@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { MailCheck, RefreshCw } from 'lucide-react';
+import type { EmailOtpType } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
 import { useI18n } from '../../context/I18nContext';
 import ErrorMessage from '../../components/common/ErrorMessage';
@@ -14,6 +15,10 @@ export default function VerifyEmail() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const email = params.get('email') ?? '';
+  const tokenHash = params.get('token_hash');
+  const tokenType = params.get('type');
+  const authCode = params.get('code');
+  const authError = params.get('error_description') ?? params.get('error');
 
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [verifying, setVerifying] = useState(false);
@@ -37,8 +42,56 @@ export default function VerifyEmail() {
 
   // Redirect if no email in URL
   useEffect(() => {
-    if (!email) navigate('/register', { replace: true });
-  }, [email, navigate]);
+    if (!email && !tokenHash && !authCode) navigate('/register', { replace: true });
+  }, [authCode, email, navigate, tokenHash]);
+
+  useEffect(() => {
+    if (!authError) return;
+    setError(decodeURIComponent(authError.replace(/\+/g, ' ')));
+  }, [authError]);
+
+  useEffect(() => {
+    let active = true;
+
+    const verifyFromLink = async () => {
+      const allowedTypes: EmailOtpType[] = ['signup', 'invite', 'magiclink', 'recovery', 'email', 'email_change'];
+      const normalizedType = tokenType && allowedTypes.includes(tokenType as EmailOtpType)
+        ? (tokenType as EmailOtpType)
+        : null;
+
+      if (!authCode && !(tokenHash && normalizedType)) return;
+
+      setError(null);
+      setVerifying(true);
+
+      try {
+        if (authCode) {
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(authCode);
+          if (exchangeError) throw exchangeError;
+        } else if (tokenHash && normalizedType) {
+          const { error: verifyError } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: normalizedType,
+          });
+          if (verifyError) throw verifyError;
+        }
+
+        if (!active) return;
+        navigate('/dashboard', { replace: true });
+      } catch (err) {
+        if (!active) return;
+        setError(err instanceof Error ? err.message : t('verifyEmail.invalidCode'));
+      } finally {
+        if (active) setVerifying(false);
+      }
+    };
+
+    void verifyFromLink();
+
+    return () => {
+      active = false;
+    };
+  }, [authCode, navigate, t, tokenHash, tokenType]);
 
   const focusInput = (index: number) => {
     inputRefs.current[index]?.focus();
@@ -96,7 +149,7 @@ export default function VerifyEmail() {
     const { error: err } = await supabase.auth.verifyOtp({
       email,
       token,
-      type: 'email',
+      type: 'signup',
     });
     setVerifying(false);
 
@@ -123,6 +176,9 @@ export default function VerifyEmail() {
     const { error: err } = await supabase.auth.resend({
       type: 'signup',
       email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/verify-email?email=${encodeURIComponent(email)}`,
+      },
     });
     setResending(false);
     if (err) {
@@ -159,7 +215,7 @@ export default function VerifyEmail() {
           <h1 className="text-xl font-bold text-slate-900">{t('verifyEmail.title')}</h1>
           <p className="mt-2 text-sm text-slate-500">
             {t('verifyEmail.description')}{' '}
-            <span className="font-medium text-slate-700">{email}</span>
+            {email ? <span className="font-medium text-slate-700">{email}</span> : null}
           </p>
 
           <div className="mt-6">

@@ -95,10 +95,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     role: UserRole,
     fullName: string
   ) => {
+    const emailRedirectTo = typeof window !== 'undefined'
+      ? `${window.location.origin}/verify-email?email=${encodeURIComponent(email)}`
+      : undefined;
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
+        emailRedirectTo,
         data: { role, full_name: fullName },
       },
     });
