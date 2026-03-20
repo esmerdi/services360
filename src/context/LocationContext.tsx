@@ -1,0 +1,93 @@
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from 'react';
+import { supabase } from '../lib/supabase';
+import { useAuth } from './AuthContext';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface Coords {
+  latitude: number;
+  longitude: number;
+}
+
+interface LocationContextValue {
+  coords: Coords | null;
+  address: string | null;
+  loading: boolean;
+  error: string | null;
+  refresh: () => void;
+}
+
+// ─── Context ──────────────────────────────────────────────────────────────────
+const LocationContext = createContext<LocationContextValue | null>(null);
+
+// ─── Provider ─────────────────────────────────────────────────────────────────
+export function LocationProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  const [coords, setCoords] = useState<Coords | null>(null);
+  const [address, setAddress] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [tick, setTick] = useState(0);
+
+  const refresh = useCallback(() => setTick((t: number) => t + 1), []);
+
+  useEffect(() => {
+    if (!user) {
+      setCoords(null);
+      setAddress(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+    if (!navigator.geolocation) {
+      setError('Geolocation is not supported by your browser.');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setCoords({ latitude, longitude });
+
+        // Persist location in DB (upsert)
+        await supabase.from('locations').upsert(
+          {
+            user_id: user.id,
+            latitude,
+            longitude,
+            address: null,
+          },
+          { onConflict: 'user_id' }
+        );
+
+        setLoading(false);
+      },
+      (err) => {
+        setError(err.message);
+        setLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }, [user, tick]);
+
+  return (
+    <LocationContext.Provider value={{ coords, address, loading, error, refresh }}>
+      {children}
+    </LocationContext.Provider>
+  );
+}
+
+// ─── Hook ─────────────────────────────────────────────────────────────────────
+export function useLocation(): LocationContextValue {
+  const ctx = useContext(LocationContext);
+  if (!ctx) throw new Error('useLocation must be used inside LocationProvider');
+  return ctx;
+}
