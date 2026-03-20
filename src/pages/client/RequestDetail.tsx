@@ -3,12 +3,14 @@ import { useParams } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
+import LocationMap from '../../components/common/LocationMap';
+import type { LocationMapMarker } from '../../components/common/LocationMap';
 import StatusBadge from '../../components/common/StatusBadge';
 import StarRating from '../../components/common/StarRating';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
-import { formatCurrency, formatDateTime } from '../../utils/helpers';
+import { formatDateTime } from '../../utils/helpers';
 import type { Category, Rating, RequestStatusHistory, ServiceRequest } from '../../types';
 
 const CLIENT_NAV = [
@@ -119,6 +121,32 @@ export default function ClientRequestDetail() {
     [request, rating, user]
   );
 
+  const requestMarkers = useMemo(() => {
+    if (
+      !request ||
+      request.latitude === null ||
+      request.latitude === undefined ||
+      request.longitude === null ||
+      request.longitude === undefined
+    ) {
+      return [];
+    }
+
+    const markers: LocationMapMarker[] = [
+      {
+        id: request.id,
+        latitude: request.latitude,
+        longitude: request.longitude,
+        label: request.service?.name || t('clientRequestDetail.serviceRequest'),
+        description: request.address || t('clientRequestDetail.notProvided'),
+        color: '#2563eb',
+        radius: 10,
+      },
+    ];
+
+    return markers;
+  }, [request, t]);
+
   async function submitRating(event: React.FormEvent) {
     event.preventDefault();
     if (!request || !request.provider_id || !user) return;
@@ -178,9 +206,9 @@ export default function ClientRequestDetail() {
                   <p className="mt-1 text-sm text-slate-500">{request.provider?.email || t('clientRequestDetail.providerFallback')}</p>
                 </div>
                 <div className="rounded-xl bg-slate-50 p-4">
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{t('clientRequestDetail.budget')}</p>
-                  <p className="mt-2 font-medium text-slate-900">{formatCurrency(request.price, language)}</p>
-                  <p className="mt-1 text-sm text-slate-500">{t('clientRequestDetail.created')} {formatDateTime(request.created_at, language)}</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{t('clientRequestDetail.created')}</p>
+                  <p className="mt-2 font-medium text-slate-900">{formatDateTime(request.created_at, language)}</p>
+                  <p className="mt-1 text-sm text-slate-500">{request.address || t('clientRequestDetail.notProvided')}</p>
                 </div>
               </div>
             </div>
@@ -221,6 +249,13 @@ export default function ClientRequestDetail() {
                   </dd>
                 </div>
               </dl>
+
+              {requestMarkers.length > 0 && (
+                <div className="mt-5 space-y-3">
+                  <p className="text-sm font-medium text-slate-800">Mapa</p>
+                  <LocationMap markers={requestMarkers} heightClassName="h-72" />
+                </div>
+              )}
             </div>
 
             <div className="card">

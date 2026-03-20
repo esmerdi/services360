@@ -6,7 +6,7 @@ import StatusBadge from '../../components/common/StatusBadge';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
-import { formatCurrency, formatDateTime } from '../../utils/helpers';
+import { formatDateTime } from '../../utils/helpers';
 import type { RequestStatus, ServiceRequest } from '../../types';
 
 const PROVIDER_NAV = [
@@ -123,14 +123,10 @@ export default function ProviderMyJobs() {
                 <StatusBadge status={job.status} />
               </div>
 
-              <div className="mt-4 grid gap-4 md:grid-cols-3">
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <div className="surface-muted text-sm text-slate-600">
                   <p className="font-medium text-slate-800">{es ? 'Direccion' : 'Address'}</p>
                   <p className="mt-1">{job.address || (es ? 'Detalles pendientes' : 'Pending details')}</p>
-                </div>
-                <div className="surface-muted text-sm text-slate-600">
-                  <p className="font-medium text-slate-800">{es ? 'Precio' : 'Price'}</p>
-                  <p className="mt-1">{formatCurrency(job.price, language)}</p>
                 </div>
                 <div className="surface-muted text-sm text-slate-600">
                   <p className="font-medium text-slate-800">{es ? 'Creado' : 'Created'}</p>

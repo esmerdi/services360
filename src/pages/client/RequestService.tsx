@@ -4,6 +4,8 @@ import { MapPin } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
+import LocationMap from '../../components/common/LocationMap';
+import type { LocationMapMarker } from '../../components/common/LocationMap';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
@@ -35,7 +37,6 @@ export default function ClientRequestService() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [description, setDescription] = useState('');
-  const [price, setPrice] = useState('');
   const [address, setAddress] = useState('');
 
   const categoryMap = useMemo(
@@ -179,6 +180,32 @@ export default function ClientRequestService() {
   }, [serviceId, coords, t]);
 
   const estimatedProviders = useMemo(() => providers.slice(0, 5), [providers]);
+  const providerMarkers = useMemo(() => {
+    const markers: LocationMapMarker[] = estimatedProviders
+      .filter((provider) => provider.location)
+      .map((provider) => ({
+        id: provider.id,
+        latitude: provider.location!.latitude,
+        longitude: provider.location!.longitude,
+        label: provider.full_name || provider.email,
+        description: provider.location?.address || t('clientRequestService.providerLocationFallback'),
+        color: '#0f766e',
+      }));
+
+    if (coords) {
+      markers.unshift({
+        id: 'client-location',
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        label: t('clientRequestService.currentLocation'),
+        description: address.trim() || `${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`,
+        color: '#2563eb',
+        radius: 10,
+      });
+    }
+
+    return markers;
+  }, [address, coords, estimatedProviders, t]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -196,7 +223,6 @@ export default function ClientRequestService() {
         client_id: user.id,
         service_id: serviceId,
         description: description.trim() || null,
-        price: price ? Number(price) : null,
         latitude: coords.latitude,
         longitude: coords.longitude,
         address: address.trim() || null,
@@ -258,19 +284,7 @@ export default function ClientRequestService() {
               />
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="form-group">
-                <label className="label">{t('clientRequestService.budgetLabel')}</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  className="input"
-                  placeholder={t('clientRequestService.budgetPlaceholder')}
-                  value={price}
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => setPrice(event.target.value)}
-                />
-              </div>
+            <div className="grid gap-4 md:grid-cols-1">
               <div className="form-group">
                 <label className="label">{t('clientRequestService.addressLabel')}</label>
                 <input
@@ -299,6 +313,7 @@ export default function ClientRequestService() {
               <h2 className="text-lg font-semibold text-slate-900">{t('clientRequestService.nearbyProviders')}</h2>
               <p className="mt-1 text-sm text-slate-500">{t('clientRequestService.nearbyProvidersDesc')}</p>
             </div>
+            <LocationMap markers={providerMarkers} />
             <div className="space-y-3">
               {estimatedProviders.length === 0 && (
                 <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-400">

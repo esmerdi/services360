@@ -3,12 +3,13 @@ import { MapPin } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
+import LocationMap from '../../components/common/LocationMap';
+import type { LocationMapMarker } from '../../components/common/LocationMap';
 import StatusBadge from '../../components/common/StatusBadge';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
 import { useLocation } from '../../context/LocationContext';
-import { formatCurrency } from '../../utils/helpers';
 import { formatDistance } from '../../utils/distance';
 import type { ServiceRequest } from '../../types';
 
@@ -110,6 +111,32 @@ export default function ProviderNearbyRequests() {
   }
 
   const es = language === 'es';
+  const requestMarkers = React.useMemo(() => {
+    const markers: LocationMapMarker[] = requests
+      .filter((request) => request.latitude !== null && request.latitude !== undefined && request.longitude !== null && request.longitude !== undefined)
+      .map((request) => ({
+        id: request.id,
+        latitude: request.latitude as number,
+        longitude: request.longitude as number,
+        label: request.service?.name || (es ? 'Solicitud de servicio' : 'Service request'),
+        description: request.address || request.client?.full_name || (es ? 'Ubicacion del cliente' : 'Client location'),
+        color: '#ea580c',
+      }));
+
+    if (coords) {
+      markers.unshift({
+        id: 'provider-location',
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        label: es ? 'Tu ubicacion' : 'Your location',
+        description: `${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`,
+        color: '#2563eb',
+        radius: 10,
+      });
+    }
+
+    return markers;
+  }, [coords, es, requests]);
 
   return (
     <Layout navItems={PROVIDER_NAV} title="Nearby Requests">
@@ -137,46 +164,56 @@ export default function ProviderNearbyRequests() {
           <LoadingSpinner size="lg" />
         </div>
       ) : (
-        <div className="grid gap-4 xl:grid-cols-2">
-          {requests.length === 0 && (
-            <div className="card xl:col-span-2">
-              <p className="text-center text-slate-400">{es ? 'No hay solicitudes cercanas disponibles ahora.' : 'No matching nearby requests right now.'}</p>
+        <div className="space-y-4">
+          <div className="card space-y-4">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">{es ? 'Mapa de solicitudes' : 'Requests map'}</h2>
+              <p className="mt-1 text-sm text-slate-500">{es ? 'Visualiza tu posicion y las solicitudes cercanas sobre OpenStreetMap.' : 'See your position and nearby requests on OpenStreetMap.'}</p>
             </div>
-          )}
-          {requests.map((request) => (
-            <div key={request.id} className="card">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-sm text-slate-500">{request.service?.name || (es ? 'Solicitud de servicio' : 'Service Request')}</p>
-                  <h2 className="mt-1 text-lg font-semibold text-slate-900">{request.client?.full_name || (es ? 'Solicitud de cliente' : 'Client request')}</h2>
-                </div>
-                <StatusBadge status={request.status} />
+            <LocationMap markers={requestMarkers} />
+          </div>
+
+          <div className="grid gap-4 xl:grid-cols-2">
+            {requests.length === 0 && (
+              <div className="card xl:col-span-2">
+                <p className="text-center text-slate-400">{es ? 'No hay solicitudes cercanas disponibles ahora.' : 'No matching nearby requests right now.'}</p>
               </div>
-
-              <p className="mt-3 text-sm text-slate-500">{request.description || (es ? 'No hay detalles adicionales.' : 'No extra details provided.')}</p>
-
-              <div className="mt-4 grid gap-3 md:grid-cols-2">
-                <div className="surface-muted text-sm text-slate-600">
-                  <p className="font-medium text-slate-800">{es ? 'Presupuesto' : 'Budget'}</p>
-                  <p className="mt-1">{formatCurrency(request.price, language)}</p>
+            )}
+            {requests.map((request) => (
+              <div key={request.id} className="card">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm text-slate-500">{request.service?.name || (es ? 'Solicitud de servicio' : 'Service Request')}</p>
+                    <h2 className="mt-1 text-lg font-semibold text-slate-900">{request.client?.full_name || (es ? 'Solicitud de cliente' : 'Client request')}</h2>
+                  </div>
+                  <StatusBadge status={request.status} />
                 </div>
-                <div className="surface-muted text-sm text-slate-600">
-                  <p className="font-medium text-slate-800">{es ? 'Distancia' : 'Distance'}</p>
-                  <p className="mt-1">{request.distance_km !== undefined ? formatDistance(request.distance_km) : (es ? 'No disponible' : 'Unavailable')}</p>
+
+                <p className="mt-3 text-sm text-slate-500">{request.description || (es ? 'No hay detalles adicionales.' : 'No extra details provided.')}</p>
+
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  <div className="surface-muted text-sm text-slate-600">
+                    <p className="font-medium text-slate-800">{es ? 'Distancia' : 'Distance'}</p>
+                    <p className="mt-1">{request.distance_km !== undefined ? formatDistance(request.distance_km) : (es ? 'No disponible' : 'Unavailable')}</p>
+                  </div>
+                  <div className="surface-muted text-sm text-slate-600">
+                    <p className="font-medium text-slate-800">{es ? 'Ubicacion' : 'Location'}</p>
+                    <p className="mt-1">{request.latitude !== null && request.latitude !== undefined && request.longitude !== null && request.longitude !== undefined ? `${request.latitude.toFixed(5)}, ${request.longitude.toFixed(5)}` : (es ? 'No disponible' : 'Unavailable')}</p>
+                  </div>
                 </div>
+
+                <p className="mt-4 text-sm text-slate-500">{request.address || (es ? 'Sin referencia de direccion.' : 'No address reference supplied.')}</p>
+
+                <button
+                  onClick={() => acceptRequest(request.id)}
+                  className="btn-primary mt-5 w-full justify-center"
+                  disabled={actingId === request.id}
+                >
+                  {actingId === request.id ? <LoadingSpinner size="sm" /> : (es ? 'Aceptar solicitud' : 'Accept request')}
+                </button>
               </div>
-
-              <p className="mt-4 text-sm text-slate-500">{request.address || (es ? 'Sin referencia de direccion.' : 'No address reference supplied.')}</p>
-
-              <button
-                onClick={() => acceptRequest(request.id)}
-                className="btn-primary mt-5 w-full justify-center"
-                disabled={actingId === request.id}
-              >
-                {actingId === request.id ? <LoadingSpinner size="sm" /> : (es ? 'Aceptar solicitud' : 'Accept request')}
-              </button>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </Layout>

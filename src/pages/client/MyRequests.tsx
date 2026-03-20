@@ -8,7 +8,7 @@ import StatusBadge from '../../components/common/StatusBadge';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
-import { formatCurrency, formatDateTime } from '../../utils/helpers';
+import { formatDateTime } from '../../utils/helpers';
 import type { Category, RequestStatus, ServiceRequest } from '../../types';
 
 const CLIENT_NAV = [
@@ -159,14 +159,13 @@ export default function ClientMyRequests() {
                   <th className="px-4 py-3 text-left font-medium text-slate-500">{t('myRequests.table.service')}</th>
                   <th className="px-4 py-3 text-left font-medium text-slate-500">{t('myRequests.table.provider')}</th>
                   <th className="px-4 py-3 text-left font-medium text-slate-500">{t('myRequests.table.status')}</th>
-                  <th className="px-4 py-3 text-left font-medium text-slate-500">{t('myRequests.table.price')}</th>
                   <th className="px-4 py-3 text-left font-medium text-slate-500 hidden lg:table-cell">{t('myRequests.table.created')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredRequests.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-10 text-center text-slate-400">
+                    <td colSpan={4} className="px-4 py-10 text-center text-slate-400">
                       {t('myRequests.table.noRequests')}
                     </td>
                   </tr>
@@ -190,7 +189,6 @@ export default function ClientMyRequests() {
                     <td className="px-4 py-3">
                       <StatusBadge status={request.status} />
                     </td>
-                    <td className="px-4 py-3 text-slate-700">{formatCurrency(request.price, language)}</td>
                     <td className="px-4 py-3 text-slate-500 hidden lg:table-cell">
                       {formatDateTime(request.created_at, language)}
                     </td>
