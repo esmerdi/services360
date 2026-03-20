@@ -109,12 +109,12 @@ export default function Landing() {
             </div>
             <span className="font-display text-xl tracking-tight text-slate-900">Taskly</span>
           </Link>
-          <div className="relative z-[90] flex items-center gap-3">
+          <div className="relative z-[90] flex flex-col md:flex-row items-stretch md:items-center gap-2 md:gap-3">
             <LanguageSwitcher compact />
-            <Link to="/login" className="btn-secondary text-sm px-4 py-2">
+            <Link to="/login" className="btn-secondary text-sm px-4 py-2 text-center">
               {t('common.signIn')}
             </Link>
-            <Link to="/register" className="btn-primary text-sm px-4 py-2">
+            <Link to="/register" className="btn-primary text-sm px-4 py-2 text-center">
               {t('landing.startToday')}
             </Link>
           </div>
