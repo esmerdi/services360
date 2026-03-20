@@ -183,14 +183,14 @@ export default function App() {
               element={
                 <RequireRole role="client">
                   <ClientRequestDetail />
-                            <Route
-                              path="/client/profile"
-                              element={
-                                <RequireRole role="client">
-                                  <ClientProfile />
-                                </RequireRole>
-                              }
-                            />
+                </RequireRole>
+              }
+            />
+            <Route
+              path="/client/profile"
+              element={
+                <RequireRole role="client">
+                  <ClientProfile />
                 </RequireRole>
               }
             />
