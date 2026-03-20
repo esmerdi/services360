@@ -11,6 +11,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
 import { useLocation } from '../../context/LocationContext';
 import { formatDistance } from '../../utils/distance';
+import { getCategoryMarkerColor, getCategoryMarkerGlyph } from '../../utils/mapMarkers';
 import type { ServiceRequest } from '../../types';
 
 const PROVIDER_NAV = [
@@ -68,7 +69,7 @@ export default function ProviderNearbyRequests() {
         .from('service_requests')
         .select(`
           *,
-          service:services(id, name),
+          service:services(id, name, category_id, category:categories(id, name, icon)),
           client:users!service_requests_client_id_fkey(id, full_name, email)
         `)
         .in('id', requestIds);
@@ -120,7 +121,8 @@ export default function ProviderNearbyRequests() {
         longitude: request.longitude as number,
         label: request.service?.name || (es ? 'Solicitud de servicio' : 'Service request'),
         description: request.address || request.client?.full_name || (es ? 'Ubicacion del cliente' : 'Client location'),
-        color: '#ea580c',
+        color: getCategoryMarkerColor(request.service?.category_id),
+        glyph: getCategoryMarkerGlyph(request.service?.category?.icon, request.service?.category?.name),
       }));
 
     if (coords) {
@@ -132,6 +134,7 @@ export default function ProviderNearbyRequests() {
         description: `${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`,
         color: '#2563eb',
         radius: 10,
+        glyph: '📍',
       });
     }
 

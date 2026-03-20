@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
-import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from 'react-leaflet';
-import { latLngBounds } from 'leaflet';
+import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
+import { divIcon, latLngBounds, point } from 'leaflet';
 
 export interface LocationMapMarker {
   id: string;
@@ -10,6 +10,7 @@ export interface LocationMapMarker {
   description?: string;
   color?: string;
   radius?: number;
+  glyph?: string;
 }
 
 interface LocationMapProps {
@@ -35,6 +36,33 @@ function FitMapBounds({ markers }: { markers: LocationMapMarker[] }) {
   return null;
 }
 
+function markerIcon(marker: LocationMapMarker) {
+  const color = marker.color ?? '#0284c7';
+  const size = Math.max(24, (marker.radius ?? 8) * 2 + 10);
+  const glyph = marker.glyph ?? '•';
+
+  return divIcon({
+    html: `<div style="
+      width:${size}px;
+      height:${size}px;
+      border-radius:999px;
+      border:2px solid #ffffff;
+      background:${color};
+      color:#ffffff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:${Math.max(11, Math.floor(size * 0.48))}px;
+      font-weight:700;
+      box-shadow:0 8px 18px rgba(15,23,42,0.25);
+      line-height:1;
+    ">${glyph}</div>`,
+    className: '',
+    iconSize: point(size, size),
+    iconAnchor: point(size / 2, size / 2),
+    popupAnchor: point(0, -size / 2),
+  });
+}
 export default function LocationMap({ markers, heightClassName = 'h-80' }: LocationMapProps) {
   if (markers.length === 0) {
     return null;
@@ -53,25 +81,20 @@ export default function LocationMap({ markers, heightClassName = 'h-80' }: Locat
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <FitMapBounds markers={markers} />
-        {markers.map((marker) => {
-          const color = marker.color ?? '#0284c7';
-
-          return (
-            <CircleMarker
-              key={marker.id}
-              center={[marker.latitude, marker.longitude]}
-              radius={marker.radius ?? 8}
-              pathOptions={{ color, fillColor: color, fillOpacity: 0.75, weight: 2 }}
-            >
-              <Popup>
-                <div className="min-w-[160px]">
-                  <p className="font-semibold text-slate-900">{marker.label}</p>
-                  {marker.description ? <p className="mt-1 text-sm text-slate-600">{marker.description}</p> : null}
-                </div>
-              </Popup>
-            </CircleMarker>
-          );
-        })}
+        {markers.map((marker) => (
+          <Marker
+            key={marker.id}
+            position={[marker.latitude, marker.longitude]}
+            icon={markerIcon(marker)}
+          >
+            <Popup>
+              <div className="min-w-[160px]">
+                <p className="font-semibold text-slate-900">{marker.label}</p>
+                {marker.description ? <p className="mt-1 text-sm text-slate-600">{marker.description}</p> : null}
+              </div>
+            </Popup>
+          </Marker>
+        ))}
       </MapContainer>
     </div>
   );

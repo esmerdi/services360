@@ -11,6 +11,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
 import { formatDateTime } from '../../utils/helpers';
+import { getCategoryMarkerColor, getCategoryMarkerGlyph } from '../../utils/mapMarkers';
 import type { Category, Rating, RequestStatusHistory, ServiceRequest } from '../../types';
 
 const CLIENT_NAV = [
@@ -66,7 +67,7 @@ export default function ClientRequestDetail() {
           .from('service_requests')
           .select(`
             *,
-            service:services(id, name, category_id),
+            service:services(id, name, category_id, category:categories(id, name, icon)),
             client:users!service_requests_client_id_fkey(id, full_name, email),
             provider:users!service_requests_provider_id_fkey(id, full_name, email)
           `)
@@ -138,14 +139,15 @@ export default function ClientRequestDetail() {
         latitude: request.latitude,
         longitude: request.longitude,
         label: request.service?.name || t('clientRequestDetail.serviceRequest'),
-        description: request.address || t('clientRequestDetail.notProvided'),
-        color: '#2563eb',
+        description: `${getCategoryPath(request.service?.category_id)} | ${request.address || t('clientRequestDetail.notProvided')}`,
+        color: getCategoryMarkerColor(request.service?.category_id),
         radius: 10,
+        glyph: getCategoryMarkerGlyph(request.service?.category?.icon, request.service?.category?.name),
       },
     ];
 
     return markers;
-  }, [request, t]);
+  }, [getCategoryPath, request, t]);
 
   async function submitRating(event: React.FormEvent) {
     event.preventDefault();

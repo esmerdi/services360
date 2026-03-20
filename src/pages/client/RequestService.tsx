@@ -11,6 +11,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
 import { useLocation } from '../../context/LocationContext';
 import { formatDistance, haversineDistance } from '../../utils/distance';
+import { getCategoryMarkerColor, getCategoryMarkerGlyph } from '../../utils/mapMarkers';
 import type { Service, User } from '../../types';
 
 const CLIENT_NAV = [
@@ -20,7 +21,7 @@ const CLIENT_NAV = [
   { label: 'Profile',     to: '/client/profile' },
 ];
 
-type ServiceDetails = Service & { category?: { id: string; name: string } };
+type ServiceDetails = Service & { category?: { id: string; name: string; icon?: string | null } };
 type NearbyProvider = User & { distance_km?: number; location?: { latitude: number; longitude: number; address: string | null } };
 
 export default function ClientRequestService() {
@@ -80,7 +81,7 @@ export default function ClientRequestService() {
       const [serviceRes, categoriesRes] = await Promise.all([
         supabase
           .from('services')
-          .select('*, category:categories(id, name)')
+          .select('*, category:categories(id, name, icon)')
           .eq('id', serviceId)
           .single(),
         supabase.from('categories').select('id, name, parent_id'),
@@ -189,7 +190,8 @@ export default function ClientRequestService() {
         longitude: provider.location!.longitude,
         label: provider.full_name || provider.email,
         description: provider.location?.address || t('clientRequestService.providerLocationFallback'),
-        color: '#0f766e',
+        color: getCategoryMarkerColor(service?.category_id),
+        glyph: getCategoryMarkerGlyph(service?.category?.icon, service?.category?.name),
       }));
 
     if (coords) {
@@ -201,11 +203,12 @@ export default function ClientRequestService() {
         description: address.trim() || `${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`,
         color: '#2563eb',
         radius: 10,
+        glyph: '📍',
       });
     }
 
     return markers;
-  }, [address, coords, estimatedProviders, t]);
+  }, [address, coords, estimatedProviders, service?.category?.icon, service?.category?.name, service?.category_id, t]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
