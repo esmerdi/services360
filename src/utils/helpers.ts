@@ -124,6 +124,10 @@ export function extractManagedAvatarPath(url: string | null | undefined): string
   const normalized = url.trim();
   if (!normalized) return null;
 
+  if (normalized.startsWith('data:image/') || normalized.startsWith('blob:')) {
+    return null;
+  }
+
   const lowerUrl = normalized.toLowerCase();
   const markers = [
     '/storage/v1/object/public/avatars/',
@@ -144,6 +148,11 @@ export function extractManagedAvatarPath(url: string | null | undefined): string
 
   if (lowerUrl.startsWith('avatars/')) {
     return normalized.slice('avatars/'.length);
+  }
+
+  // Support storing just the object path, e.g. userId/avatar.png.
+  if (!lowerUrl.includes('://') && !lowerUrl.startsWith('/')) {
+    return normalized;
   }
 
   return null;

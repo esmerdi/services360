@@ -123,10 +123,8 @@ export default function ProfileEditor() {
         console.warn('Avatar upload failed (storage may be disabled locally):', uploadError.message);
         // Storage failed but continue with profile update without avatar
       } else {
-        // Only update avatar URL if upload succeeded
-        const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
-        avatarUrl = publicUrl;
-        setAvatarPreview(publicUrl);
+        avatarUrl = path;
+        setAvatarPreview(path);
       }
     }
 

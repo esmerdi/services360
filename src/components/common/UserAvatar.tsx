@@ -19,13 +19,27 @@ export default function UserAvatar({
   imageClassName = 'h-full w-full object-cover',
   fallbackClassName,
 }: UserAvatarProps) {
-  const [currentSrc, setCurrentSrc] = useState<string | null>(
-    isManagedAvatarUrl(avatarUrl) ? avatarUrl ?? null : null
-  );
+  const resolveAvatarSrc = (value: string | null | undefined): string | null => {
+    if (!value || !isManagedAvatarUrl(value)) return null;
+
+    if (value.startsWith('data:image/') || value.startsWith('blob:')) {
+      return value;
+    }
+
+    const objectPath = extractManagedAvatarPath(value);
+    if (!objectPath) {
+      return value;
+    }
+
+    const { data } = supabase.storage.from('avatars').getPublicUrl(objectPath);
+    return data.publicUrl;
+  };
+
+  const [currentSrc, setCurrentSrc] = useState<string | null>(resolveAvatarSrc(avatarUrl));
   const [signedUrlAttempted, setSignedUrlAttempted] = useState(false);
 
   useEffect(() => {
-    setCurrentSrc(isManagedAvatarUrl(avatarUrl) ? avatarUrl ?? null : null);
+    setCurrentSrc(resolveAvatarSrc(avatarUrl));
     setSignedUrlAttempted(false);
   }, [avatarUrl]);
 
