@@ -16,6 +16,8 @@ export interface User {
   is_available: boolean;
   avatar_url: string | null;
   address: string | null;
+  avg_rating?: number;
+  ratings_count?: number;
   created_at: string;
 }
 

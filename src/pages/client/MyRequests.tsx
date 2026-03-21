@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import { Search, Star } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import StatusBadge from '../../components/common/StatusBadge';
+import StarRating from '../../components/common/StarRating';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
@@ -27,6 +28,7 @@ export default function ClientMyRequests() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<'all' | RequestStatus>('all');
+  const [ratedRequestIds, setRatedRequestIds] = useState<Set<string>>(new Set());
 
   const statusOptions: Array<{ value: 'all' | RequestStatus; label: string }> = useMemo(
     () => [
@@ -64,7 +66,54 @@ export default function ClientMyRequests() {
       } else if (categoriesRes.error) {
         setError(categoriesRes.error.message);
       } else {
-        setRequests((requestsRes.data as ServiceRequest[]) ?? []);
+        const requestRows = (requestsRes.data as ServiceRequest[]) ?? [];
+        const providerIds = Array.from(new Set(requestRows.map((request) => request.provider_id).filter(Boolean))) as string[];
+        const requestIds = requestRows.map((request) => request.id);
+
+        const [providerRatingsRes, requestRatingsRes] = await Promise.all([
+          providerIds.length > 0
+            ? supabase.from('ratings').select('to_user_id, rating').in('to_user_id', providerIds)
+            : Promise.resolve({ data: [], error: null }),
+          requestIds.length > 0
+            ? supabase.from('ratings').select('request_id').in('request_id', requestIds)
+            : Promise.resolve({ data: [], error: null }),
+        ]);
+
+        if (providerRatingsRes.error) {
+          setError(providerRatingsRes.error.message);
+          setLoading(false);
+          return;
+        }
+
+        if (requestRatingsRes.error) {
+          setError(requestRatingsRes.error.message);
+          setLoading(false);
+          return;
+        }
+
+        const providerRatingMap = new Map<string, { total: number; count: number }>();
+        for (const rating of (providerRatingsRes.data as Array<{ to_user_id: string; rating: number }>) ?? []) {
+          const current = providerRatingMap.get(rating.to_user_id) ?? { total: 0, count: 0 };
+          current.total += rating.rating;
+          current.count += 1;
+          providerRatingMap.set(rating.to_user_id, current);
+        }
+
+        const enhancedRequests = requestRows.map((request) => {
+          if (!request.provider) return request;
+          const providerStats = providerRatingMap.get(request.provider.id);
+          return {
+            ...request,
+            provider: {
+              ...request.provider,
+              avg_rating: providerStats ? providerStats.total / providerStats.count : 0,
+              ratings_count: providerStats?.count ?? 0,
+            },
+          };
+        });
+
+        setRequests(enhancedRequests);
+        setRatedRequestIds(new Set(((requestRatingsRes.data as Array<{ request_id: string }>) ?? []).map((item) => item.request_id)));
         setCategories((categoriesRes.data as Array<Pick<Category, 'id' | 'name' | 'parent_id'>>) ?? []);
       }
       setLoading(false);
@@ -112,6 +161,11 @@ export default function ClientMyRequests() {
     });
   }, [getCategoryPath, requests, search, status]);
 
+  const pendingReviewCount = useMemo(
+    () => requests.filter((request) => request.status === 'completed' && !ratedRequestIds.has(request.id)).length,
+    [ratedRequestIds, requests]
+  );
+
   return (
     <Layout navItems={CLIENT_NAV} title="My Requests">
       <div className="page-header flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -123,6 +177,20 @@ export default function ClientMyRequests() {
           {t('common.newRequest')}
         </Link>
       </div>
+
+      {pendingReviewCount > 0 && (
+        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <div className="flex items-start gap-3">
+            <Star className="mt-0.5 h-4 w-4 flex-shrink-0" />
+            <div>
+              <p className="font-medium">{t('myRequests.pendingReviewTitle')}</p>
+              <p className="mt-1 text-amber-700">
+                {pendingReviewCount} {t('myRequests.pendingReviewDescription')}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="mb-4 grid gap-4 lg:grid-cols-[1.2fr,0.8fr]">
         <div className="relative">
@@ -184,7 +252,26 @@ export default function ClientMyRequests() {
                       <p className="mt-2 text-xs text-slate-400">{request.address || t('myRequests.table.addressPending')}</p>
                     </td>
                     <td className="px-4 py-3 text-slate-600">
-                      {request.provider?.full_name || t('myRequests.table.awaitingAcceptance')}
+                      {request.provider ? (
+                        <div className="space-y-1">
+                          <p className="font-medium text-slate-700">{request.provider.full_name || request.provider.email}</p>
+                          <div className="flex items-center gap-2 text-xs text-slate-500">
+                            <StarRating value={request.provider.avg_rating ?? 0} readonly size="sm" />
+                            <span>
+                              {request.provider.ratings_count && request.provider.ratings_count > 0
+                                ? `${(request.provider.avg_rating ?? 0).toFixed(1)} (${request.provider.ratings_count})`
+                                : t('myRequests.table.noRatingsYet')}
+                            </span>
+                          </div>
+                          {request.status === 'completed' && !ratedRequestIds.has(request.id) && (
+                            <Link to={`/client/requests/${request.id}`} className="inline-flex text-xs font-medium text-amber-700 hover:text-amber-800">
+                              {t('myRequests.table.rateNow')}
+                            </Link>
+                          )}
+                        </div>
+                      ) : (
+                        t('myRequests.table.awaitingAcceptance')
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <StatusBadge status={request.status} />

@@ -4,6 +4,7 @@ import { Search, ArrowRight } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
+import StarRating from '../../components/common/StarRating';
 import { useI18n } from '../../context/I18nContext';
 import { supabase } from '../../lib/supabase';
 import type { Category, Service } from '../../types';
@@ -15,7 +16,12 @@ const CLIENT_NAV = [
   { label: 'Profile',     to: '/client/profile' },
 ];
 
-type ServiceWithCategory = Service & { category?: Pick<Category, 'id' | 'name'> };
+type ServiceWithCategory = Service & {
+  category?: Pick<Category, 'id' | 'name'>;
+  avg_rating?: number;
+  ratings_count?: number;
+  providers_count?: number;
+};
 
 const CATEGORY_PALETTE = [
   { badge: 'bg-violet-50 text-violet-700', dot: 'bg-violet-500', ring: 'border-violet-300 hover:border-violet-400' },
@@ -40,18 +46,73 @@ export default function ClientBrowse() {
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
-      const [catRes, serviceRes] = await Promise.all([
+      const [catRes, serviceRes, providerServiceRes] = await Promise.all([
         supabase.from('categories').select('*').order('name'),
         supabase.from('services').select('*, category:categories(id, name)').order('name'),
+        supabase.from('provider_services').select('service_id, provider_id'),
       ]);
 
       if (catRes.error) {
         setError(catRes.error.message);
       } else if (serviceRes.error) {
         setError(serviceRes.error.message);
+      } else if (providerServiceRes.error) {
+        setError(providerServiceRes.error.message);
       } else {
+        const providerLinks = (providerServiceRes.data as Array<{ service_id: string; provider_id: string }>) ?? [];
+        const providerIds = Array.from(new Set(providerLinks.map((item) => item.provider_id)));
+
+        let providerRatingMap = new Map<string, { total: number; count: number }>();
+        if (providerIds.length > 0) {
+          const { data: ratingsData, error: ratingsError } = await supabase
+            .from('ratings')
+            .select('to_user_id, rating')
+            .in('to_user_id', providerIds);
+
+          if (ratingsError) {
+            setError(ratingsError.message);
+            setLoading(false);
+            return;
+          }
+
+          for (const rating of (ratingsData as Array<{ to_user_id: string; rating: number }>) ?? []) {
+            const current = providerRatingMap.get(rating.to_user_id) ?? { total: 0, count: 0 };
+            current.total += rating.rating;
+            current.count += 1;
+            providerRatingMap.set(rating.to_user_id, current);
+          }
+        }
+
+        const providersByService = new Map<string, string[]>();
+        for (const link of providerLinks) {
+          const current = providersByService.get(link.service_id) ?? [];
+          current.push(link.provider_id);
+          providersByService.set(link.service_id, current);
+        }
+
+        const enrichedServices = ((serviceRes.data as ServiceWithCategory[]) ?? []).map((service) => {
+          const providerIdsForService = providersByService.get(service.id) ?? [];
+          const aggregate = providerIdsForService.reduce(
+            (acc, providerId) => {
+              const providerStats = providerRatingMap.get(providerId);
+              if (!providerStats) return acc;
+              acc.total += providerStats.total;
+              acc.count += providerStats.count;
+              return acc;
+            },
+            { total: 0, count: 0 }
+          );
+
+          return {
+            ...service,
+            providers_count: providerIdsForService.length,
+            ratings_count: aggregate.count,
+            avg_rating: aggregate.count > 0 ? aggregate.total / aggregate.count : 0,
+          };
+        });
+
         setCategories((catRes.data as Category[]) ?? []);
-        setServices((serviceRes.data as ServiceWithCategory[]) ?? []);
+        setServices(enrichedServices);
       }
       setLoading(false);
     }
@@ -258,6 +319,25 @@ export default function ClientBrowse() {
                   <p className="mt-2 text-sm leading-6 text-slate-500">
                     {service.description || t('clientBrowse.serviceFallback')}
                   </p>
+                  <div className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2">
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                        {t('clientBrowse.providerRatingLabel')}
+                      </p>
+                      <div className="mt-1 flex items-center gap-2 text-sm text-slate-600">
+                        <StarRating value={service.avg_rating ?? 0} readonly size="sm" />
+                        <span>
+                          {service.ratings_count && service.ratings_count > 0
+                            ? `${(service.avg_rating ?? 0).toFixed(1)} (${service.ratings_count})`
+                            : t('clientBrowse.noRatingsYet')}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right text-xs text-slate-500">
+                      <p className="font-medium text-slate-700">{service.providers_count ?? 0}</p>
+                      <p>{t('clientBrowse.providersAvailable')}</p>
+                    </div>
+                  </div>
                 </div>
                 <Link to={`/client/request/${service.id}`} className="btn-primary mt-6 w-full justify-center">
                   {t('clientBrowse.requestService')}

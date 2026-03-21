@@ -6,6 +6,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import LocationMap from '../../components/common/LocationMap';
 import UserAvatar from '../../components/common/UserAvatar';
+import StarRating from '../../components/common/StarRating';
 import type { LocationMapMarker } from '../../components/common/LocationMap';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -148,6 +149,25 @@ export default function ClientRequestService() {
           return;
         }
 
+        const { data: providerRatings, error: providerRatingsError } = await supabase
+          .from('ratings')
+          .select('to_user_id, rating')
+          .in('to_user_id', filteredProviderIds);
+
+        if (providerRatingsError) {
+          setError(providerRatingsError.message);
+          setLoading(false);
+          return;
+        }
+
+        const providerRatingMap = new Map<string, { total: number; count: number }>();
+        for (const rating of (providerRatings as Array<{ to_user_id: string; rating: number }>) ?? []) {
+          const current = providerRatingMap.get(rating.to_user_id) ?? { total: 0, count: 0 };
+          current.total += rating.rating;
+          current.count += 1;
+          providerRatingMap.set(rating.to_user_id, current);
+        }
+
         const locationMap = new Map(
           ((locationData as Array<{ user_id: string; latitude: number; longitude: number; address: string | null }>) ?? []).map((location) => [
             location.user_id,
@@ -159,6 +179,10 @@ export default function ClientRequestService() {
           .map((provider) => ({
             ...provider,
             location: locationMap.get(provider.id),
+            avg_rating: providerRatingMap.has(provider.id)
+              ? providerRatingMap.get(provider.id)!.total / providerRatingMap.get(provider.id)!.count
+              : 0,
+            ratings_count: providerRatingMap.get(provider.id)?.count ?? 0,
             distance_km: locationMap.get(provider.id)
               ? haversineDistance(
                   currentCoords.latitude,
@@ -361,6 +385,14 @@ export default function ClientRequestService() {
                       <div className="min-w-0">
                         <p className="font-medium text-slate-900 truncate">{provider.full_name || provider.email}</p>
                         <p className="mt-1 text-sm text-slate-500">{provider.location?.address || t('clientRequestService.providerLocationFallback')}</p>
+                        <div className="mt-2 flex items-center gap-2 text-sm text-slate-500">
+                          <StarRating value={provider.avg_rating ?? 0} readonly size="sm" />
+                          <span>
+                            {provider.ratings_count && provider.ratings_count > 0
+                              ? `${(provider.avg_rating ?? 0).toFixed(1)} (${provider.ratings_count})`
+                              : t('clientRequestService.noRatingsYet')}
+                          </span>
+                        </div>
                       </div>
                     </div>
                     <span className="badge bg-green-50 text-green-700">{t('clientRequestService.online')}</span>

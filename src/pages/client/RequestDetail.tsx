@@ -84,7 +84,36 @@ export default function ClientRequestDetail() {
       } else if (categoriesRes.error) {
         setError(categoriesRes.error.message);
       } else {
-        setRequest(requestRes.data as ServiceRequest);
+        const requestData = requestRes.data as ServiceRequest;
+
+        if (requestData.provider_id) {
+          const { data: providerRatings, error: providerRatingsError } = await supabase
+            .from('ratings')
+            .select('rating')
+            .eq('to_user_id', requestData.provider_id);
+
+          if (providerRatingsError) {
+            setError(providerRatingsError.message);
+            setLoading(false);
+            return;
+          }
+
+          const ratings = (providerRatings as Array<{ rating: number }>) ?? [];
+          const ratingsCount = ratings.length;
+          const avgRating = ratingsCount > 0
+            ? ratings.reduce((sum, item) => sum + item.rating, 0) / ratingsCount
+            : 0;
+
+          if (requestData.provider) {
+            requestData.provider = {
+              ...requestData.provider,
+              avg_rating: avgRating,
+              ratings_count: ratingsCount,
+            };
+          }
+        }
+
+        setRequest(requestData);
         setCategories((categoriesRes.data as Array<Pick<Category, 'id' | 'name' | 'parent_id'>>) ?? []);
       }
 
@@ -217,6 +246,14 @@ export default function ClientRequestDetail() {
                       <div className="min-w-0">
                         <p className="font-medium text-slate-900 truncate">{request.provider.full_name || t('clientRequestDetail.awaitingProvider')}</p>
                         <p className="mt-1 text-sm text-slate-500">{request.provider.email || t('clientRequestDetail.providerFallback')}</p>
+                        <div className="mt-2 flex items-center gap-2 text-sm text-slate-500">
+                          <StarRating value={request.provider.avg_rating ?? 0} readonly size="sm" />
+                          <span>
+                            {request.provider.ratings_count && request.provider.ratings_count > 0
+                              ? `${(request.provider.avg_rating ?? 0).toFixed(1)} (${request.provider.ratings_count})`
+                              : t('clientRequestDetail.noRatingsYet')}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   ) : (
@@ -288,6 +325,10 @@ export default function ClientRequestDetail() {
                 </div>
               ) : canRate ? (
                 <form onSubmit={submitRating} className="mt-4 space-y-4">
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    <p className="font-medium">{t('clientRequestDetail.ratingReminderTitle')}</p>
+                    <p className="mt-1 text-amber-700">{t('clientRequestDetail.ratingReminderDescription')}</p>
+                  </div>
                   <StarRating value={score} onChange={setScore} />
                   <textarea
                     className="input resize-none"
