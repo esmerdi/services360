@@ -324,6 +324,9 @@ export default function ClientBrowse() {
                       <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
                         {t('clientBrowse.providerRatingLabel')}
                       </p>
+                      <p className="text-[10px] text-slate-400 leading-tight">
+                        {t('clientBrowse.providerRatingNote')}
+                      </p>
                       <div className="mt-1 flex items-center gap-2 text-sm text-slate-600">
                         <StarRating value={service.avg_rating ?? 0} readonly size="sm" />
                         <span>
