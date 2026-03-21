@@ -88,8 +88,8 @@ export default function ProfileEditor() {
       setError(es ? 'Solo se permiten imágenes' : 'Only image files are allowed');
       return;
     }
-    if (file.size > 2 * 1024 * 1024) {
-      setError(es ? 'La imagen no puede superar 2 MB' : 'Image must be under 2 MB');
+    if (file.size > 3 * 1024 * 1024) {
+      setError(es ? 'La imagen no puede superar 3 MB' : 'Image must be under 3 MB');
       return;
     }
     setError(null);
@@ -217,7 +217,7 @@ export default function ProfileEditor() {
               onChange={handleFileChange}
             />
           </div>
-          <p className="text-xs text-slate-400">{es ? 'Máx. 2 MB' : 'Max 2 MB'}</p>
+          <p className="text-xs text-slate-400">{es ? 'Máx. 3 MB' : 'Max 3 MB'}</p>
         </div>
 
         {/* ── Fields ─────────────────────────────────────────────────── */}
