@@ -38,6 +38,7 @@ export default function ClientRequestService() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [description, setDescription] = useState('');
+  const [budget, setBudget] = useState('');
   const [address, setAddress] = useState('');
 
   const categoryMap = useMemo(
@@ -217,6 +218,13 @@ export default function ClientRequestService() {
       return;
     }
 
+    const normalizedBudget = budget.trim().replace(',', '.');
+    const parsedBudget = normalizedBudget === '' ? null : Number(normalizedBudget);
+    if (parsedBudget !== null && (!Number.isFinite(parsedBudget) || parsedBudget < 0)) {
+      setError(t('clientRequestService.invalidBudget', 'Enter a valid budget value.'));
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
 
@@ -226,6 +234,7 @@ export default function ClientRequestService() {
         client_id: user.id,
         service_id: serviceId,
         description: description.trim() || null,
+        price: parsedBudget,
         latitude: coords.latitude,
         longitude: coords.longitude,
         address: address.trim() || null,
@@ -287,7 +296,21 @@ export default function ClientRequestService() {
               />
             </div>
 
-            <div className="grid gap-4 md:grid-cols-1">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="form-group">
+                <label className="label">{t('clientRequestService.budgetLabel')}</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  inputMode="decimal"
+                  className="input"
+                  placeholder={t('clientRequestService.budgetPlaceholder')}
+                  value={budget}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => setBudget(event.target.value)}
+                />
+              </div>
+
               <div className="form-group">
                 <label className="label">{t('clientRequestService.addressLabel')}</label>
                 <input
