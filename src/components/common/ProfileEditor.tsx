@@ -225,9 +225,9 @@ export default function ProfileEditor() {
             <label className="mb-1.5 block text-sm font-medium text-slate-700">
               {es ? 'Teléfono' : 'Phone'}
             </label>
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <select
-                className="input w-auto flex-shrink-0"
+                className="input w-full sm:w-auto sm:min-w-[190px] sm:flex-shrink-0"
                 value={dialCode}
                 onChange={(e) => setDialCode(e.target.value as DialCode)}
               >
@@ -239,7 +239,7 @@ export default function ProfileEditor() {
               </select>
               <input
                 type="tel"
-                className="input min-w-0 flex-1"
+                className="input w-full min-w-0 flex-1"
                 value={localNumber}
                  onChange={(e) => setLocalNumber(e.target.value.replace(/[^\d\s-]/g, ''))}
                 placeholder={dialCode === '+57' ? '3001234567' : es ? 'Número' : 'Number'}
