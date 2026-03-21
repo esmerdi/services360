@@ -10,7 +10,7 @@ import StarRating from '../../components/common/StarRating';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
-import { formatDateTime } from '../../utils/helpers';
+import { formatDateTime, getInitials, isManagedAvatarUrl } from '../../utils/helpers';
 import { getCategoryMarkerColor, getCategoryMarkerGlyph } from '../../utils/mapMarkers';
 import type { Category, Rating, RequestStatusHistory, ServiceRequest } from '../../types';
 
@@ -34,6 +34,7 @@ export default function ClientRequestDetail() {
   const [error, setError] = useState<string | null>(null);
   const [score, setScore] = useState(5);
   const [comment, setComment] = useState('');
+  const [providerAvatarFailed, setProviderAvatarFailed] = useState(false);
 
   const categoryMap = useMemo(
     () => new Map(categories.map((category) => [category.id, category] as const)),
@@ -69,7 +70,7 @@ export default function ClientRequestDetail() {
             *,
             service:services(id, name, category_id, category:categories(id, name, icon)),
             client:users!service_requests_client_id_fkey(id, full_name, email),
-            provider:users!service_requests_provider_id_fkey(id, full_name, email)
+            provider:users!service_requests_provider_id_fkey(id, full_name, email, avatar_url)
           `)
           .eq('id', id)
           .single(),
@@ -116,6 +117,10 @@ export default function ClientRequestDetail() {
       supabase.removeChannel(channel);
     };
   }, [id]);
+
+  useEffect(() => {
+    setProviderAvatarFailed(false);
+  }, [request?.provider?.avatar_url]);
 
   const canRate = useMemo(
     () => !!request && request.status === 'completed' && !!request.provider_id && !rating && !!user,
@@ -204,8 +209,33 @@ export default function ClientRequestDetail() {
               <div className="mt-6 grid gap-4 md:grid-cols-2">
                 <div className="rounded-xl bg-slate-50 p-4">
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{t('clientRequestDetail.provider')}</p>
-                  <p className="mt-2 font-medium text-slate-900">{request.provider?.full_name || t('clientRequestDetail.awaitingProvider')}</p>
-                  <p className="mt-1 text-sm text-slate-500">{request.provider?.email || t('clientRequestDetail.providerFallback')}</p>
+                  {request.provider ? (
+                    <div className="mt-2 flex items-center gap-3">
+                      <div className="h-10 w-10 overflow-hidden rounded-full bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center flex-shrink-0">
+                        {isManagedAvatarUrl(request.provider.avatar_url) && !providerAvatarFailed ? (
+                          <img
+                            src={request.provider.avatar_url ?? ''}
+                            alt={request.provider.full_name || request.provider.email}
+                            className="h-full w-full object-cover"
+                            onError={() => setProviderAvatarFailed(true)}
+                          />
+                        ) : (
+                          <span className="text-xs font-semibold text-white">
+                            {getInitials(request.provider.full_name || request.provider.email)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-slate-900 truncate">{request.provider.full_name || t('clientRequestDetail.awaitingProvider')}</p>
+                        <p className="mt-1 text-sm text-slate-500">{request.provider.email || t('clientRequestDetail.providerFallback')}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="mt-2 font-medium text-slate-900">{t('clientRequestDetail.awaitingProvider')}</p>
+                      <p className="mt-1 text-sm text-slate-500">{t('clientRequestDetail.providerFallback')}</p>
+                    </>
+                  )}
                 </div>
                 <div className="rounded-xl bg-slate-50 p-4">
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{t('clientRequestDetail.created')}</p>
