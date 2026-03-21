@@ -103,3 +103,18 @@ export function getInitials(name: string | null | undefined): string {
     .toUpperCase()
     .slice(0, 2);
 }
+
+export function isManagedAvatarUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+
+  const normalized = url.trim().toLowerCase();
+  if (!normalized) return false;
+
+  // Local previews should render as image while editing profile.
+  if (normalized.startsWith('data:image/') || normalized.startsWith('blob:')) {
+    return true;
+  }
+
+  // Persisted avatars must come from the project's avatars bucket.
+  return normalized.includes('/storage/v1/object/public/avatars/');
+}

@@ -3,6 +3,7 @@ import { Camera, CheckCircle2, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
+import { isManagedAvatarUrl } from '../../utils/helpers';
 import ErrorMessage from './ErrorMessage';
 
 // ─── Dial codes ───────────────────────────────────────────────────────────────
@@ -76,7 +77,7 @@ export default function ProfileEditor() {
     setDialCode(parsed.dialCode);
     setLocalNumber(parsed.localNumber);
     setAddress(user.address ?? '');
-    setAvatarPreview(user.avatar_url ?? null);
+    setAvatarPreview(isManagedAvatarUrl(user.avatar_url) ? user.avatar_url : null);
     setAvatarFile(null);
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 

@@ -23,7 +23,7 @@ import {
 import clsx from 'clsx';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
-import { getInitials } from '../../utils/helpers';
+import { getInitials, isManagedAvatarUrl } from '../../utils/helpers';
 import LanguageSwitcher from '../common/LanguageSwitcher';
 
 interface NavItem {
@@ -98,6 +98,7 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
   const quickLinks = useMemo(() => navItems.slice(0, 2), [navItems]);
@@ -126,6 +127,10 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
     };
   }, []);
 
+  useEffect(() => {
+    setAvatarLoadFailed(false);
+  }, [user?.avatar_url]);
+
   const handleSignOut = async () => {
     await signOut();
     navigate('/login', { replace: true });
@@ -133,6 +138,7 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
 
   const translatedTitle = t(`views.${title}`, title);
   const translatedRole = user?.role ? t(`roles.${user.role}`, user.role) : '';
+  const shouldRenderAvatarImage = isManagedAvatarUrl(user?.avatar_url) && !avatarLoadFailed;
 
   const getTranslatedLabel = (label: string) => {
     const key = getNavTranslationKey(label);
@@ -170,8 +176,13 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
               aria-label={t('common.openProfileMenu')}
             >
               <div className="h-9 w-9 overflow-hidden rounded-full bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center flex-shrink-0">
-                {user?.avatar_url ? (
-                  <img src={user.avatar_url} alt="" className="h-full w-full object-cover" />
+                {shouldRenderAvatarImage ? (
+                  <img
+                    src={user?.avatar_url ?? ''}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    onError={() => setAvatarLoadFailed(true)}
+                  />
                 ) : (
                   <span className="text-white text-xs font-semibold">
                     {getInitials(user?.full_name || user?.email)}
@@ -194,8 +205,13 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
                   </div>
                   <div className="mt-3 flex items-center gap-3">
                     <div className="h-11 w-11 overflow-hidden rounded-xl bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center shadow-sm">
-                      {user?.avatar_url ? (
-                        <img src={user.avatar_url} alt="" className="h-full w-full object-cover" />
+                      {shouldRenderAvatarImage ? (
+                        <img
+                          src={user?.avatar_url ?? ''}
+                          alt=""
+                          className="h-full w-full object-cover"
+                          onError={() => setAvatarLoadFailed(true)}
+                        />
                       ) : (
                         <span className="text-white text-sm font-semibold">
                           {getInitials(user?.full_name || user?.email)}
@@ -270,8 +286,13 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
 
           <div className="flex items-center gap-2">
               <div className="h-8 w-8 overflow-hidden rounded-full bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center flex-shrink-0">
-                {user?.avatar_url ? (
-                  <img src={user.avatar_url} alt="" className="h-full w-full object-cover" />
+                {shouldRenderAvatarImage ? (
+                  <img
+                    src={user?.avatar_url ?? ''}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    onError={() => setAvatarLoadFailed(true)}
+                  />
                 ) : (
                   <span className="text-white text-[10px] font-semibold">
                     {getInitials(user?.full_name || user?.email)}
