@@ -5,13 +5,13 @@ import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import LocationMap from '../../components/common/LocationMap';
+import UserAvatar from '../../components/common/UserAvatar';
 import type { LocationMapMarker } from '../../components/common/LocationMap';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
 import { useLocation } from '../../context/LocationContext';
 import { formatDistance, haversineDistance } from '../../utils/distance';
-import { getInitials, isManagedAvatarUrl } from '../../utils/helpers';
 import { getCategoryMarkerColor, getCategoryMarkerGlyph } from '../../utils/mapMarkers';
 import type { Service, User } from '../../types';
 
@@ -41,7 +41,6 @@ export default function ClientRequestService() {
   const [description, setDescription] = useState('');
   const [budget, setBudget] = useState('');
   const [address, setAddress] = useState('');
-  const [avatarLoadFailures, setAvatarLoadFailures] = useState<Record<string, boolean>>({});
 
   const categoryMap = useMemo(
     () => new Map(categories.map((category) => [category.id, category] as const)),
@@ -352,20 +351,13 @@ export default function ClientRequestService() {
                 <div key={provider.id} className="rounded-xl border border-slate-200 p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3 min-w-0">
-                      <div className="h-10 w-10 overflow-hidden rounded-full bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center flex-shrink-0">
-                        {isManagedAvatarUrl(provider.avatar_url) && !avatarLoadFailures[provider.id] ? (
-                          <img
-                            src={provider.avatar_url ?? ''}
-                            alt={provider.full_name || provider.email}
-                            className="h-full w-full object-cover"
-                            onError={() => setAvatarLoadFailures((current) => ({ ...current, [provider.id]: true }))}
-                          />
-                        ) : (
-                          <span className="text-xs font-semibold text-white">
-                            {getInitials(provider.full_name || provider.email)}
-                          </span>
-                        )}
-                      </div>
+                      <UserAvatar
+                        avatarUrl={provider.avatar_url}
+                        name={provider.full_name || provider.email}
+                        alt={provider.full_name || provider.email}
+                        className="h-10 w-10 overflow-hidden rounded-full bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center flex-shrink-0"
+                        fallbackClassName="text-xs font-semibold text-white"
+                      />
                       <div className="min-w-0">
                         <p className="font-medium text-slate-900 truncate">{provider.full_name || provider.email}</p>
                         <p className="mt-1 text-sm text-slate-500">{provider.location?.address || t('clientRequestService.providerLocationFallback')}</p>

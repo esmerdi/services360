@@ -115,6 +115,36 @@ export function isManagedAvatarUrl(url: string | null | undefined): boolean {
     return true;
   }
 
-  // Persisted avatars must come from the project's avatars bucket.
-  return normalized.includes('/storage/v1/object/public/avatars/');
+  return extractManagedAvatarPath(url) !== null;
+}
+
+export function extractManagedAvatarPath(url: string | null | undefined): string | null {
+  if (!url) return null;
+
+  const normalized = url.trim();
+  if (!normalized) return null;
+
+  const lowerUrl = normalized.toLowerCase();
+  const markers = [
+    '/storage/v1/object/public/avatars/',
+    '/storage/v1/object/sign/avatars/',
+    '/storage/v1/object/authenticated/avatars/',
+    '/storage/v1/render/image/public/avatars/',
+  ];
+
+  for (const marker of markers) {
+    const markerIndex = lowerUrl.indexOf(marker);
+    if (markerIndex >= 0) {
+      const pathStart = markerIndex + marker.length;
+      const pathWithQuery = normalized.slice(pathStart);
+      const queryIndex = pathWithQuery.indexOf('?');
+      return queryIndex >= 0 ? pathWithQuery.slice(0, queryIndex) : pathWithQuery;
+    }
+  }
+
+  if (lowerUrl.startsWith('avatars/')) {
+    return normalized.slice('avatars/'.length);
+  }
+
+  return null;
 }

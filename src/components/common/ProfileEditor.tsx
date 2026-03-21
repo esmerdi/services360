@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
 import { isManagedAvatarUrl } from '../../utils/helpers';
 import ErrorMessage from './ErrorMessage';
+import UserAvatar from './UserAvatar';
 
 // ─── Dial codes ───────────────────────────────────────────────────────────────
 const DIAL_CODES = [
@@ -155,17 +156,6 @@ export default function ProfileEditor() {
     setTimeout(() => setSuccess(false), 3500);
   }
 
-  // Initials fallback for avatar
-  const initials = (() => {
-    const name = fullName.trim() || user?.email || '?';
-    return name
-      .split(/\s+/)
-      .map((w: string) => w[0] ?? '')
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  })();
-
   return (
     <div className="card">
       <h2 className="text-lg font-semibold text-slate-900">
@@ -190,17 +180,13 @@ export default function ProfileEditor() {
         {/* ── Avatar ─────────────────────────────────────────────────── */}
         <div className="flex flex-col items-center gap-2 flex-shrink-0">
           <div className="relative">
-            <div className="h-24 w-24 overflow-hidden rounded-2xl border-2 border-slate-200 bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center shadow-sm">
-              {avatarPreview ? (
-                <img
-                  src={avatarPreview}
-                  alt={es ? 'Foto de perfil' : 'Profile photo'}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <span className="text-2xl font-semibold text-white">{initials}</span>
-              )}
-            </div>
+            <UserAvatar
+              avatarUrl={avatarPreview}
+              name={fullName.trim() || user?.email}
+              alt={es ? 'Foto de perfil' : 'Profile photo'}
+              className="h-24 w-24 overflow-hidden rounded-2xl border-2 border-slate-200 bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center shadow-sm"
+              fallbackClassName="text-2xl font-semibold text-white"
+            />
             <button
               type="button"
               onClick={() => { setError(null); fileInputRef.current?.click(); }}
