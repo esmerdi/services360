@@ -35,6 +35,7 @@ type NearbyProviderMap = {
   location: { latitude: number; longitude: number; address: string | null };
   root_category_ids: string[];
   distance_km?: number;
+  image_url?: string | null;
 };
 
 const CATEGORY_PALETTE = [
@@ -134,7 +135,7 @@ export default function ClientBrowse() {
 
         const { data: providerUsers, error: providerUsersError } = await supabase
           .from('users')
-          .select('id, full_name, email, role, is_available')
+          .select('id, full_name, email, role, is_available, image_url')
           .in('id', providerIds)
           .eq('role', 'provider')
           .eq('is_available', true);
@@ -164,7 +165,7 @@ export default function ClientBrowse() {
           ])
         );
 
-        const providerMapRows = ((providerUsers as Array<{ id: string; full_name: string | null; email: string }>) ?? []).reduce<NearbyProviderMap[]>(
+        const providerMapRows = ((providerUsers as Array<{ id: string; full_name: string | null; email: string; image_url?: string | null }>) ?? []).reduce<NearbyProviderMap[]>(
           (acc, provider) => {
             const location = locationMap.get(provider.id);
             if (!location) return acc;
@@ -181,7 +182,8 @@ export default function ClientBrowse() {
                 address: location.address,
               },
               root_category_ids: rootCategoryIds,
-              distance_km: coords
+              image_url: provider.image_url || null,
+              distance_km: coords 
                 ? haversineDistance(
                     coords.latitude,
                     coords.longitude,
@@ -370,6 +372,7 @@ export default function ClientBrowse() {
         description: `${rootCategory?.name || t('clientBrowse.generalCategory')} • ${distanceLabel}`,
         color: getCategoryMarkerColor(markerRootCategoryId),
         glyph: getCategoryMarkerGlyph(rootCategory?.icon, rootCategory?.name),
+        imageUrl: provider.image_url || undefined,
       };
     });
 

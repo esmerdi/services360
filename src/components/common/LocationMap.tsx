@@ -12,6 +12,7 @@ export interface LocationMapMarker {
   color?: string;
   radius?: number;
   glyph?: string;
+  imageUrl?: string;
 }
 
 interface LocationMapProps {
@@ -65,6 +66,7 @@ function markerIcon(marker: LocationMapMarker) {
     popupAnchor: point(0, -size / 2),
   });
 }
+
 export default function LocationMap({ markers, heightClassName = 'h-80', enableClustering = true }: LocationMapProps) {
   if (markers.length === 0) {
     return null;
@@ -94,7 +96,14 @@ export default function LocationMap({ markers, heightClassName = 'h-80', enableC
               icon={markerIcon(marker)}
             >
               <Popup>
-                <div className="min-w-[160px]">
+                <div className="w-full min-w-[160px]">
+                  {marker.imageUrl ? (
+                    <img
+                      src={marker.imageUrl}
+                      alt={marker.label}
+                      className="mb-2 h-28 w-full rounded-md object-cover"
+                    />
+                  ) : null}
                   <p className="font-semibold text-slate-900">{marker.label}</p>
                   {marker.description ? <p className="mt-1 text-sm text-slate-600">{marker.description}</p> : null}
                 </div>
