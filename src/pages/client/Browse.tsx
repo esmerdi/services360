@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
@@ -491,6 +491,11 @@ export default function ClientBrowse() {
     });
   }, [filteredNearbyProviders, resolveAvatarUrl, selectedService, t]);
 
+  const selectedProviderOption = useMemo(
+    () => providerOptions.find((provider) => provider.id === selectedProviderId) ?? null,
+    [providerOptions, selectedProviderId]
+  );
+
   const handleQuickRequest = useCallback(async (marker: LocationMapMarker) => {
     if (!user || !marker.actionServiceId || !marker.actionProviderId || !coords) {
       setError(t('clientRequestService.locationRequiredError'));
@@ -734,11 +739,41 @@ export default function ClientBrowse() {
                                 <p className="text-xs text-slate-500">{provider.ratingLabel}</p>
                                 <p className="text-xs text-slate-500">{provider.distanceLabel}</p>
                               </div>
+                              {isSelected ? (
+                                <CheckCircle2 className="ml-auto h-4 w-4 flex-shrink-0 text-sky-600" />
+                              ) : null}
                             </div>
                           </button>
                         );
                       })}
                     </div>
+                  )}
+                </div>
+
+                <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                    {t('clientBrowse.selectedProviderLabel')}
+                  </p>
+                  {selectedProviderOption ? (
+                    <div className="mt-2 flex items-center gap-3">
+                      {selectedProviderOption.avatar ? (
+                        <img
+                          src={selectedProviderOption.avatar}
+                          alt={selectedProviderOption.displayName}
+                          className="h-9 w-9 rounded-full border border-slate-200 object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-xs font-semibold text-slate-500">
+                          {selectedProviderOption.displayName.slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-slate-900">{selectedProviderOption.displayName}</p>
+                        <p className="text-xs text-slate-500">{selectedProviderOption.distanceLabel}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-sm text-slate-500">{t('clientBrowse.selectProviderFirst')}</p>
                   )}
                 </div>
 
@@ -750,17 +785,12 @@ export default function ClientBrowse() {
                 >
                   {quickRequestingMarkerId === selectedProviderId
                     ? t('clientBrowse.requestingProvider')
-                    : t('clientBrowse.requestSelectedProvider')}
+                    : selectedProviderId
+                      ? t('clientBrowse.requestSelectedProvider')
+                      : t('clientBrowse.selectProviderFirstButton')}
                   <ArrowRight className="h-4 w-4" />
                 </button>
 
-                <Link 
-                  to={`/client/request/${selectedServiceData.id}`} 
-                  className="btn-secondary mt-2 w-full justify-center"
-                >
-                  {t('clientBrowse.requestServiceButton')}
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
               </div>
             )}
           </div>
