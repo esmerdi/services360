@@ -141,6 +141,14 @@ const translations: Record<Language, TranslationMap> = {
       providersAvailable: 'providers available',
       requestService: 'Request Service',
     },
+    chat: {
+      openChat: 'Chat',
+      chatSubtitle: 'Online',
+      noMessagesYet: 'No messages yet. Say hi!',
+      messagePlaceholder: 'Type a message…',
+      sendMessage: 'Send',
+      unknownUser: 'Unknown user',
+    },
     clientRequestService: {
       serviceNotFound: 'Service not found.',
       locationRequiredError: 'Location is required before sending a request.',
@@ -427,6 +435,14 @@ const translations: Record<Language, TranslationMap> = {
       noRatingsYet: 'Aun sin calificaciones',
       providersAvailable: 'proveedores disponibles',
       requestService: 'Solicitar servicio',
+    },
+    chat: {
+      openChat: 'Chat',
+      chatSubtitle: 'En línea',
+      noMessagesYet: '¡Aún no hay mensajes. ¡Di hola!',
+      messagePlaceholder: 'Escribe un mensaje…',
+      sendMessage: 'Enviar',
+      unknownUser: 'Usuario desconocido',
     },
     clientRequestService: {
       serviceNotFound: 'Servicio no encontrado.',

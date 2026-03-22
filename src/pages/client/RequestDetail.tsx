@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { MessageCircle } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import LocationMap from '../../components/common/LocationMap';
 import UserAvatar from '../../components/common/UserAvatar';
+import ChatWindow from '../../components/common/ChatWindow';
 import type { LocationMapMarker } from '../../components/common/LocationMap';
 import StatusBadge from '../../components/common/StatusBadge';
 import StarRating from '../../components/common/StarRating';
@@ -35,6 +37,7 @@ export default function ClientRequestDetail() {
   const [error, setError] = useState<string | null>(null);
   const [score, setScore] = useState(5);
   const [comment, setComment] = useState('');
+  const [chatOpen, setChatOpen] = useState(false);
 
   const categoryMap = useMemo(
     () => new Map(categories.map((category) => [category.id, category] as const)),
@@ -350,6 +353,31 @@ export default function ClientRequestDetail() {
           </div>
         </div>
       ) : null}
+
+      {/* Floating chat button — visible once a provider is assigned */}
+      {request && request.provider_id && request.provider && (
+        ['accepted', 'in_progress', 'completed'].includes(request.status)
+      ) && (
+        <button
+          onClick={() => setChatOpen(true)}
+          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-blue-700"
+          aria-label={t('chat.openChat')}
+        >
+          <MessageCircle className="h-5 w-5" />
+          {t('chat.openChat')}
+        </button>
+      )}
+
+      {request && request.provider_id && request.provider && (
+        <ChatWindow
+          requestId={request.id}
+          currentUserId={user?.id ?? ''}
+          otherUserName={request.provider.full_name}
+          otherUserAvatar={request.provider.avatar_url}
+          isOpen={chatOpen}
+          onClose={() => setChatOpen(false)}
+        />
+      )}
     </Layout>
   );
 }

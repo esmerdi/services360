@@ -95,6 +95,15 @@ export interface Rating {
   from_user?: User;
 }
 
+export interface Message {
+  id: string;
+  request_id: string;
+  sender_id: string;
+  content: string;
+  created_at: string;
+  read_at: string | null;
+}
+
 export interface Plan {
   id: string;
   name: PlanName;

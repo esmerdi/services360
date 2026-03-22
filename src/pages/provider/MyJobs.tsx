@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { MessageCircle } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import StatusBadge from '../../components/common/StatusBadge';
+import ChatWindow from '../../components/common/ChatWindow';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
@@ -30,6 +32,7 @@ export default function ProviderMyJobs() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | RequestStatus>('all');
   const [actingId, setActingId] = useState<string | null>(null);
+  const [chatJobId, setChatJobId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -134,15 +137,40 @@ export default function ProviderMyJobs() {
                 </div>
               </div>
 
-              {(job.status === 'accepted' || job.status === 'in_progress') && (
-                <button onClick={() => updateStatus(job)} className="btn-primary mt-5" disabled={actingId === job.id}>
-                  {actingId === job.id ? <LoadingSpinner size="sm" /> : job.status === 'accepted' ? (es ? 'Iniciar trabajo' : 'Start job') : (es ? 'Marcar completado' : 'Mark completed')}
-                </button>
-              )}
+              <div className="mt-5 flex flex-wrap gap-3">
+                {(job.status === 'accepted' || job.status === 'in_progress') && (
+                  <button onClick={() => updateStatus(job)} className="btn-primary" disabled={actingId === job.id}>
+                    {actingId === job.id ? <LoadingSpinner size="sm" /> : job.status === 'accepted' ? (es ? 'Iniciar trabajo' : 'Start job') : (es ? 'Marcar completado' : 'Mark completed')}
+                  </button>
+                )}
+                {(job.status === 'accepted' || job.status === 'in_progress') && job.client && (
+                  <button
+                    onClick={() => setChatJobId(job.id)}
+                    className="btn-secondary flex items-center gap-2"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    {es ? 'Chat con cliente' : 'Chat with client'}
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>
       )}
+      {chatJobId && (() => {
+        const chatJob = jobs.find((j) => j.id === chatJobId);
+        if (!chatJob) return null;
+        return (
+          <ChatWindow
+            requestId={chatJob.id}
+            currentUserId={user?.id ?? ''}
+            otherUserName={chatJob.client?.full_name ?? null}
+            otherUserAvatar={null}
+            isOpen={true}
+            onClose={() => setChatJobId(null)}
+          />
+        );
+      })()}
     </Layout>
   );
 }
