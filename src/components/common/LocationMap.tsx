@@ -11,6 +11,10 @@ export interface LocationMapMarker {
   description?: string;
   ratingText?: string;
   hasRating?: boolean;
+  categoryText?: string;
+  serviceText?: string;
+  actionUrl?: string;
+  actionLabel?: string;
   color?: string;
   radius?: number;
   glyph?: string;
@@ -112,7 +116,14 @@ export default function LocationMap({ markers, heightClassName = 'h-80', enableC
                       {marker.ratingText}
                     </p>
                   ) : null}
+                  {marker.categoryText ? <p className="mt-1 text-sm text-slate-600">{marker.categoryText}</p> : null}
+                  {marker.serviceText ? <p className="mt-1 text-sm text-slate-700">{marker.serviceText}</p> : null}
                   {marker.description ? <p className="mt-1 text-sm text-slate-600">{marker.description}</p> : null}
+                  {marker.actionUrl && marker.actionLabel ? (
+                    <a href={marker.actionUrl} className="btn-primary mt-3 w-full justify-center text-sm">
+                      {marker.actionLabel}
+                    </a>
+                  ) : null}
                 </div>
               </Popup>
             </Marker>

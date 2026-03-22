@@ -39,6 +39,7 @@ type NearbyProviderMap = {
   avatar_url?: string | null;
   avg_rating?: number;
   ratings_count?: number;
+  offered_services: Array<{ id: string; name: string; root_category_id: string | null }>;
 };
 
 const CATEGORY_PALETTE = [
@@ -137,12 +138,26 @@ export default function ClientBrowse() {
         };
 
         const serviceCategoryMap = new Map(serviceRows.map((service) => [service.id, service.category_id] as const));
+        const serviceById = new Map(serviceRows.map((service) => [service.id, service] as const));
 
         const rootCategoriesByProvider = new Map<string, Set<string>>();
+        const offeredServicesByProvider = new Map<string, Array<{ id: string; name: string; root_category_id: string | null }>>();
         for (const link of providerLinks) {
           const serviceCategoryId = serviceCategoryMap.get(link.service_id);
           const rootCategoryId = getRootCategoryId(serviceCategoryId);
           if (!rootCategoryId) continue;
+
+          const linkedService = serviceById.get(link.service_id);
+          if (linkedService) {
+            const currentServices = offeredServicesByProvider.get(link.provider_id) ?? [];
+            currentServices.push({
+              id: linkedService.id,
+              name: linkedService.name,
+              root_category_id: rootCategoryId,
+            });
+            offeredServicesByProvider.set(link.provider_id, currentServices);
+          }
+
           const current = rootCategoriesByProvider.get(link.provider_id) ?? new Set<string>();
           current.add(rootCategoryId);
           rootCategoriesByProvider.set(link.provider_id, current);
@@ -187,6 +202,7 @@ export default function ClientBrowse() {
             const rootCategoryIds = Array.from(rootCategoriesByProvider.get(provider.id) ?? []);
             if (rootCategoryIds.length === 0) return acc;
             const providerStats = providerRatingMap.get(provider.id);
+            const offeredServices = offeredServicesByProvider.get(provider.id) ?? [];
 
             acc.push({
               id: provider.id,
@@ -201,6 +217,7 @@ export default function ClientBrowse() {
               avatar_url: provider.avatar_url || null,
               avg_rating: providerStats && providerStats.count > 0 ? providerStats.total / providerStats.count : 0,
               ratings_count: providerStats?.count ?? 0,
+              offered_services: offeredServices,
               distance_km: coords 
                 ? haversineDistance(
                     coords.latitude,
@@ -386,6 +403,16 @@ export default function ClientBrowse() {
         ? `⭐ ${(provider.avg_rating ?? 0).toFixed(1)} (${provider.ratings_count})`
         : `☆ ${t('clientBrowse.noRatingsYet')}`;
 
+      const servicesByCategory = provider.offered_services.filter(
+        (item) => !selectedRootCategoryId || item.root_category_id === selectedRootCategoryId
+      );
+
+      const preferredService = selectedService
+        ? servicesByCategory.find((item) => item.id === selectedService) ?? null
+        : null;
+
+      const markerService = preferredService ?? servicesByCategory[0] ?? provider.offered_services[0] ?? null;
+
       return {
         id: provider.id,
         latitude: provider.location.latitude,
@@ -393,7 +420,11 @@ export default function ClientBrowse() {
         label: provider.full_name || provider.email,
         ratingText: ratingLabel,
         hasRating,
-        description: `${rootCategory?.name || t('clientBrowse.generalCategory')} • ${distanceLabel}`,
+        categoryText: rootCategory?.name || t('clientBrowse.generalCategory'),
+        serviceText: markerService?.name || t('clientBrowse.popupNoServiceAvailable'),
+        description: distanceLabel,
+        actionUrl: markerService ? `/client/request/${markerService.id}` : undefined,
+        actionLabel: t('clientBrowse.popupRequestShortcut'),
         color: getCategoryMarkerColor(markerRootCategoryId),
         glyph: getCategoryMarkerGlyph(rootCategory?.icon, rootCategory?.name),
         imageUrl: resolveAvatarUrl(provider.avatar_url),
@@ -414,7 +445,7 @@ export default function ClientBrowse() {
     }
 
     return markers;
-  }, [categoryMap, coords, filteredNearbyProviders, resolveAvatarUrl, selectedRootCategoryId, t]);
+  }, [categoryMap, coords, filteredNearbyProviders, resolveAvatarUrl, selectedRootCategoryId, selectedService, t]);
 
   return (
     <Layout navItems={CLIENT_NAV} title="Browse Services">
