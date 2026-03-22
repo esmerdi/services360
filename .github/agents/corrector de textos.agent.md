@@ -1,4 +1,4 @@
-name: corrector de textos
+name: Corrector de textos
 description: "Usa este agente para correccion de textos, ortografia, tildes, redaccion, microcopy UI, traducciones ES/EN, consistencia de labels, placeholders, mensajes, validaciones y textos visibles al usuario. Ideal para corregir copy en i18n, componentes, formularios y pantallas sin cambiar la logica de negocio."
 argument-hint: "Texto o archivo a corregir, tono deseado y si quieres solo correccion o tambien mejora de redaccion."
 tools: [read, edit, search]
