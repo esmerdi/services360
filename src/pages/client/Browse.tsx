@@ -57,12 +57,10 @@ export default function ClientBrowse() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedRootCategory, setSelectedRootCategory] = useState<string | null>(null);
-  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const [selectedService, setSelectedService] = useState<string | null>(null);
 
   useEffect(() => {
-    // Reset subcategory and service when root category changes
-    setSelectedSubcategory(null);
+    // Reset service when root category changes
     setSelectedService(null);
   }, [selectedRootCategory]);
 
@@ -306,13 +304,13 @@ export default function ClientBrowse() {
     return children.sort((a, b) => a.name.localeCompare(b.name));
   }, [selectedRootCategory, childrenByParent]);
 
-  const servicesForSelectedSubcategory = useMemo(() => {
-    if (!selectedSubcategory) return [];
+  const servicesForSelectedRoot = useMemo(() => {
+    if (!selectedRootCategory) return [];
+    const descendantCategoryIds = getDescendantCategoryIds(selectedRootCategory);
     return services
-      .filter((service) => service.category_id === selectedSubcategory || 
-                          categoryMap.get(selectedSubcategory)?.id === service.category_id)
+      .filter((service) => service.category_id && descendantCategoryIds.has(service.category_id))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [selectedSubcategory, services, categoryMap]);
+  }, [selectedRootCategory, services, getDescendantCategoryIds]);
 
   const selectedServiceData = useMemo(() => {
     if (!selectedService) return null;
@@ -447,32 +445,6 @@ export default function ClientBrowse() {
               </select>
             </div>
 
-            {/* Subcategory Select */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                {t('clientBrowse.selectSubcategory')}
-              </label>
-              <select
-                className="input w-full"
-                value={selectedSubcategory || ''}
-                onChange={(e) => setSelectedSubcategory(e.target.value || null)}
-                disabled={!selectedRootCategory}
-              >
-                <option value="">
-                  {!selectedRootCategory 
-                    ? t('clientBrowse.noSubcategoriesAvailable')
-                    : subcategoriesForSelectedRoot.length === 0 
-                    ? t('clientBrowse.noSubcategoriesAvailable')
-                    : t('clientBrowse.selectSubcategory')}
-                </option>
-                {subcategoriesForSelectedRoot.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
             {/* Service Select */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -482,16 +454,16 @@ export default function ClientBrowse() {
                 className="input w-full"
                 value={selectedService || ''}
                 onChange={(e) => setSelectedService(e.target.value || null)}
-                disabled={!selectedSubcategory}
+                disabled={!selectedRootCategory}
               >
                 <option value="">
-                  {!selectedSubcategory 
+                  {!selectedRootCategory 
                     ? t('clientBrowse.noServicesAvailable')
-                    : servicesForSelectedSubcategory.length === 0 
+                    : servicesForSelectedRoot.length === 0 
                     ? t('clientBrowse.noServicesAvailable')
                     : t('clientBrowse.selectService')}
                 </option>
-                {servicesForSelectedSubcategory.map((service) => (
+                {servicesForSelectedRoot.map((service) => (
                   <option key={service.id} value={service.id}>
                     {service.name}
                   </option>
