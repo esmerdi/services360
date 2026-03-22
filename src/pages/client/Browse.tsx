@@ -418,7 +418,11 @@ export default function ClientBrowse() {
                 <p className="text-slate-500">{t('clientBrowse.noMapProviders')}</p>
               </div>
             ) : (
-              <LocationMap markers={nearbyProviderMarkers} heightClassName="h-96 lg:h-[600px]" />
+              <LocationMap 
+                markers={nearbyProviderMarkers} 
+                heightClassName="h-96 lg:h-[600px]"
+                enableClustering={nearbyProviderMarkers.length > 8}
+              />
             )}
           </div>
 

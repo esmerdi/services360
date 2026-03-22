@@ -17,6 +17,7 @@ export interface LocationMapMarker {
 interface LocationMapProps {
   markers: LocationMapMarker[];
   heightClassName?: string;
+  enableClustering?: boolean;
 }
 
 function FitMapBounds({ markers }: { markers: LocationMapMarker[] }) {
@@ -64,10 +65,13 @@ function markerIcon(marker: LocationMapMarker) {
     popupAnchor: point(0, -size / 2),
   });
 }
-export default function LocationMap({ markers, heightClassName = 'h-80' }: LocationMapProps) {
+export default function LocationMap({ markers, heightClassName = 'h-80', enableClustering = true }: LocationMapProps) {
   if (markers.length === 0) {
     return null;
   }
+
+  const MarkerContainer = enableClustering ? MarkerClusterGroup : React.Fragment;
+  const markerContainerProps = enableClustering ? { chunkedLoading: true } : {};
 
   return (
     <div className={`overflow-hidden rounded-2xl border border-slate-200 ${heightClassName}`}>
@@ -82,7 +86,7 @@ export default function LocationMap({ markers, heightClassName = 'h-80' }: Locat
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <FitMapBounds markers={markers} />
-        <MarkerClusterGroup chunkedLoading>
+        <MarkerContainer {...markerContainerProps}>
           {markers.map((marker) => (
             <Marker
               key={marker.id}
@@ -97,7 +101,7 @@ export default function LocationMap({ markers, heightClassName = 'h-80' }: Locat
               </Popup>
             </Marker>
           ))}
-        </MarkerClusterGroup>
+        </MarkerContainer>
       </MapContainer>
     </div>
   );
