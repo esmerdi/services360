@@ -67,6 +67,8 @@ export default function ClientBrowse() {
   const [quickRequestingMarkerId, setQuickRequestingMarkerId] = useState<string | null>(null);
   const [selectedRootCategory, setSelectedRootCategory] = useState<string | null>(null);
   const [selectedService, setSelectedService] = useState<string | null>(null);
+  const [visibleMarkerIds, setVisibleMarkerIds] = useState<string[]>([]);
+  const [fitBoundsTrigger, setFitBoundsTrigger] = useState(0);
 
   const resolveAvatarUrl = useCallback((value: string | null | undefined): string | undefined => {
     if (!value) return undefined;
@@ -453,6 +455,11 @@ export default function ClientBrowse() {
     return markers;
   }, [categoryMap, coords, filteredNearbyProviders, resolveAvatarUrl, selectedRootCategoryId, selectedService, t]);
 
+  const visibleProviderCount = useMemo(() => {
+    const providerIds = new Set(filteredNearbyProviders.map((provider) => provider.id));
+    return visibleMarkerIds.filter((markerId) => providerIds.has(markerId)).length;
+  }, [filteredNearbyProviders, visibleMarkerIds]);
+
   const handleQuickRequest = useCallback(async (marker: LocationMapMarker) => {
     if (!user || !marker.actionServiceId || !marker.actionProviderId || !coords) {
       setError(t('clientRequestService.locationRequiredError'));
@@ -485,8 +492,10 @@ export default function ClientBrowse() {
   return (
     <Layout navItems={CLIENT_NAV} title="Browse Services">
       <div className="page-header">
-        <h1 className="page-title">{t('clientBrowse.title')}</h1>
-        <p className="page-subtitle">{t('clientBrowse.subtitle')}</p>
+        <div>
+          <h1 className="page-title">{t('clientBrowse.title')}</h1>
+          <p className="page-subtitle">{t('clientBrowse.subtitle')}</p>
+        </div>
       </div>
 
       {error && <ErrorMessage message={error} className="mb-4" />}
@@ -498,7 +507,37 @@ export default function ClientBrowse() {
       ) : (
         <div className="card grid gap-6 lg:grid-cols-[1fr_384px]">
           {/* Map Container */}
-          <div className="rounded-lg overflow-hidden bg-slate-50 min-h-96 lg:min-h-[600px]">
+          <div className="overflow-hidden rounded-lg bg-slate-50 min-h-96 lg:min-h-[600px]">
+            <div className="flex flex-col gap-3 border-b border-slate-200 bg-white/95 px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">{t('clientBrowse.nearbyProvidersMapTitle')}</h2>
+                <p className="mt-1 text-sm text-slate-500">{t('clientBrowse.nearbyProvidersMapDesc')}</p>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 sm:min-w-[220px]">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                  {t('clientBrowse.availableNow')}
+                </p>
+                <p className="mt-1 text-sm font-semibold text-slate-900">
+                  {filteredNearbyProviders.length === 1
+                    ? t('clientBrowse.oneNearbyProvider')
+                    : t('clientBrowse.nearbyProvidersCount').replace('{{count}}', String(filteredNearbyProviders.length))}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {t('clientBrowse.visibleProvidersCount').replace('{{count}}', String(visibleProviderCount))}
+                </p>
+                {coords && filteredNearbyProviders.length > 0 && visibleProviderCount < filteredNearbyProviders.length ? (
+                  <button
+                    type="button"
+                    onClick={() => setFitBoundsTrigger((current) => current + 1)}
+                    className="mt-2 text-xs font-semibold text-sky-700 transition hover:text-sky-800"
+                  >
+                    {t('clientBrowse.viewAllOnMap')}
+                  </button>
+                ) : null}
+              </div>
+            </div>
+
             {!coords ? (
               <div className="h-full flex flex-col items-center justify-center gap-4 bg-slate-100">
                 <p className="text-slate-600">{t('clientBrowse.enableLocationForMap')}</p>
@@ -517,6 +556,8 @@ export default function ClientBrowse() {
                 enableClustering={nearbyProviderMarkers.length > 8}
                 onMarkerActionClick={handleQuickRequest}
                 actionLoadingMarkerId={quickRequestingMarkerId}
+                onVisibleMarkerIdsChange={setVisibleMarkerIds}
+                fitBoundsTrigger={fitBoundsTrigger}
               />
             )}
           </div>

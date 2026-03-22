@@ -129,6 +129,11 @@ const translations: Record<Language, TranslationMap> = {
     clientBrowse: {
       title: 'Browse Services',
       subtitle: 'Explore categories and request nearby providers.',
+      availableNow: 'Available now',
+      oneNearbyProvider: '1 nearby provider',
+      nearbyProvidersCount: '{{count}} nearby providers',
+      visibleProvidersCount: '{{count}} currently visible on the map',
+      viewAllOnMap: 'See all',
       nearbyProvidersMapTitle: 'Nearby providers on map',
       nearbyProvidersMapDesc: 'Filter by parent category to view matching providers with their category icon.',
       popupNoServiceAvailable: 'Service not available in this filter',
@@ -437,6 +442,11 @@ const translations: Record<Language, TranslationMap> = {
     clientBrowse: {
       title: 'Explorar servicios',
       subtitle: 'Explora categorías y solicita proveedores cercanos.',
+      availableNow: 'Disponibles ahora',
+      oneNearbyProvider: '1 proveedor cercano',
+      nearbyProvidersCount: '{{count}} proveedores cercanos',
+      visibleProvidersCount: '{{count}} visibles en el mapa',
+      viewAllOnMap: 'Ver todas',
       nearbyProvidersMapTitle: 'Proveedores cercanos en el mapa',
       nearbyProvidersMapDesc: 'Filtra por categoría padre para ver proveedores con su ícono de categoría.',
       popupNoServiceAvailable: 'Servicio no disponible para este filtro',

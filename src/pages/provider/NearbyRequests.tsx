@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin } from 'lucide-react';
+import { CheckCircle2, Info, MapPin } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
@@ -31,11 +31,16 @@ export default function ProviderNearbyRequests() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { language } = useI18n();
+  const es = language === 'es';
   const { coords, refresh } = useLocation();
   const [requests, setRequests] = useState<NearbyRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const [actingId, setActingId] = useState<string | null>(null);
+  const [visibleMarkerIds, setVisibleMarkerIds] = useState<string[]>([]);
+  const [fitBoundsTrigger, setFitBoundsTrigger] = useState(0);
 
   const resolveAvatarUrl = React.useCallback((value: string | null | undefined): string | undefined => {
     if (!value) return undefined;
@@ -108,36 +113,135 @@ export default function ProviderNearbyRequests() {
     fetchRequests();
   }, [coords, user]);
 
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`provider-nearby-requests-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'service_requests' },
+        (payload) => {
+          const updated = payload.new as Partial<ServiceRequest>;
+          if (!updated?.id) return;
+
+          let removedRequest: NearbyRequest | undefined;
+          if (updated.status !== 'pending' || updated.provider_id) {
+            setRequests((current) => {
+              removedRequest = current.find((request) => request.id === updated.id);
+              return current.filter((request) => request.id !== updated.id);
+            });
+
+            if (removedRequest && actingId !== updated.id) {
+              setInfoMessage(
+                updated.provider_id && updated.provider_id !== user.id
+                  ? (es ? 'Una solicitud cercana fue tomada por otro proveedor.' : 'A nearby request was taken by another provider.')
+                  : (es ? 'Una solicitud cercana dejó de estar disponible.' : 'A nearby request is no longer available.')
+              );
+            }
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'service_requests' },
+        (payload) => {
+          const removed = payload.old as Partial<ServiceRequest>;
+          if (!removed?.id) return;
+
+          let removedRequest: NearbyRequest | undefined;
+          setRequests((current) => {
+            removedRequest = current.find((request) => request.id === removed.id);
+            return current.filter((request) => request.id !== removed.id);
+          });
+
+          if (removedRequest && actingId !== removed.id) {
+            setInfoMessage(es ? 'Una solicitud cercana dejó de estar disponible.' : 'A nearby request is no longer available.');
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [actingId, es, user]);
+
+  useEffect(() => {
+    if (!successMessage) return;
+    const timer = window.setTimeout(() => setSuccessMessage(null), 3500);
+    return () => window.clearTimeout(timer);
+  }, [successMessage]);
+
+  useEffect(() => {
+    if (!infoMessage) return;
+    const timer = window.setTimeout(() => setInfoMessage(null), 3500);
+    return () => window.clearTimeout(timer);
+  }, [infoMessage]);
+
   async function acceptRequest(requestId: string, redirectToJobs = false) {
     if (!user) return;
+    setError(null);
+    setSuccessMessage(null);
+    setInfoMessage(null);
     setActingId(requestId);
-    const { data: updatedRequest, error: updateError } = await supabase
+    const { error: updateError } = await supabase
       .from('service_requests')
       .update({ provider_id: user.id, status: 'accepted' })
       .eq('id', requestId)
-      .is('provider_id', null)
-      .select('id')
-      .maybeSingle();
-    setActingId(null);
+      .is('provider_id', null);
 
     if (updateError) {
+      setActingId(null);
       setError(updateError.message);
       return;
     }
 
-    if (!updatedRequest) {
-      setError(es ? 'La solicitud ya no esta disponible.' : 'The request is no longer available.');
+    const { data: acceptedRequest, error: acceptedRequestError } = await supabase
+      .from('service_requests')
+      .select('id')
+      .eq('id', requestId)
+      .eq('provider_id', user.id)
+      .eq('status', 'accepted')
+      .maybeSingle();
+
+    setActingId(null);
+
+    if (acceptedRequestError) {
+      setError(acceptedRequestError.message);
+      return;
+    }
+
+    if (!acceptedRequest) {
+      const { data: currentRequest, error: currentRequestError } = await supabase
+        .from('service_requests')
+        .select('id, status, provider_id')
+        .eq('id', requestId)
+        .maybeSingle();
+
+      if (currentRequestError) {
+        setError(currentRequestError.message);
+        return;
+      }
+
+      if (!currentRequest || currentRequest.status !== 'pending' || currentRequest.provider_id) {
+        setRequests((current) => current.filter((request) => request.id !== requestId));
+        setError(es ? 'La solicitud ya fue tomada o dejó de estar disponible.' : 'This request was already taken or is no longer available.');
+        return;
+      }
+
+      setError(es ? 'No tienes permiso para aceptar esta solicitud.' : 'You do not have permission to accept this request.');
       return;
     }
 
     setRequests((current) => current.filter((request) => request.id !== requestId));
+    setSuccessMessage(es ? 'Solicitud aceptada correctamente.' : 'Request accepted successfully.');
 
     if (redirectToJobs) {
-      navigate('/provider/jobs');
+      window.setTimeout(() => navigate('/provider/jobs'), 900);
     }
   }
 
-  const es = language === 'es';
   const requestMarkers = React.useMemo(() => {
     const markers: LocationMapMarker[] = requests
       .filter((request) => request.latitude !== null && request.latitude !== undefined && request.longitude !== null && request.longitude !== undefined)
@@ -171,6 +275,11 @@ export default function ProviderNearbyRequests() {
     return markers;
   }, [coords, es, requests, resolveAvatarUrl]);
 
+  const visibleNearbyCount = React.useMemo(() => {
+    const requestIds = new Set(requests.map((request) => request.id));
+    return visibleMarkerIds.filter((markerId) => requestIds.has(markerId)).length;
+  }, [requests, visibleMarkerIds]);
+
   return (
     <Layout navItems={PROVIDER_NAV} title="Nearby Requests">
       <div className="page-header flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -178,10 +287,44 @@ export default function ProviderNearbyRequests() {
           <h1 className="page-title">{es ? 'Solicitudes cercanas' : 'Nearby Requests'}</h1>
           <p className="page-subtitle">{es ? 'Las solicitudes se ordenan por distancia a tu ubicacion actual.' : 'Requests are ordered by distance from your current position.'}</p>
         </div>
-        <button onClick={refresh} className="btn-secondary">
-          <MapPin className="h-4 w-4" />
-          {es ? 'Actualizar GPS' : 'Refresh GPS'}
-        </button>
+        <div className="flex flex-col gap-3 sm:items-end">
+          <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white/90 px-4 py-3 shadow-sm">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-100 text-sky-700">
+              <MapPin className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                {es ? 'Disponibles ahora' : 'Available now'}
+              </p>
+              <p className="text-sm font-semibold text-slate-900">
+                {requests.length === 1
+                  ? (es ? '1 solicitud cercana' : '1 nearby request')
+                  : es
+                    ? `${requests.length} solicitudes cercanas`
+                    : `${requests.length} nearby requests`}
+              </p>
+              <p className="mt-1 text-xs text-slate-500">
+                {es
+                  ? `${visibleNearbyCount} visibles en el mapa`
+                  : `${visibleNearbyCount} currently visible on the map`}
+              </p>
+              {requests.length > 0 && visibleNearbyCount < requests.length ? (
+                <button
+                  type="button"
+                  onClick={() => setFitBoundsTrigger((current) => current + 1)}
+                  className="mt-2 text-xs font-semibold text-sky-700 transition hover:text-sky-800"
+                >
+                  {es ? 'Ver todas' : 'See all'}
+                </button>
+              ) : null}
+            </div>
+          </div>
+
+          <button onClick={refresh} className="btn-secondary">
+            <MapPin className="h-4 w-4" />
+            {es ? 'Actualizar GPS' : 'Refresh GPS'}
+          </button>
+        </div>
       </div>
 
       {!coords && (
@@ -191,6 +334,20 @@ export default function ProviderNearbyRequests() {
       )}
 
       {error && <ErrorMessage message={error} className="mb-4" />}
+
+      {successMessage && (
+        <div className="fixed right-4 top-20 z-50 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 shadow-lg">
+          <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+          {successMessage}
+        </div>
+      )}
+
+      {infoMessage && (
+        <div className="fixed right-4 top-36 z-50 flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-medium text-sky-700 shadow-lg">
+          <Info className="h-4 w-4 flex-shrink-0" />
+          {infoMessage}
+        </div>
+      )}
 
       {loading ? (
         <div className="flex justify-center py-20">
@@ -208,6 +365,8 @@ export default function ProviderNearbyRequests() {
               enableClustering={requestMarkers.length > 8}
               onMarkerActionClick={(marker: LocationMapMarker) => acceptRequest(marker.actionRequestId ?? marker.id, true)}
               actionLoadingMarkerId={actingId}
+              onVisibleMarkerIdsChange={setVisibleMarkerIds}
+              fitBoundsTrigger={fitBoundsTrigger}
             />
           </div>
 

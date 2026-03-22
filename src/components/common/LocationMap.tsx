@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
+import { MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import { FilePlus2 } from 'lucide-react';
 import { divIcon, latLngBounds, point } from 'leaflet';
@@ -31,9 +31,11 @@ interface LocationMapProps {
   enableClustering?: boolean;
   onMarkerActionClick?: (marker: LocationMapMarker) => void | Promise<void>;
   actionLoadingMarkerId?: string | null;
+  onVisibleMarkerIdsChange?: (markerIds: string[]) => void;
+  fitBoundsTrigger?: number;
 }
 
-function FitMapBounds({ markers }: { markers: LocationMapMarker[] }) {
+function FitMapBounds({ markers, fitBoundsTrigger = 0 }: { markers: LocationMapMarker[]; fitBoundsTrigger?: number }) {
   const map = useMap();
 
   useEffect(() => {
@@ -46,7 +48,40 @@ function FitMapBounds({ markers }: { markers: LocationMapMarker[] }) {
 
     const bounds = latLngBounds(markers.map((marker) => [marker.latitude, marker.longitude] as [number, number]));
     map.fitBounds(bounds, { padding: [36, 36] });
-  }, [map, markers]);
+  }, [fitBoundsTrigger, map, markers]);
+
+  return null;
+}
+
+function TrackVisibleMarkers({
+  markers,
+  onVisibleMarkerIdsChange,
+}: {
+  markers: LocationMapMarker[];
+  onVisibleMarkerIdsChange?: (markerIds: string[]) => void;
+}) {
+  const map = useMap();
+
+  const emitVisibleMarkerIds = React.useCallback(() => {
+    if (!onVisibleMarkerIdsChange) return;
+
+    const bounds = map.getBounds();
+    const visibleIds = markers
+      .filter((marker) => bounds.contains([marker.latitude, marker.longitude]))
+      .map((marker) => marker.id);
+
+    onVisibleMarkerIdsChange(visibleIds);
+  }, [map, markers, onVisibleMarkerIdsChange]);
+
+  useMapEvents({
+    moveend: emitVisibleMarkerIds,
+    zoomend: emitVisibleMarkerIds,
+    resize: emitVisibleMarkerIds,
+  });
+
+  useEffect(() => {
+    emitVisibleMarkerIds();
+  }, [emitVisibleMarkerIds]);
 
   return null;
 }
@@ -85,6 +120,8 @@ export default function LocationMap({
   enableClustering = true,
   onMarkerActionClick,
   actionLoadingMarkerId = null,
+  onVisibleMarkerIdsChange,
+  fitBoundsTrigger = 0,
 }: LocationMapProps) {
   if (markers.length === 0) {
     return null;
@@ -105,7 +142,8 @@ export default function LocationMap({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <FitMapBounds markers={markers} />
+        <FitMapBounds markers={markers} fitBoundsTrigger={fitBoundsTrigger} />
+        <TrackVisibleMarkers markers={markers} onVisibleMarkerIdsChange={onVisibleMarkerIdsChange} />
         <MarkerContainer {...markerContainerProps}>
           {markers.map((marker) => (
             <Marker
