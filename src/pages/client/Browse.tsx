@@ -405,9 +405,9 @@ export default function ClientBrowse() {
           <LoadingSpinner size="lg" />
         </div>
       ) : (
-        <div className="relative h-screen -m-6 p-6">
+        <div className="card grid gap-6 lg:grid-cols-[1fr_384px]">
           {/* Map Container */}
-          <div className="h-full rounded-lg overflow-hidden shadow-lg bg-slate-50">
+          <div className="rounded-lg overflow-hidden bg-slate-50 min-h-96 lg:min-h-[600px]">
             {!coords ? (
               <div className="h-full flex flex-col items-center justify-center gap-4 bg-slate-100">
                 <p className="text-slate-600">{t('clientBrowse.enableLocationForMap')}</p>
@@ -420,12 +420,12 @@ export default function ClientBrowse() {
                 <p className="text-slate-500">{t('clientBrowse.noMapProviders')}</p>
               </div>
             ) : (
-              <LocationMap markers={nearbyProviderMarkers} heightClassName="h-full" />
+              <LocationMap markers={nearbyProviderMarkers} heightClassName="h-96 lg:h-[600px]" />
             )}
           </div>
 
-          {/* Filter Card - Floating over map */}
-          <div className="absolute top-4 right-4 w-96 bg-white rounded-lg shadow-xl p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
+          {/* Filter Card */}
+          <div className="bg-white rounded-lg p-4 h-fit lg:sticky lg:top-24">
             <h2 className="text-lg font-semibold text-slate-900 mb-4">{t('clientBrowse.nearbyProvidersMapTitle')}</h2>
             
             {/* Root Category Select */}
