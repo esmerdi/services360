@@ -129,6 +129,10 @@ const translations: Record<Language, TranslationMap> = {
     clientBrowse: {
       title: 'Browse Services',
       subtitle: 'Explore categories and request nearby providers.',
+      nearbyProvidersMapTitle: 'Nearby providers on map',
+      nearbyProvidersMapDesc: 'Filter by parent category to view matching providers with their category icon.',
+      enableLocationForMap: 'Enable location to view nearby providers on the map.',
+      noMapProviders: 'No nearby providers found for this category on the map.',
       searchPlaceholder: 'Search services, categories or keywords',
       allCategories: 'All categories',
       categoryFallback: 'Browse related services and providers near you.',
@@ -424,6 +428,10 @@ const translations: Record<Language, TranslationMap> = {
     clientBrowse: {
       title: 'Explorar servicios',
       subtitle: 'Explora categorías y solicita proveedores cercanos.',
+      nearbyProvidersMapTitle: 'Proveedores cercanos en el mapa',
+      nearbyProvidersMapDesc: 'Filtra por categoría padre para ver proveedores con su ícono de categoría.',
+      enableLocationForMap: 'Activa tu ubicación para ver proveedores cercanos en el mapa.',
+      noMapProviders: 'No hay proveedores cercanos para esta categoría en el mapa.',
       searchPlaceholder: 'Buscar servicios, categorías o palabras clave',
       allCategories: 'Todas las categorías',
       categoryFallback: 'Explora servicios relacionados y proveedores cercanos.',

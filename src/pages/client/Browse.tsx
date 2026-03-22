@@ -4,9 +4,14 @@ import { Search, ArrowRight } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
+import LocationMap from '../../components/common/LocationMap';
 import StarRating from '../../components/common/StarRating';
 import { useI18n } from '../../context/I18nContext';
+import { useLocation } from '../../context/LocationContext';
 import { supabase } from '../../lib/supabase';
+import type { LocationMapMarker } from '../../components/common/LocationMap';
+import { formatDistance, haversineDistance } from '../../utils/distance';
+import { getCategoryMarkerColor, getCategoryMarkerGlyph } from '../../utils/mapMarkers';
 import type { Category, Service } from '../../types';
 
 const CLIENT_NAV = [
@@ -23,6 +28,15 @@ type ServiceWithCategory = Service & {
   providers_count?: number;
 };
 
+type NearbyProviderMap = {
+  id: string;
+  full_name: string | null;
+  email: string;
+  location: { latitude: number; longitude: number; address: string | null };
+  root_category_ids: string[];
+  distance_km?: number;
+};
+
 const CATEGORY_PALETTE = [
   { badge: 'bg-violet-50 text-violet-700', dot: 'bg-violet-500', ring: 'border-violet-300 hover:border-violet-400' },
   { badge: 'bg-sky-50 text-sky-700',       dot: 'bg-sky-500',    ring: 'border-sky-300 hover:border-sky-400' },
@@ -36,8 +50,10 @@ const CATEGORY_PALETTE = [
 
 export default function ClientBrowse() {
   const { t } = useI18n();
+  const { coords, refresh } = useLocation();
   const [categories, setCategories] = useState<Category[]>([]);
   const [services, setServices] = useState<ServiceWithCategory[]>([]);
+  const [nearbyProviders, setNearbyProviders] = useState<NearbyProviderMap[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -59,6 +75,8 @@ export default function ClientBrowse() {
       } else if (providerServiceRes.error) {
         setError(providerServiceRes.error.message);
       } else {
+        const categoryRows = (catRes.data as Category[]) ?? [];
+        const serviceRows = (serviceRes.data as ServiceWithCategory[]) ?? [];
         const providerLinks = (providerServiceRes.data as Array<{ service_id: string; provider_id: string }>) ?? [];
         const providerIds = Array.from(new Set(providerLinks.map((item) => item.provider_id)));
 
@@ -83,6 +101,96 @@ export default function ClientBrowse() {
           }
         }
 
+        const categoryById = new Map(categoryRows.map((category) => [category.id, category] as const));
+        const getRootCategoryId = (categoryId: string | null | undefined): string | null => {
+          if (!categoryId) return null;
+          const visited = new Set<string>();
+          let current = categoryById.get(categoryId);
+          while (current) {
+            if (visited.has(current.id)) break;
+            visited.add(current.id);
+            if (!current.parent_id) return current.id;
+            current = current.parent_id ? categoryById.get(current.parent_id) : undefined;
+          }
+          return categoryId;
+        };
+
+        const serviceCategoryMap = new Map(serviceRows.map((service) => [service.id, service.category_id] as const));
+
+        const rootCategoriesByProvider = new Map<string, Set<string>>();
+        for (const link of providerLinks) {
+          const serviceCategoryId = serviceCategoryMap.get(link.service_id);
+          const rootCategoryId = getRootCategoryId(serviceCategoryId);
+          if (!rootCategoryId) continue;
+          const current = rootCategoriesByProvider.get(link.provider_id) ?? new Set<string>();
+          current.add(rootCategoryId);
+          rootCategoriesByProvider.set(link.provider_id, current);
+        }
+
+        const { data: providerUsers, error: providerUsersError } = await supabase
+          .from('users')
+          .select('id, full_name, email, role, is_available')
+          .in('id', providerIds)
+          .eq('role', 'provider')
+          .eq('is_available', true);
+
+        if (providerUsersError) {
+          setError(providerUsersError.message);
+          setLoading(false);
+          return;
+        }
+
+        const availableProviderIds = ((providerUsers as Array<{ id: string }>) ?? []).map((provider) => provider.id);
+        const { data: locationData, error: locationError } = await supabase
+          .from('locations')
+          .select('user_id, latitude, longitude, address')
+          .in('user_id', availableProviderIds);
+
+        if (locationError) {
+          setError(locationError.message);
+          setLoading(false);
+          return;
+        }
+
+        const locationMap = new Map(
+          ((locationData as Array<{ user_id: string; latitude: number; longitude: number; address: string | null }>) ?? []).map((location) => [
+            location.user_id,
+            location,
+          ])
+        );
+
+        const providerMapRows = ((providerUsers as Array<{ id: string; full_name: string | null; email: string }>) ?? []).reduce<NearbyProviderMap[]>(
+          (acc, provider) => {
+            const location = locationMap.get(provider.id);
+            if (!location) return acc;
+            const rootCategoryIds = Array.from(rootCategoriesByProvider.get(provider.id) ?? []);
+            if (rootCategoryIds.length === 0) return acc;
+
+            acc.push({
+              id: provider.id,
+              full_name: provider.full_name,
+              email: provider.email,
+              location: {
+                latitude: location.latitude,
+                longitude: location.longitude,
+                address: location.address,
+              },
+              root_category_ids: rootCategoryIds,
+              distance_km: coords
+                ? haversineDistance(
+                    coords.latitude,
+                    coords.longitude,
+                    location.latitude,
+                    location.longitude
+                  )
+                : undefined,
+            });
+
+            return acc;
+          },
+          []
+        ).sort((left, right) => (left.distance_km ?? Infinity) - (right.distance_km ?? Infinity));
+
         const providersByService = new Map<string, string[]>();
         for (const link of providerLinks) {
           const current = providersByService.get(link.service_id) ?? [];
@@ -90,7 +198,7 @@ export default function ClientBrowse() {
           providersByService.set(link.service_id, current);
         }
 
-        const enrichedServices = ((serviceRes.data as ServiceWithCategory[]) ?? []).map((service) => {
+        const enrichedServices = serviceRows.map((service) => {
           const providerIdsForService = providersByService.get(service.id) ?? [];
           const aggregate = providerIdsForService.reduce(
             (acc, providerId) => {
@@ -111,8 +219,9 @@ export default function ClientBrowse() {
           };
         });
 
-        setCategories((catRes.data as Category[]) ?? []);
+        setCategories(categoryRows);
         setServices(enrichedServices);
+        setNearbyProviders(providerMapRows);
       }
       setLoading(false);
     }
@@ -211,6 +320,52 @@ export default function ClientBrowse() {
     return CATEGORY_PALETTE[index % CATEGORY_PALETTE.length];
   }, [getRootCategoryId, rootColorMap]);
 
+  const selectedRootCategoryId = useMemo(() => {
+    if (selectedCategory === 'all') return null;
+    return getRootCategoryId(selectedCategory);
+  }, [getRootCategoryId, selectedCategory]);
+
+  const filteredNearbyProviders = useMemo(() => {
+    if (!selectedRootCategoryId) return nearbyProviders;
+    return nearbyProviders.filter((provider) => provider.root_category_ids.includes(selectedRootCategoryId));
+  }, [nearbyProviders, selectedRootCategoryId]);
+
+  const nearbyProviderMarkers = useMemo(() => {
+    const markers: LocationMapMarker[] = filteredNearbyProviders.map((provider) => {
+      const markerRootCategoryId = selectedRootCategoryId ?? provider.root_category_ids[0] ?? null;
+      const rootCategory = markerRootCategoryId ? categoryMap.get(markerRootCategoryId) : null;
+
+      const distanceLabel = provider.distance_km !== undefined
+        ? formatDistance(provider.distance_km)
+        : t('clientRequestService.distanceUnavailable');
+
+      return {
+        id: provider.id,
+        latitude: provider.location.latitude,
+        longitude: provider.location.longitude,
+        label: provider.full_name || provider.email,
+        description: `${rootCategory?.name || t('clientBrowse.generalCategory')} • ${distanceLabel}`,
+        color: getCategoryMarkerColor(markerRootCategoryId),
+        glyph: getCategoryMarkerGlyph(rootCategory?.icon, rootCategory?.name),
+      };
+    });
+
+    if (coords) {
+      markers.unshift({
+        id: 'client-location-browse',
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        label: t('clientRequestService.currentLocation'),
+        description: `${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`,
+        color: '#2563eb',
+        radius: 10,
+        glyph: '📍',
+      });
+    }
+
+    return markers;
+  }, [categoryMap, coords, filteredNearbyProviders, selectedRootCategoryId, t]);
+
   const filteredServices = useMemo(() => {
     const query = search.trim().toLowerCase();
     const categoryIds = new Set<string>();
@@ -301,6 +456,30 @@ export default function ClientBrowse() {
                 </button>
               );
             })}
+          </div>
+
+          <div className="card mb-6">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-base font-semibold text-slate-900">{t('clientBrowse.nearbyProvidersMapTitle')}</h2>
+                <p className="text-sm text-slate-500">{t('clientBrowse.nearbyProvidersMapDesc')}</p>
+              </div>
+              {!coords && (
+                <button type="button" className="btn-secondary" onClick={refresh}>
+                  {t('clientRequestService.detectLocation')}
+                </button>
+              )}
+            </div>
+
+            {!coords ? (
+              <p className="mt-4 text-sm text-amber-700">{t('clientBrowse.enableLocationForMap')}</p>
+            ) : nearbyProviderMarkers.length <= 1 ? (
+              <p className="mt-4 text-sm text-slate-500">{t('clientBrowse.noMapProviders')}</p>
+            ) : (
+              <div className="mt-4">
+                <LocationMap markers={nearbyProviderMarkers} heightClassName="h-80" />
+              </div>
+            )}
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

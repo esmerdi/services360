@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import { divIcon, latLngBounds, point } from 'leaflet';
 
 export interface LocationMapMarker {
@@ -81,20 +82,22 @@ export default function LocationMap({ markers, heightClassName = 'h-80' }: Locat
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <FitMapBounds markers={markers} />
-        {markers.map((marker) => (
-          <Marker
-            key={marker.id}
-            position={[marker.latitude, marker.longitude]}
-            icon={markerIcon(marker)}
-          >
-            <Popup>
-              <div className="min-w-[160px]">
-                <p className="font-semibold text-slate-900">{marker.label}</p>
-                {marker.description ? <p className="mt-1 text-sm text-slate-600">{marker.description}</p> : null}
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+        <MarkerClusterGroup chunkedLoading>
+          {markers.map((marker) => (
+            <Marker
+              key={marker.id}
+              position={[marker.latitude, marker.longitude]}
+              icon={markerIcon(marker)}
+            >
+              <Popup>
+                <div className="min-w-[160px]">
+                  <p className="font-semibold text-slate-900">{marker.label}</p>
+                  {marker.description ? <p className="mt-1 text-sm text-slate-600">{marker.description}</p> : null}
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+        </MarkerClusterGroup>
       </MapContainer>
     </div>
   );
