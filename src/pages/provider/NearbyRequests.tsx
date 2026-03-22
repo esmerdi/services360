@@ -136,6 +136,8 @@ export default function ProviderNearbyRequests() {
         serviceText: request.service?.name || (es ? 'Solicitud de servicio' : 'Service request'),
         description: request.address || (es ? 'Ubicacion del cliente' : 'Client location'),
         imageUrl: resolveAvatarUrl(request.client?.avatar_url),
+        actionLabel: es ? 'Aceptar solicitud' : 'Accept request',
+        actionRequestId: request.id,
         color: getCategoryMarkerColor(request.service?.category_id),
         glyph: getCategoryMarkerGlyph(request.service?.category?.icon, request.service?.category?.name),
       }));
@@ -188,7 +190,12 @@ export default function ProviderNearbyRequests() {
               <h2 className="text-lg font-semibold text-slate-900">{es ? 'Mapa de solicitudes' : 'Requests map'}</h2>
               <p className="mt-1 text-sm text-slate-500">{es ? 'Visualiza tu posicion y las solicitudes cercanas sobre OpenStreetMap.' : 'See your position and nearby requests on OpenStreetMap.'}</p>
             </div>
-            <LocationMap markers={requestMarkers} enableClustering={requestMarkers.length > 8} />
+            <LocationMap
+              markers={requestMarkers}
+              enableClustering={requestMarkers.length > 8}
+              onMarkerActionClick={(marker: LocationMapMarker) => acceptRequest(marker.actionRequestId ?? marker.id)}
+              actionLoadingMarkerId={actingId}
+            />
           </div>
 
           <div className="grid gap-4 xl:grid-cols-2">

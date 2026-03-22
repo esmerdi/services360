@@ -16,6 +16,7 @@ export interface LocationMapMarker {
   serviceText?: string;
   actionUrl?: string;
   actionLabel?: string;
+  actionRequestId?: string;
   actionServiceId?: string;
   actionProviderId?: string;
   color?: string;
@@ -135,7 +136,7 @@ export default function LocationMap({
                   ) : null}
                   {marker.description ? <p className="mt-1 text-sm leading-tight text-slate-600">{marker.description}</p> : null}
                   {marker.actionLabel ? (
-                    onMarkerActionClick && marker.actionServiceId && marker.actionProviderId ? (
+                    onMarkerActionClick && (Boolean(marker.actionRequestId) || (Boolean(marker.actionServiceId) && Boolean(marker.actionProviderId))) ? (
                       <button
                         type="button"
                         onClick={() => void onMarkerActionClick(marker)}
