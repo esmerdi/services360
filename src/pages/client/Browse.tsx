@@ -67,6 +67,7 @@ export default function ClientBrowse() {
   const [quickRequestingMarkerId, setQuickRequestingMarkerId] = useState<string | null>(null);
   const [selectedRootCategory, setSelectedRootCategory] = useState<string | null>(null);
   const [selectedService, setSelectedService] = useState<string | null>(null);
+  const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
   const [visibleMarkerIds, setVisibleMarkerIds] = useState<string[]>([]);
   const [fitBoundsTrigger, setFitBoundsTrigger] = useState(0);
 
@@ -85,7 +86,12 @@ export default function ClientBrowse() {
   useEffect(() => {
     // Reset service when root category changes
     setSelectedService(null);
+    setSelectedProviderId(null);
   }, [selectedRootCategory]);
+
+  useEffect(() => {
+    setSelectedProviderId(null);
+  }, [selectedService]);
 
   useEffect(() => {
     async function fetchData() {
@@ -460,6 +466,31 @@ export default function ClientBrowse() {
     return visibleMarkerIds.filter((markerId) => providerIds.has(markerId)).length;
   }, [filteredNearbyProviders, visibleMarkerIds]);
 
+  const providerOptions = useMemo(() => {
+    const candidates = selectedService
+      ? filteredNearbyProviders.filter((provider) =>
+          provider.offered_services.some((service) => service.id === selectedService)
+        )
+      : filteredNearbyProviders;
+
+    return candidates.map((provider) => {
+      const hasRatings = Boolean(provider.ratings_count && provider.ratings_count > 0);
+      const ratingLabel = hasRatings
+        ? `⭐ ${(provider.avg_rating ?? 0).toFixed(1)} (${provider.ratings_count})`
+        : `☆ ${t('clientBrowse.noRatingsYet')}`;
+
+      return {
+        ...provider,
+        ratingLabel,
+        distanceLabel: provider.distance_km !== undefined
+          ? formatDistance(provider.distance_km)
+          : t('clientRequestService.distanceUnavailable'),
+        displayName: provider.full_name || provider.email,
+        avatar: resolveAvatarUrl(provider.avatar_url),
+      };
+    });
+  }, [filteredNearbyProviders, resolveAvatarUrl, selectedService, t]);
+
   const handleQuickRequest = useCallback(async (marker: LocationMapMarker) => {
     if (!user || !marker.actionServiceId || !marker.actionProviderId || !coords) {
       setError(t('clientRequestService.locationRequiredError'));
@@ -488,6 +519,35 @@ export default function ClientBrowse() {
     setQuickRequestingMarkerId(null);
     navigate('/client/requests');
   }, [coords, navigate, t, user]);
+
+  const handleProviderRequest = useCallback(async () => {
+    if (!user || !selectedService || !selectedProviderId || !coords) {
+      setError(t('clientRequestService.locationRequiredError'));
+      return;
+    }
+
+    setQuickRequestingMarkerId(selectedProviderId);
+    setError(null);
+
+    const { error: requestError } = await supabase.from('service_requests').insert({
+      client_id: user.id,
+      provider_id: selectedProviderId,
+      service_id: selectedService,
+      description: null,
+      latitude: coords.latitude,
+      longitude: coords.longitude,
+      address: null,
+    });
+
+    if (requestError) {
+      setError(requestError.message);
+      setQuickRequestingMarkerId(null);
+      return;
+    }
+
+    setQuickRequestingMarkerId(null);
+    navigate('/client/requests');
+  }, [coords, navigate, selectedProviderId, selectedService, t, user]);
 
   return (
     <Layout navItems={CLIENT_NAV} title="Browse Services">
@@ -636,9 +696,67 @@ export default function ClientBrowse() {
                   )}
                 </div>
 
+                <div className="mb-4 space-y-2">
+                  <p className="text-sm font-semibold text-slate-800">{t('clientBrowse.selectNearbyProvider')}</p>
+                  {providerOptions.length === 0 ? (
+                    <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
+                      {t('clientBrowse.noProvidersForService')}
+                    </p>
+                  ) : (
+                    <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
+                      {providerOptions.map((provider) => {
+                        const isSelected = selectedProviderId === provider.id;
+                        return (
+                          <button
+                            key={provider.id}
+                            type="button"
+                            onClick={() => setSelectedProviderId(provider.id)}
+                            className={`w-full rounded-xl border px-3 py-2 text-left transition ${
+                              isSelected
+                                ? 'border-sky-400 bg-sky-50'
+                                : 'border-slate-200 bg-white hover:border-slate-300'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              {provider.avatar ? (
+                                <img
+                                  src={provider.avatar}
+                                  alt={provider.displayName}
+                                  className="h-10 w-10 rounded-full border border-slate-200 object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-xs font-semibold text-slate-500">
+                                  {provider.displayName.slice(0, 2).toUpperCase()}
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-semibold text-slate-900">{provider.displayName}</p>
+                                <p className="text-xs text-slate-500">{provider.ratingLabel}</p>
+                                <p className="text-xs text-slate-500">{provider.distanceLabel}</p>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  className="btn-primary w-full justify-center"
+                  onClick={handleProviderRequest}
+                  disabled={!selectedProviderId || quickRequestingMarkerId === selectedProviderId}
+                >
+                  {quickRequestingMarkerId === selectedProviderId
+                    ? t('clientBrowse.requestingProvider')
+                    : t('clientBrowse.requestSelectedProvider')}
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+
                 <Link 
                   to={`/client/request/${selectedServiceData.id}`} 
-                  className="btn-primary w-full justify-center"
+                  className="btn-secondary mt-2 w-full justify-center"
                 >
                   {t('clientBrowse.requestServiceButton')}
                   <ArrowRight className="h-4 w-4" />
