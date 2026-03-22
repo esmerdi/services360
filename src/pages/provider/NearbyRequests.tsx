@@ -11,6 +11,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
 import { useLocation } from '../../context/LocationContext';
 import { formatDistance } from '../../utils/distance';
+import { extractManagedAvatarPath } from '../../utils/helpers';
 import { getCategoryMarkerColor, getCategoryMarkerGlyph } from '../../utils/mapMarkers';
 import type { ServiceRequest } from '../../types';
 
@@ -22,7 +23,7 @@ const PROVIDER_NAV = [
   { label: 'Subscription', to: '/provider/subscription' },
 ];
 
-type NearbyRequest = ServiceRequest & { client?: { full_name?: string | null; email?: string | null } };
+type NearbyRequest = ServiceRequest & { client?: { full_name?: string | null; email?: string | null; avatar_url?: string | null } };
 type NearbyRequestRpcRow = { id: string; distance_km: number };
 
 export default function ProviderNearbyRequests() {
@@ -33,6 +34,18 @@ export default function ProviderNearbyRequests() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actingId, setActingId] = useState<string | null>(null);
+
+  const resolveAvatarUrl = React.useCallback((value: string | null | undefined): string | undefined => {
+    if (!value) return undefined;
+
+    const objectPath = extractManagedAvatarPath(value);
+    if (!objectPath) {
+      return value;
+    }
+
+    const { data } = supabase.storage.from('avatars').getPublicUrl(objectPath);
+    return data.publicUrl || value;
+  }, []);
 
   useEffect(() => {
     if (!user || !coords) {
@@ -70,7 +83,7 @@ export default function ProviderNearbyRequests() {
         .select(`
           *,
           service:services(id, name, category_id, category:categories(id, name, icon)),
-          client:users!service_requests_client_id_fkey(id, full_name, email)
+          client:users!service_requests_client_id_fkey(id, full_name, email, avatar_url)
         `)
         .in('id', requestIds);
 
@@ -119,8 +132,10 @@ export default function ProviderNearbyRequests() {
         id: request.id,
         latitude: request.latitude as number,
         longitude: request.longitude as number,
-        label: request.service?.name || (es ? 'Solicitud de servicio' : 'Service request'),
-        description: request.address || request.client?.full_name || (es ? 'Ubicacion del cliente' : 'Client location'),
+        label: request.client?.full_name || request.client?.email || (es ? 'Cliente' : 'Client'),
+        serviceText: request.service?.name || (es ? 'Solicitud de servicio' : 'Service request'),
+        description: request.address || (es ? 'Ubicacion del cliente' : 'Client location'),
+        imageUrl: resolveAvatarUrl(request.client?.avatar_url),
         color: getCategoryMarkerColor(request.service?.category_id),
         glyph: getCategoryMarkerGlyph(request.service?.category?.icon, request.service?.category?.name),
       }));
@@ -139,7 +154,7 @@ export default function ProviderNearbyRequests() {
     }
 
     return markers;
-  }, [coords, es, requests]);
+  }, [coords, es, requests, resolveAvatarUrl]);
 
   return (
     <Layout navItems={PROVIDER_NAV} title="Nearby Requests">
@@ -173,7 +188,7 @@ export default function ProviderNearbyRequests() {
               <h2 className="text-lg font-semibold text-slate-900">{es ? 'Mapa de solicitudes' : 'Requests map'}</h2>
               <p className="mt-1 text-sm text-slate-500">{es ? 'Visualiza tu posicion y las solicitudes cercanas sobre OpenStreetMap.' : 'See your position and nearby requests on OpenStreetMap.'}</p>
             </div>
-            <LocationMap markers={requestMarkers} />
+            <LocationMap markers={requestMarkers} enableClustering={requestMarkers.length > 8} />
           </div>
 
           <div className="grid gap-4 xl:grid-cols-2">
