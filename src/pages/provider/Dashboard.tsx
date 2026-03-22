@@ -104,7 +104,7 @@ export default function ProviderDashboard() {
         </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.1fr,0.9fr]">
+      <div className="grid gap-6">
         <div className="card">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-display text-xl text-slate-900">{es ? 'Trabajos recientes' : 'Recent Jobs'}</h2>
@@ -132,28 +132,28 @@ export default function ProviderDashboard() {
             </div>
           )}
         </div>
+      </div>
 
-        <div className="card">
-          <h2 className="font-display text-xl text-slate-900">{es ? 'Estado de cobertura' : 'Coverage Status'}</h2>
-          <div className="mt-4 surface-muted">
-            <div className="flex items-start gap-3">
-              <MapPin className="mt-0.5 h-5 w-5 text-blue-600" />
-              <div>
-                <p className="font-medium text-slate-900">{es ? 'Ubicacion del proveedor' : 'Provider location'}</p>
-                <p className="mt-1 text-sm text-slate-500">
-                  {locationLoading
-                    ? (es ? 'Obteniendo ubicacion actual...' : 'Getting current position...')
-                    : coords
-                      ? `${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`
-                      : (es ? 'Activa el GPS para recibir solicitudes cercanas.' : 'Enable GPS to receive nearby requests.')}
-                </p>
-              </div>
+      <div className="mt-6 card">
+        <h2 className="font-display text-xl text-slate-900">{es ? 'Estado de cobertura' : 'Coverage Status'}</h2>
+        <div className="mt-4 surface-muted">
+          <div className="flex items-start gap-3">
+            <MapPin className="mt-0.5 h-5 w-5 text-blue-600" />
+            <div>
+              <p className="font-medium text-slate-900">{es ? 'Ubicacion del proveedor' : 'Provider location'}</p>
+              <p className="mt-1 text-sm text-slate-500">
+                {locationLoading
+                  ? (es ? 'Obteniendo ubicacion actual...' : 'Getting current position...')
+                  : coords
+                    ? `${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`
+                    : (es ? 'Activa el GPS para recibir solicitudes cercanas.' : 'Enable GPS to receive nearby requests.')}
+              </p>
             </div>
           </div>
-          <Link to="/provider/nearby" className="btn-primary mt-4 w-full justify-center">
-            {es ? 'Ver solicitudes cercanas' : 'See nearby requests'}
-          </Link>
         </div>
+        <Link to="/provider/nearby" className="btn-primary mt-4 w-full justify-center">
+          {es ? 'Ver solicitudes cercanas' : 'See nearby requests'}
+        </Link>
       </div>
     </Layout>
   );
