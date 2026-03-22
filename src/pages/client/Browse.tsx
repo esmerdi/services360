@@ -279,8 +279,8 @@ export default function ClientBrowse() {
         </div>
       ) : (
         <>
-          <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {topLevelCategories.slice(0, 4).map((category: Category) => {
+          <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {topLevelCategories.map((category: Category) => {
               const color = CATEGORY_PALETTE[(rootColorMap.get(category.id) ?? 0) % CATEGORY_PALETTE.length];
               return (
                 <button
