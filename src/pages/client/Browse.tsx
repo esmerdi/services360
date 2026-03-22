@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
@@ -56,8 +56,15 @@ export default function ClientBrowse() {
   const [nearbyProviders, setNearbyProviders] = useState<NearbyProviderMap[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedRootCategory, setSelectedRootCategory] = useState<string | null>(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
+  const [selectedService, setSelectedService] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Reset subcategory and service when root category changes
+    setSelectedSubcategory(null);
+    setSelectedService(null);
+  }, [selectedRootCategory]);
 
   useEffect(() => {
     async function fetchData() {
@@ -293,6 +300,25 @@ export default function ClientBrowse() {
     [categories]
   );
 
+  const subcategoriesForSelectedRoot = useMemo(() => {
+    if (!selectedRootCategory) return [];
+    const children = childrenByParent.get(selectedRootCategory) ?? [];
+    return children.sort((a, b) => a.name.localeCompare(b.name));
+  }, [selectedRootCategory, childrenByParent]);
+
+  const servicesForSelectedSubcategory = useMemo(() => {
+    if (!selectedSubcategory) return [];
+    return services
+      .filter((service) => service.category_id === selectedSubcategory || 
+                          categoryMap.get(selectedSubcategory)?.id === service.category_id)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [selectedSubcategory, services, categoryMap]);
+
+  const selectedServiceData = useMemo(() => {
+    if (!selectedService) return null;
+    return services.find((s) => s.id === selectedService);
+  }, [selectedService, services]);
+
   const rootColorMap = useMemo(() => {
     const map = new Map<string, number>();
     topLevelCategories.forEach((cat, index) => {
@@ -321,9 +347,8 @@ export default function ClientBrowse() {
   }, [getRootCategoryId, rootColorMap]);
 
   const selectedRootCategoryId = useMemo(() => {
-    if (selectedCategory === 'all') return null;
-    return getRootCategoryId(selectedCategory);
-  }, [getRootCategoryId, selectedCategory]);
+    return selectedRootCategory;
+  }, [selectedRootCategory]);
 
   const filteredNearbyProviders = useMemo(() => {
     if (!selectedRootCategoryId) return nearbyProviders;
@@ -366,64 +391,11 @@ export default function ClientBrowse() {
     return markers;
   }, [categoryMap, coords, filteredNearbyProviders, selectedRootCategoryId, t]);
 
-  const filteredServices = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    const categoryIds = new Set<string>();
-
-    if (selectedCategory !== 'all') {
-      getDescendantCategoryIds(selectedCategory).forEach((id) => categoryIds.add(id));
-    }
-
-    return services.filter((service: ServiceWithCategory) => {
-      const categoryPath = getCategoryPath(service.category_id).toLowerCase();
-      const matchesSearch =
-        !query ||
-        service.name.toLowerCase().includes(query) ||
-        service.description?.toLowerCase().includes(query) ||
-        service.category?.name.toLowerCase().includes(query) ||
-        categoryPath.includes(query);
-
-      const matchesCategory =
-        selectedCategory === 'all' || (service.category_id ? categoryIds.has(service.category_id) : false);
-
-      return matchesSearch && matchesCategory;
-    });
-  }, [getCategoryPath, getDescendantCategoryIds, search, selectedCategory, services]);
-
-  const sortedCategories = useMemo(() => {
-    return [...categories].sort((a, b) => getCategoryPath(a.id).localeCompare(getCategoryPath(b.id)));
-  }, [categories, getCategoryPath]);
-
   return (
     <Layout navItems={CLIENT_NAV} title="Browse Services">
       <div className="page-header">
         <h1 className="page-title">{t('clientBrowse.title')}</h1>
         <p className="page-subtitle">{t('clientBrowse.subtitle')}</p>
-      </div>
-
-      <div className="mb-6 grid gap-4 lg:grid-cols-[1.2fr,0.8fr]">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input
-            type="search"
-            className="input pl-9"
-            placeholder={t('clientBrowse.searchPlaceholder')}
-            value={search}
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => setSearch(event.target.value)}
-          />
-        </div>
-        <select
-          className="input"
-          value={selectedCategory}
-          onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setSelectedCategory(event.target.value)}
-        >
-          <option value="all">{t('clientBrowse.allCategories')}</option>
-          {sortedCategories.map((category: Category) => (
-            <option key={category.id} value={category.id}>
-              {getCategoryPath(category.id)}
-            </option>
-          ))}
-        </select>
       </div>
 
       {error && <ErrorMessage message={error} className="mb-4" />}
@@ -433,102 +405,136 @@ export default function ClientBrowse() {
           <LoadingSpinner size="lg" />
         </div>
       ) : (
-        <>
-          <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {topLevelCategories.map((category: Category) => {
-              const color = CATEGORY_PALETTE[(rootColorMap.get(category.id) ?? 0) % CATEGORY_PALETTE.length];
-              return (
-                <button
-                  key={category.id}
-                  onClick={() => setSelectedCategory(category.id)}
-                  className={`card text-left transition-all hover:shadow-md border-2 ${selectedCategory === category.id ? color.ring : 'border-transparent'}`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${color.dot}`} />
-                    <p className="text-sm font-semibold text-slate-900">{category.name}</p>
-                  </div>
-                  <p className="mt-2 text-sm text-slate-500">
-                    {category.description || t('clientBrowse.categoryFallback')}
-                  </p>
-                  <p className="mt-3 text-xs font-medium text-slate-400">
-                    {countServicesForCategory(category.id)} {t('nav.services').toLowerCase()}
-                  </p>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="card mb-6">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-base font-semibold text-slate-900">{t('clientBrowse.nearbyProvidersMapTitle')}</h2>
-                <p className="text-sm text-slate-500">{t('clientBrowse.nearbyProvidersMapDesc')}</p>
-              </div>
-              {!coords && (
+        <div className="relative h-screen -m-6 p-6">
+          {/* Map Container */}
+          <div className="h-full rounded-lg overflow-hidden shadow-lg bg-slate-50">
+            {!coords ? (
+              <div className="h-full flex flex-col items-center justify-center gap-4 bg-slate-100">
+                <p className="text-slate-600">{t('clientBrowse.enableLocationForMap')}</p>
                 <button type="button" className="btn-secondary" onClick={refresh}>
                   {t('clientRequestService.detectLocation')}
                 </button>
-              )}
-            </div>
-
-            {!coords ? (
-              <p className="mt-4 text-sm text-amber-700">{t('clientBrowse.enableLocationForMap')}</p>
-            ) : nearbyProviderMarkers.length <= 1 ? (
-              <p className="mt-4 text-sm text-slate-500">{t('clientBrowse.noMapProviders')}</p>
-            ) : (
-              <div className="mt-4">
-                <LocationMap markers={nearbyProviderMarkers} heightClassName="h-80" />
               </div>
+            ) : nearbyProviderMarkers.length <= 1 ? (
+              <div className="h-full flex flex-col items-center justify-center gap-4 bg-slate-100">
+                <p className="text-slate-500">{t('clientBrowse.noMapProviders')}</p>
+              </div>
+            ) : (
+              <LocationMap markers={nearbyProviderMarkers} heightClassName="h-full" />
             )}
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {filteredServices.length === 0 && (
-              <div className="card md:col-span-2 xl:col-span-3">
-                <p className="text-center text-slate-400">{t('clientBrowse.noServices')}</p>
-              </div>
-            )}
-            {filteredServices.map((service: ServiceWithCategory) => (
-              <div key={service.id} className="card flex h-full flex-col justify-between">
-                <div>
-                  <span className={`badge ${getCategoryColor(service.category_id).badge}`}>
-                    {getCategoryPath(service.category_id)}
-                  </span>
-                  <h2 className="mt-3 text-lg font-semibold text-slate-900">{service.name}</h2>
-                  <p className="mt-2 text-sm leading-6 text-slate-500">
-                    {service.description || t('clientBrowse.serviceFallback')}
-                  </p>
-                  <div className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2">
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                        {t('clientBrowse.providerRatingLabel')}
-                      </p>
-                      <p className="text-[10px] text-slate-400 leading-tight">
-                        {t('clientBrowse.providerRatingNote')}
-                      </p>
-                      <div className="mt-1 flex items-center gap-2 text-sm text-slate-600">
-                        <StarRating value={service.avg_rating ?? 0} readonly size="sm" />
-                        <span>
-                          {service.ratings_count && service.ratings_count > 0
-                            ? `${(service.avg_rating ?? 0).toFixed(1)} (${service.ratings_count})`
-                            : t('clientBrowse.noRatingsYet')}
-                        </span>
-                      </div>
+          {/* Filter Card - Floating over map */}
+          <div className="absolute top-4 right-4 w-96 bg-white rounded-lg shadow-xl p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">{t('clientBrowse.nearbyProvidersMapTitle')}</h2>
+            
+            {/* Root Category Select */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                {t('clientBrowse.selectParentCategory')}
+              </label>
+              <select
+                className="input w-full"
+                value={selectedRootCategory || ''}
+                onChange={(e) => setSelectedRootCategory(e.target.value || null)}
+              >
+                <option value="">{t('common.all')}</option>
+                {topLevelCategories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Subcategory Select */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                {t('clientBrowse.selectSubcategory')}
+              </label>
+              <select
+                className="input w-full"
+                value={selectedSubcategory || ''}
+                onChange={(e) => setSelectedSubcategory(e.target.value || null)}
+                disabled={!selectedRootCategory}
+              >
+                <option value="">
+                  {!selectedRootCategory 
+                    ? t('clientBrowse.noSubcategoriesAvailable')
+                    : subcategoriesForSelectedRoot.length === 0 
+                    ? t('clientBrowse.noSubcategoriesAvailable')
+                    : t('clientBrowse.selectSubcategory')}
+                </option>
+                {subcategoriesForSelectedRoot.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Service Select */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                {t('clientBrowse.selectService')}
+              </label>
+              <select
+                className="input w-full"
+                value={selectedService || ''}
+                onChange={(e) => setSelectedService(e.target.value || null)}
+                disabled={!selectedSubcategory}
+              >
+                <option value="">
+                  {!selectedSubcategory 
+                    ? t('clientBrowse.noServicesAvailable')
+                    : servicesForSelectedSubcategory.length === 0 
+                    ? t('clientBrowse.noServicesAvailable')
+                    : t('clientBrowse.selectService')}
+                </option>
+                {servicesForSelectedSubcategory.map((service) => (
+                  <option key={service.id} value={service.id}>
+                    {service.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Service Details & Request Button */}
+            {selectedServiceData && (
+              <div className="mt-6 pt-6 border-t border-slate-200">
+                <div className="mb-4">
+                  <h3 className="font-semibold text-slate-900">{selectedServiceData.name}</h3>
+                  <p className="text-sm text-slate-600 mt-1">{selectedServiceData.description}</p>
+                  
+                  {selectedServiceData.avg_rating !== undefined && selectedServiceData.ratings_count !== undefined && (
+                    <div className="mt-3 flex items-center gap-2 text-sm">
+                      <StarRating value={selectedServiceData.avg_rating ?? 0} readonly size="sm" />
+                      <span className="text-slate-600">
+                        {selectedServiceData.ratings_count && selectedServiceData.ratings_count > 0
+                          ? `${(selectedServiceData.avg_rating ?? 0).toFixed(1)} (${selectedServiceData.ratings_count})`
+                          : t('clientBrowse.noRatingsYet')}
+                      </span>
                     </div>
-                    <div className="text-right text-xs text-slate-500">
-                      <p className="font-medium text-slate-700">{service.providers_count ?? 0}</p>
-                      <p>{t('clientBrowse.providersAvailable')}</p>
-                    </div>
-                  </div>
+                  )}
+
+                  {selectedServiceData.providers_count !== undefined && (
+                    <p className="text-xs text-slate-500 mt-2">
+                      {selectedServiceData.providers_count} {t('clientBrowse.providersAvailable')}
+                    </p>
+                  )}
                 </div>
-                <Link to={`/client/request/${service.id}`} className="btn-primary mt-6 w-full justify-center">
-                  {t('clientBrowse.requestService')}
+
+                <Link 
+                  to={`/client/request/${selectedServiceData.id}`} 
+                  className="btn-primary w-full justify-center"
+                >
+                  {t('clientBrowse.requestServiceButton')}
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
-            ))}
+            )}
           </div>
-        </>
+        </div>
       )}
     </Layout>
   );
