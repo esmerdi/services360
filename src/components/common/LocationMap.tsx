@@ -9,6 +9,8 @@ export interface LocationMapMarker {
   longitude: number;
   label: string;
   description?: string;
+  ratingText?: string;
+  hasRating?: boolean;
   color?: string;
   radius?: number;
   glyph?: string;
@@ -101,10 +103,15 @@ export default function LocationMap({ markers, heightClassName = 'h-80', enableC
                     <img
                       src={marker.imageUrl}
                       alt={marker.label}
-                      className="mb-2 h-28 w-full rounded-md object-cover"
+                      className="mx-auto mb-2 h-16 w-16 rounded-full border-2 border-slate-200 object-cover"
                     />
                   ) : null}
                   <p className="font-semibold text-slate-900">{marker.label}</p>
+                  {marker.ratingText ? (
+                    <p className={`mt-1 text-sm font-medium ${marker.hasRating ? 'text-amber-600' : 'text-slate-400'}`}>
+                      {marker.ratingText}
+                    </p>
+                  ) : null}
                   {marker.description ? <p className="mt-1 text-sm text-slate-600">{marker.description}</p> : null}
                 </div>
               </Popup>

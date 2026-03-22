@@ -37,6 +37,8 @@ type NearbyProviderMap = {
   root_category_ids: string[];
   distance_km?: number;
   avatar_url?: string | null;
+  avg_rating?: number;
+  ratings_count?: number;
 };
 
 const CATEGORY_PALETTE = [
@@ -184,6 +186,7 @@ export default function ClientBrowse() {
             if (!location) return acc;
             const rootCategoryIds = Array.from(rootCategoriesByProvider.get(provider.id) ?? []);
             if (rootCategoryIds.length === 0) return acc;
+            const providerStats = providerRatingMap.get(provider.id);
 
             acc.push({
               id: provider.id,
@@ -196,6 +199,8 @@ export default function ClientBrowse() {
               },
               root_category_ids: rootCategoryIds,
               avatar_url: provider.avatar_url || null,
+              avg_rating: providerStats && providerStats.count > 0 ? providerStats.total / providerStats.count : 0,
+              ratings_count: providerStats?.count ?? 0,
               distance_km: coords 
                 ? haversineDistance(
                     coords.latitude,
@@ -376,12 +381,18 @@ export default function ClientBrowse() {
       const distanceLabel = provider.distance_km !== undefined
         ? formatDistance(provider.distance_km)
         : t('clientRequestService.distanceUnavailable');
+      const hasRating = Boolean(provider.ratings_count && provider.ratings_count > 0);
+      const ratingLabel = hasRating
+        ? `⭐ ${(provider.avg_rating ?? 0).toFixed(1)} (${provider.ratings_count})`
+        : `☆ ${t('clientBrowse.noRatingsYet')}`;
 
       return {
         id: provider.id,
         latitude: provider.location.latitude,
         longitude: provider.location.longitude,
         label: provider.full_name || provider.email,
+        ratingText: ratingLabel,
+        hasRating,
         description: `${rootCategory?.name || t('clientBrowse.generalCategory')} • ${distanceLabel}`,
         color: getCategoryMarkerColor(markerRootCategoryId),
         glyph: getCategoryMarkerGlyph(rootCategory?.icon, rootCategory?.name),
