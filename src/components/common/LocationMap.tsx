@@ -16,6 +16,8 @@ export interface LocationMapMarker {
   serviceText?: string;
   actionUrl?: string;
   actionLabel?: string;
+  actionServiceId?: string;
+  actionProviderId?: string;
   color?: string;
   radius?: number;
   glyph?: string;
@@ -26,6 +28,8 @@ interface LocationMapProps {
   markers: LocationMapMarker[];
   heightClassName?: string;
   enableClustering?: boolean;
+  onMarkerActionClick?: (marker: LocationMapMarker) => void | Promise<void>;
+  actionLoadingMarkerId?: string | null;
 }
 
 function FitMapBounds({ markers }: { markers: LocationMapMarker[] }) {
@@ -74,7 +78,13 @@ function markerIcon(marker: LocationMapMarker) {
   });
 }
 
-export default function LocationMap({ markers, heightClassName = 'h-80', enableClustering = true }: LocationMapProps) {
+export default function LocationMap({
+  markers,
+  heightClassName = 'h-80',
+  enableClustering = true,
+  onMarkerActionClick,
+  actionLoadingMarkerId = null,
+}: LocationMapProps) {
   if (markers.length === 0) {
     return null;
   }
@@ -124,15 +134,28 @@ export default function LocationMap({ markers, heightClassName = 'h-80', enableC
                     </span>
                   ) : null}
                   {marker.description ? <p className="mt-1 text-sm leading-tight text-slate-600">{marker.description}</p> : null}
-                  {marker.actionUrl && marker.actionLabel ? (
-                    <a
-                      href={marker.actionUrl}
-                      className="btn-primary mt-2 flex w-full items-center justify-center gap-2 text-sm !text-white visited:!text-white hover:!text-white focus:!text-white no-underline"
-                      style={{ color: '#ffffff' }}
-                    >
-                      <FilePlus2 className="h-4 w-4" />
-                      {marker.actionLabel}
-                    </a>
+                  {marker.actionLabel ? (
+                    onMarkerActionClick && marker.actionServiceId && marker.actionProviderId ? (
+                      <button
+                        type="button"
+                        onClick={() => void onMarkerActionClick(marker)}
+                        disabled={actionLoadingMarkerId === marker.id}
+                        className="btn-primary mt-2 flex w-full items-center justify-center gap-2 text-sm !text-white visited:!text-white hover:!text-white focus:!text-white no-underline disabled:opacity-70"
+                        style={{ color: '#ffffff' }}
+                      >
+                        <FilePlus2 className="h-4 w-4" />
+                        {actionLoadingMarkerId === marker.id ? '...' : marker.actionLabel}
+                      </button>
+                    ) : marker.actionUrl ? (
+                      <a
+                        href={marker.actionUrl}
+                        className="btn-primary mt-2 flex w-full items-center justify-center gap-2 text-sm !text-white visited:!text-white hover:!text-white focus:!text-white no-underline"
+                        style={{ color: '#ffffff' }}
+                      >
+                        <FilePlus2 className="h-4 w-4" />
+                        {marker.actionLabel}
+                      </a>
+                    ) : null
                   ) : null}
                 </div>
               </Popup>

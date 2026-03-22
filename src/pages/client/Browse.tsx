@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import LocationMap from '../../components/common/LocationMap';
 import StarRating from '../../components/common/StarRating';
+import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
 import { useLocation } from '../../context/LocationContext';
 import { supabase } from '../../lib/supabase';
@@ -54,6 +55,8 @@ const CATEGORY_PALETTE = [
 ] as const;
 
 export default function ClientBrowse() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const { t } = useI18n();
   const { coords, refresh } = useLocation();
   const [categories, setCategories] = useState<Category[]>([]);
@@ -61,6 +64,7 @@ export default function ClientBrowse() {
   const [nearbyProviders, setNearbyProviders] = useState<NearbyProviderMap[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [quickRequestingMarkerId, setQuickRequestingMarkerId] = useState<string | null>(null);
   const [selectedRootCategory, setSelectedRootCategory] = useState<string | null>(null);
   const [selectedService, setSelectedService] = useState<string | null>(null);
 
@@ -425,6 +429,8 @@ export default function ClientBrowse() {
         description: distanceLabel,
         actionUrl: markerService ? `/client/request/${markerService.id}` : undefined,
         actionLabel: t('clientBrowse.popupRequestShortcut'),
+        actionServiceId: markerService?.id,
+        actionProviderId: provider.id,
         color: getCategoryMarkerColor(markerRootCategoryId),
         glyph: getCategoryMarkerGlyph(rootCategory?.icon, rootCategory?.name),
         imageUrl: resolveAvatarUrl(provider.avatar_url),
@@ -446,6 +452,35 @@ export default function ClientBrowse() {
 
     return markers;
   }, [categoryMap, coords, filteredNearbyProviders, resolveAvatarUrl, selectedRootCategoryId, selectedService, t]);
+
+  const handleQuickRequest = useCallback(async (marker: LocationMapMarker) => {
+    if (!user || !marker.actionServiceId || !marker.actionProviderId || !coords) {
+      setError(t('clientRequestService.locationRequiredError'));
+      return;
+    }
+
+    setQuickRequestingMarkerId(marker.id);
+    setError(null);
+
+    const { error: requestError } = await supabase.from('service_requests').insert({
+      client_id: user.id,
+      provider_id: marker.actionProviderId,
+      service_id: marker.actionServiceId,
+      description: null,
+      latitude: coords.latitude,
+      longitude: coords.longitude,
+      address: null,
+    });
+
+    if (requestError) {
+      setError(requestError.message);
+      setQuickRequestingMarkerId(null);
+      return;
+    }
+
+    setQuickRequestingMarkerId(null);
+    navigate('/client/requests');
+  }, [coords, navigate, t, user]);
 
   return (
     <Layout navItems={CLIENT_NAV} title="Browse Services">
@@ -480,6 +515,8 @@ export default function ClientBrowse() {
                 markers={nearbyProviderMarkers} 
                 heightClassName="h-96 lg:h-[600px]"
                 enableClustering={nearbyProviderMarkers.length > 8}
+                onMarkerActionClick={handleQuickRequest}
+                actionLoadingMarkerId={quickRequestingMarkerId}
               />
             )}
           </div>
