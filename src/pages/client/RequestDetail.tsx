@@ -172,7 +172,7 @@ export default function ClientRequestDetail() {
         latitude: request.latitude,
         longitude: request.longitude,
         label: request.service?.name || t('clientRequestDetail.serviceRequest'),
-        description: `${getCategoryPath(request.service?.category_id)} | ${request.address || t('clientRequestDetail.notProvided')}`,
+        description: `${getCategoryPath(request.service?.category_id)} • ${request.address || t('clientRequestDetail.notProvided')}`,
         color: getCategoryMarkerColor(request.service?.category_id),
         radius: 10,
         glyph: getCategoryMarkerGlyph(request.service?.category?.icon, request.service?.category?.name),
@@ -269,6 +269,7 @@ export default function ClientRequestDetail() {
                 <div className="rounded-xl bg-slate-50 p-4">
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{t('clientRequestDetail.created')}</p>
                   <p className="mt-2 font-medium text-slate-900">{formatDateTime(request.created_at, language)}</p>
+                  <p className="mt-4 text-xs font-medium uppercase tracking-wide text-slate-500">{t('clientRequestDetail.address')}</p>
                   <p className="mt-1 text-sm text-slate-500">{request.address || t('clientRequestDetail.notProvided')}</p>
                 </div>
               </div>
@@ -313,7 +314,7 @@ export default function ClientRequestDetail() {
 
               {requestMarkers.length > 0 && (
                 <div className="mt-5 space-y-3">
-                  <p className="text-sm font-medium text-slate-800">Mapa</p>
+                  <p className="text-sm font-medium text-slate-800">{t('clientRequestDetail.locationMap')}</p>
                   <LocationMap markers={requestMarkers} heightClassName="h-72" />
                 </div>
               )}
