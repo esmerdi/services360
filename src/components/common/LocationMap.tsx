@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
+import { FilePlus2 } from 'lucide-react';
 import { divIcon, latLngBounds, point } from 'leaflet';
 
 export interface LocationMapMarker {
@@ -102,7 +103,7 @@ export default function LocationMap({ markers, heightClassName = 'h-80', enableC
               icon={markerIcon(marker)}
             >
               <Popup>
-                <div className="w-full min-w-[160px]">
+                <div className="w-full min-w-[160px] leading-tight">
                   {marker.imageUrl ? (
                     <img
                       src={marker.imageUrl}
@@ -110,17 +111,22 @@ export default function LocationMap({ markers, heightClassName = 'h-80', enableC
                       className="mx-auto mb-2 h-16 w-16 rounded-full border-2 border-slate-200 object-cover"
                     />
                   ) : null}
-                  <p className="font-semibold text-slate-900">{marker.label}</p>
+                  <p className="font-semibold text-slate-900 leading-tight">{marker.label}</p>
                   {marker.ratingText ? (
-                    <p className={`mt-1 text-sm font-medium ${marker.hasRating ? 'text-amber-600' : 'text-slate-400'}`}>
+                    <p className={`mt-0.5 text-sm font-medium leading-tight ${marker.hasRating ? 'text-amber-600' : 'text-slate-400'}`}>
                       {marker.ratingText}
                     </p>
                   ) : null}
-                  {marker.categoryText ? <p className="mt-1 text-sm text-slate-600">{marker.categoryText}</p> : null}
-                  {marker.serviceText ? <p className="mt-1 text-sm text-slate-700">{marker.serviceText}</p> : null}
-                  {marker.description ? <p className="mt-1 text-sm text-slate-600">{marker.description}</p> : null}
+                  {marker.categoryText ? <p className="mt-0.5 text-sm leading-tight text-slate-600">{marker.categoryText}</p> : null}
+                  {marker.serviceText ? (
+                    <span className="mt-1 inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium leading-tight text-blue-700">
+                      {marker.serviceText}
+                    </span>
+                  ) : null}
+                  {marker.description ? <p className="mt-1 text-sm leading-tight text-slate-600">{marker.description}</p> : null}
                   {marker.actionUrl && marker.actionLabel ? (
-                    <a href={marker.actionUrl} className="btn-primary mt-3 w-full justify-center text-sm">
+                    <a href={marker.actionUrl} className="btn-primary mt-2 flex w-full items-center justify-center gap-2 text-sm text-white">
+                      <FilePlus2 className="h-4 w-4" />
                       {marker.actionLabel}
                     </a>
                   ) : null}
