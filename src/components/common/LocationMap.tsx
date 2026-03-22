@@ -125,7 +125,11 @@ export default function LocationMap({ markers, heightClassName = 'h-80', enableC
                   ) : null}
                   {marker.description ? <p className="mt-1 text-sm leading-tight text-slate-600">{marker.description}</p> : null}
                   {marker.actionUrl && marker.actionLabel ? (
-                    <a href={marker.actionUrl} className="btn-primary mt-2 flex w-full items-center justify-center gap-2 text-sm text-white">
+                    <a
+                      href={marker.actionUrl}
+                      className="btn-primary mt-2 flex w-full items-center justify-center gap-2 text-sm !text-white visited:!text-white hover:!text-white focus:!text-white no-underline"
+                      style={{ color: '#ffffff' }}
+                    >
                       <FilePlus2 className="h-4 w-4" />
                       {marker.actionLabel}
                     </a>
