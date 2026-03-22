@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MapPin } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -28,6 +29,7 @@ type NearbyRequestRpcRow = { id: string; distance_km: number };
 
 export default function ProviderNearbyRequests() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { language } = useI18n();
   const { coords, refresh } = useLocation();
   const [requests, setRequests] = useState<NearbyRequest[]>([]);
@@ -106,14 +108,16 @@ export default function ProviderNearbyRequests() {
     fetchRequests();
   }, [coords, user]);
 
-  async function acceptRequest(requestId: string) {
+  async function acceptRequest(requestId: string, redirectToJobs = false) {
     if (!user) return;
     setActingId(requestId);
-    const { error: updateError } = await supabase
+    const { data: updatedRequest, error: updateError } = await supabase
       .from('service_requests')
       .update({ provider_id: user.id, status: 'accepted' })
       .eq('id', requestId)
-      .is('provider_id', null);
+      .is('provider_id', null)
+      .select('id')
+      .maybeSingle();
     setActingId(null);
 
     if (updateError) {
@@ -121,7 +125,16 @@ export default function ProviderNearbyRequests() {
       return;
     }
 
+    if (!updatedRequest) {
+      setError(es ? 'La solicitud ya no esta disponible.' : 'The request is no longer available.');
+      return;
+    }
+
     setRequests((current) => current.filter((request) => request.id !== requestId));
+
+    if (redirectToJobs) {
+      navigate('/provider/jobs');
+    }
   }
 
   const es = language === 'es';
@@ -193,7 +206,7 @@ export default function ProviderNearbyRequests() {
             <LocationMap
               markers={requestMarkers}
               enableClustering={requestMarkers.length > 8}
-              onMarkerActionClick={(marker: LocationMapMarker) => acceptRequest(marker.actionRequestId ?? marker.id)}
+              onMarkerActionClick={(marker: LocationMapMarker) => acceptRequest(marker.actionRequestId ?? marker.id, true)}
               actionLoadingMarkerId={actingId}
             />
           </div>

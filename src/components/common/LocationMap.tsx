@@ -139,7 +139,11 @@ export default function LocationMap({
                     onMarkerActionClick && (Boolean(marker.actionRequestId) || (Boolean(marker.actionServiceId) && Boolean(marker.actionProviderId))) ? (
                       <button
                         type="button"
-                        onClick={() => void onMarkerActionClick(marker)}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          void onMarkerActionClick(marker);
+                        }}
                         disabled={actionLoadingMarkerId === marker.id}
                         className="btn-primary mt-2 flex w-full items-center justify-center gap-2 text-sm !text-white visited:!text-white hover:!text-white focus:!text-white no-underline disabled:opacity-70"
                         style={{ color: '#ffffff' }}
