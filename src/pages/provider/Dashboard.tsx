@@ -87,7 +87,7 @@ export default function ProviderDashboard() {
           <div className="flex items-start gap-3">
             <MapPin className="mt-0.5 h-5 w-5 text-blue-600" />
             <div>
-              <p className="font-medium text-slate-900">{es ? 'Ubicacion del proveedor' : 'Provider location'}</p>
+              <p className="font-medium text-slate-900">{es ? 'Tu ubicacion' : 'Your location'}</p>
               <p className="mt-1 text-sm text-slate-500">
                 {locationLoading
                   ? (es ? 'Obteniendo ubicacion actual...' : 'Getting current position...')
