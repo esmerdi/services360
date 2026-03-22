@@ -11,6 +11,7 @@ import { useLocation } from '../../context/LocationContext';
 import { supabase } from '../../lib/supabase';
 import type { LocationMapMarker } from '../../components/common/LocationMap';
 import { formatDistance, haversineDistance } from '../../utils/distance';
+import { extractManagedAvatarPath } from '../../utils/helpers';
 import { getCategoryMarkerColor, getCategoryMarkerGlyph } from '../../utils/mapMarkers';
 import type { Category, Service } from '../../types';
 
@@ -35,7 +36,7 @@ type NearbyProviderMap = {
   location: { latitude: number; longitude: number; address: string | null };
   root_category_ids: string[];
   distance_km?: number;
-  image_url?: string | null;
+  avatar_url?: string | null;
 };
 
 const CATEGORY_PALETTE = [
@@ -59,6 +60,18 @@ export default function ClientBrowse() {
   const [error, setError] = useState<string | null>(null);
   const [selectedRootCategory, setSelectedRootCategory] = useState<string | null>(null);
   const [selectedService, setSelectedService] = useState<string | null>(null);
+
+  const resolveAvatarUrl = useCallback((value: string | null | undefined): string | undefined => {
+    if (!value) return undefined;
+
+    const objectPath = extractManagedAvatarPath(value);
+    if (!objectPath) {
+      return value;
+    }
+
+    const { data } = supabase.storage.from('avatars').getPublicUrl(objectPath);
+    return data.publicUrl || value;
+  }, []);
 
   useEffect(() => {
     // Reset service when root category changes
@@ -135,7 +148,7 @@ export default function ClientBrowse() {
 
         const { data: providerUsers, error: providerUsersError } = await supabase
           .from('users')
-          .select('id, full_name, email, role, is_available, image_url')
+          .select('id, full_name, email, role, is_available, avatar_url')
           .in('id', providerIds)
           .eq('role', 'provider')
           .eq('is_available', true);
@@ -165,7 +178,7 @@ export default function ClientBrowse() {
           ])
         );
 
-        const providerMapRows = ((providerUsers as Array<{ id: string; full_name: string | null; email: string; image_url?: string | null }>) ?? []).reduce<NearbyProviderMap[]>(
+        const providerMapRows = ((providerUsers as Array<{ id: string; full_name: string | null; email: string; avatar_url?: string | null }>) ?? []).reduce<NearbyProviderMap[]>(
           (acc, provider) => {
             const location = locationMap.get(provider.id);
             if (!location) return acc;
@@ -182,7 +195,7 @@ export default function ClientBrowse() {
                 address: location.address,
               },
               root_category_ids: rootCategoryIds,
-              image_url: provider.image_url || null,
+              avatar_url: provider.avatar_url || null,
               distance_km: coords 
                 ? haversineDistance(
                     coords.latitude,
@@ -372,7 +385,7 @@ export default function ClientBrowse() {
         description: `${rootCategory?.name || t('clientBrowse.generalCategory')} • ${distanceLabel}`,
         color: getCategoryMarkerColor(markerRootCategoryId),
         glyph: getCategoryMarkerGlyph(rootCategory?.icon, rootCategory?.name),
-        imageUrl: provider.image_url || undefined,
+        imageUrl: resolveAvatarUrl(provider.avatar_url),
       };
     });
 
@@ -390,7 +403,7 @@ export default function ClientBrowse() {
     }
 
     return markers;
-  }, [categoryMap, coords, filteredNearbyProviders, selectedRootCategoryId, t]);
+  }, [categoryMap, coords, filteredNearbyProviders, resolveAvatarUrl, selectedRootCategoryId, t]);
 
   return (
     <Layout navItems={CLIENT_NAV} title="Browse Services">
