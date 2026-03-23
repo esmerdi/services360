@@ -403,10 +403,6 @@ export default function ProviderNearbyRequests() {
                     <p className="font-medium text-slate-800">{es ? 'Distancia' : 'Distance'}</p>
                     <p className="mt-1">{request.distance_km !== undefined ? formatDistance(request.distance_km) : (es ? 'No disponible' : 'Unavailable')}</p>
                   </div>
-                  <div className="surface-muted text-sm text-slate-600">
-                    <p className="font-medium text-slate-800">{es ? 'Ubicacion' : 'Location'}</p>
-                    <p className="mt-1">{request.latitude !== null && request.latitude !== undefined && request.longitude !== null && request.longitude !== undefined ? `${request.latitude.toFixed(5)}, ${request.longitude.toFixed(5)}` : (es ? 'No disponible' : 'Unavailable')}</p>
-                  </div>
                 </div>
 
                 <p className="mt-4 text-sm text-slate-500">{request.address || (es ? 'Sin referencia de direccion.' : 'No address reference supplied.')}</p>
