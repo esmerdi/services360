@@ -1,8 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  Menu,
-  X,
   LogOut,
   LayoutDashboard,
   ChevronDown,
@@ -24,11 +22,20 @@ import {
 import clsx from 'clsx';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
+import { supabase } from '../../lib/supabase';
 import LanguageSwitcher from '../common/LanguageSwitcher';
 import UserAvatar from '../common/UserAvatar';
 
 interface NavItem {
   label: string;
+  to: string;
+}
+
+interface NavbarNotification {
+  id: string;
+  requestId: string;
+  title: string;
+  description: string;
   to: string;
 }
 
@@ -100,13 +107,109 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-
-  const notifications = useMemo(
-    () => [] as Array<{ id: string; title: string; description?: string }>,
-    []
-  );
+  const [notifications, setNotifications] = useState<NavbarNotification[]>([]);
 
   const quickLinks = useMemo(() => navItems.slice(0, 2), [navItems]);
+
+  useEffect(() => {
+    if (!user) {
+      setNotifications([]);
+      return;
+    }
+
+    const currentUser = user;
+
+    async function loadNotifications() {
+      const { data, error } = await supabase
+        .from('messages')
+        .select(`
+          id,
+          request_id,
+          content,
+          created_at,
+          sender_id,
+          read_at,
+          request:service_requests!messages_request_id_fkey(
+            id,
+            client_id,
+            provider_id,
+            service:services(name),
+            client:users!service_requests_client_id_fkey(full_name, email),
+            provider:users!service_requests_provider_id_fkey(full_name, email)
+          )
+        `)
+        .neq('sender_id', currentUser.id)
+        .is('read_at', null)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) {
+        return;
+      }
+
+      const rows = ((data ?? []) as unknown[]) as Array<{
+        id?: string;
+        request_id?: string;
+        content?: string;
+        request?: unknown;
+      }>;
+
+      const mapped = rows.map((item) => {
+        const requestRaw = Array.isArray(item.request) ? item.request[0] : item.request;
+        const requestData = (requestRaw ?? null) as {
+          id?: string;
+          client?: unknown;
+          provider?: unknown;
+        } | null;
+
+        const clientRaw = requestData?.client;
+        const providerRaw = requestData?.provider;
+        const clientData = (Array.isArray(clientRaw) ? clientRaw[0] : clientRaw) as { full_name?: string | null; email?: string | null } | undefined;
+        const providerData = (Array.isArray(providerRaw) ? providerRaw[0] : providerRaw) as { full_name?: string | null; email?: string | null } | undefined;
+
+        const requestId = item.request_id ?? '';
+        const content = item.content ?? '';
+
+        const senderName = currentUser.role === 'provider'
+          ? clientData?.full_name || clientData?.email || t('roles.client')
+          : providerData?.full_name || providerData?.email || t('roles.provider');
+
+        const titleText = t('common.newMessageFrom').replace('{{name}}', senderName);
+        const descriptionText = content.length > 90 ? `${content.slice(0, 90)}...` : content;
+
+        const to = currentUser.role === 'client'
+          ? `/client/requests/${requestId}`
+          : currentUser.role === 'provider'
+            ? '/provider/jobs'
+            : '/admin/requests';
+
+        return {
+          id: item.id ?? `${requestId}-${content.slice(0, 12)}`,
+          requestId,
+          title: titleText,
+          description: descriptionText,
+          to,
+        };
+      }).filter((item) => Boolean(item.requestId));
+
+      setNotifications(mapped);
+    }
+
+    void loadNotifications();
+
+    const channel = supabase
+      .channel(`navbar-notifications-${currentUser.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
+        void loadNotifications();
+      })
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [t, user]);
+
+  const unreadCount = notifications.length;
 
   useEffect(() => {
     function handleOutsideClick(event: MouseEvent) {
@@ -186,10 +289,15 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
                 aria-expanded={notificationsOpen}
               >
                 <Bell className="h-4 w-4" />
+                {unreadCount > 0 ? (
+                  <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-semibold text-white">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                ) : null}
               </button>
 
               {notificationsOpen && (
-                <div className="absolute right-0 top-12 mt-2 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ring-1 ring-slate-900/5">
+                <div className="absolute right-0 top-12 z-50 mt-2 w-[min(22rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ring-1 ring-slate-900/5 sm:w-80">
                   <div className="border-b border-slate-200 px-4 py-3">
                     <p className="text-sm font-semibold text-slate-900">{t('common.notifications')}</p>
                   </div>
@@ -199,9 +307,18 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
                     ) : (
                       <ul className="space-y-2">
                         {notifications.map((item) => (
-                          <li key={item.id} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                            <p className="text-sm font-medium text-slate-900">{item.title}</p>
-                            {item.description ? <p className="mt-1 text-xs text-slate-500">{item.description}</p> : null}
+                          <li key={item.id}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setNotificationsOpen(false);
+                                navigate(item.to);
+                              }}
+                              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left transition hover:border-sky-200 hover:bg-sky-50"
+                            >
+                              <p className="text-sm font-medium text-slate-900">{item.title}</p>
+                              {item.description ? <p className="mt-1 text-xs text-slate-500">{item.description}</p> : null}
+                            </button>
                           </li>
                         ))}
                       </ul>
@@ -329,31 +446,67 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
                 onClick={() => setNotificationsOpen((v) => !v)}
               >
                 <Bell className="h-5 w-5" />
+                {unreadCount > 0 ? (
+                  <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-semibold text-white">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                ) : null}
               </button>
 
               {notificationsOpen && (
-                <div className="absolute right-0 top-11 z-50 mt-2 w-72 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ring-1 ring-slate-900/5">
+                <div className="absolute right-0 top-11 z-50 mt-2 w-[min(20rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ring-1 ring-slate-900/5">
                   <div className="border-b border-slate-200 px-4 py-3">
                     <p className="text-sm font-semibold text-slate-900">{t('common.notifications')}</p>
                   </div>
-                  <div className="px-4 py-3">
-                    <p className="text-sm text-slate-500">{t('common.noNotifications')}</p>
+                  <div className="max-h-80 overflow-y-auto px-4 py-3">
+                    {notifications.length === 0 ? (
+                      <p className="text-sm text-slate-500">{t('common.noNotifications')}</p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {notifications.map((item) => (
+                          <li key={item.id}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setNotificationsOpen(false);
+                                setMobileOpen(false);
+                                navigate(item.to);
+                              }}
+                              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left transition hover:border-sky-200 hover:bg-sky-50"
+                            >
+                              <p className="text-sm font-medium text-slate-900">{item.title}</p>
+                              {item.description ? <p className="mt-1 text-xs text-slate-500">{item.description}</p> : null}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 </div>
               )}
             </div>
+            <button
+              type="button"
+              onClick={() => {
+                setMobileOpen((v) => !v);
+                setNotificationsOpen(false);
+              }}
+              className="flex items-center gap-1 rounded-2xl border border-slate-200 bg-white px-1.5 py-1.5 shadow-sm transition-all hover:shadow-md"
+              aria-label={t('common.openProfileMenu')}
+              aria-expanded={mobileOpen}
+            >
               <UserAvatar
                 avatarUrl={user?.avatar_url}
                 name={user?.full_name || user?.email}
                 className="h-8 w-8 overflow-hidden rounded-full bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center flex-shrink-0"
                 fallbackClassName="text-white text-[10px] font-semibold"
               />
-            <button
-              className="btn-ghost p-2"
-              onClick={() => setMobileOpen((v) => !v)}
-              aria-label={t('common.toggleMenu')}
-            >
-              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              <ChevronDown
+                className={clsx(
+                  'h-4 w-4 text-slate-500 transition-transform',
+                  mobileOpen && 'rotate-180'
+                )}
+              />
             </button>
           </div>
         </div>
