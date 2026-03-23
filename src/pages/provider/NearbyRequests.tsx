@@ -5,6 +5,7 @@ import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import LocationMap from '../../components/common/LocationMap';
+import UserAvatar from '../../components/common/UserAvatar';
 import type { LocationMapMarker } from '../../components/common/LocationMap';
 import StatusBadge from '../../components/common/StatusBadge';
 import { supabase } from '../../lib/supabase';
@@ -379,9 +380,18 @@ export default function ProviderNearbyRequests() {
             {requests.map((request) => (
               <div key={request.id} className="card">
                 <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-sm text-slate-500">{request.service?.name || (es ? 'Solicitud de servicio' : 'Service Request')}</p>
-                    <h2 className="mt-1 text-lg font-semibold text-slate-900">{request.client?.full_name || (es ? 'Solicitud de cliente' : 'Client request')}</h2>
+                  <div className="flex min-w-0 items-start gap-3">
+                    <UserAvatar
+                      avatarUrl={request.client?.avatar_url}
+                      name={request.client?.full_name || request.client?.email || (es ? 'Cliente' : 'Client')}
+                      alt={request.client?.full_name || request.client?.email || (es ? 'Cliente' : 'Client')}
+                      className="h-11 w-11 overflow-hidden rounded-full border border-slate-200 bg-slate-100"
+                      fallbackClassName="text-xs font-semibold text-slate-600"
+                    />
+                    <div className="min-w-0">
+                      <p className="text-sm text-slate-500">{request.service?.name || (es ? 'Solicitud de servicio' : 'Service Request')}</p>
+                      <h2 className="mt-1 truncate text-lg font-semibold text-slate-900">{request.client?.full_name || (es ? 'Solicitud de cliente' : 'Client request')}</h2>
+                    </div>
                   </div>
                   <StatusBadge status={request.status} />
                 </div>
