@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Send, X } from 'lucide-react';
 import UserAvatar from './UserAvatar';
 import { supabase } from '../../lib/supabase';
@@ -31,6 +32,7 @@ export default function ChatWindow({
   const [sending, setSending] = useState(false);
   const [isOtherTyping, setIsOtherTyping] = useState(false);
   const [chatNotice, setChatNotice] = useState<string | null>(null);
+  const [portalReady, setPortalReady] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -159,6 +161,10 @@ export default function ChatWindow({
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    setPortalReady(true);
+  }, []);
+
   // Auto-resize textarea
   function handleTextChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
     const value = e.target.value;
@@ -202,8 +208,12 @@ export default function ChatWindow({
     }
   }
 
+  if (!portalReady || typeof document === 'undefined') {
+    return null;
+  }
+
   if (!isOpen) {
-    return chatNotice ? (
+    return chatNotice ? createPortal(
       <div className="fixed bottom-6 right-6 z-40 w-[calc(100%-2rem)] max-w-sm rounded-xl border border-sky-200 bg-white p-4 shadow-xl sm:w-full">
         <p className="text-sm font-medium text-slate-900">{otherUserName ?? t('chat.unknownUser')}</p>
         <p className="mt-1 text-sm text-slate-600">{chatNotice}</p>
@@ -219,11 +229,12 @@ export default function ChatWindow({
         >
           {t('chat.openChat')}
         </button>
-      </div>
+      </div>,
+      document.body
     ) : null;
   }
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-end sm:p-4">
       {/* Backdrop */}
       <div
@@ -321,6 +332,7 @@ export default function ChatWindow({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
