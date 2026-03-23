@@ -297,11 +297,11 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
               </button>
 
               {notificationsOpen && (
-                <div className="absolute right-0 top-12 z-50 mt-2 w-[min(22rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ring-1 ring-slate-900/5 sm:w-80">
+                <div className="fixed left-2 right-2 top-20 z-50 w-auto overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ring-1 ring-slate-900/5 md:absolute md:left-auto md:right-0 md:top-12 md:mt-2 md:w-80">
                   <div className="border-b border-slate-200 px-4 py-3">
                     <p className="text-sm font-semibold text-slate-900">{t('common.notifications')}</p>
                   </div>
-                  <div className="max-h-80 overflow-y-auto px-4 py-3">
+                  <div className="max-h-[70vh] overflow-y-auto px-4 py-3 md:max-h-80">
                     {notifications.length === 0 ? (
                       <p className="text-sm text-slate-500">{t('common.noNotifications')}</p>
                     ) : (
@@ -454,11 +454,11 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
               </button>
 
               {notificationsOpen && (
-                <div className="absolute right-0 top-11 z-50 mt-2 w-[min(20rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ring-1 ring-slate-900/5">
+                <div className="fixed left-2 right-2 top-20 z-50 w-auto overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ring-1 ring-slate-900/5">
                   <div className="border-b border-slate-200 px-4 py-3">
                     <p className="text-sm font-semibold text-slate-900">{t('common.notifications')}</p>
                   </div>
-                  <div className="max-h-80 overflow-y-auto px-4 py-3">
+                  <div className="max-h-[70vh] overflow-y-auto px-4 py-3">
                     {notifications.length === 0 ? (
                       <p className="text-sm text-slate-500">{t('common.noNotifications')}</p>
                     ) : (
