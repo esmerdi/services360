@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Camera, CheckCircle2, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -22,6 +22,13 @@ const DIAL_CODES = [
 ] as const;
 
 type DialCode = (typeof DIAL_CODES)[number]['code'];
+
+type AddressSuggestion = {
+  id: string;
+  label: string;
+  latitude: number;
+  longitude: number;
+};
 
 // Try longest dial code first to avoid partial matches (+593 before +5)
 const DIAL_CODES_SORTED_DESC = [...DIAL_CODES].sort((a, b) => b.code.length - a.code.length);
@@ -64,11 +71,17 @@ export default function ProfileEditor() {
   const [dialCode, setDialCode]       = useState<DialCode>('+57');
   const [localNumber, setLocalNumber] = useState('');
   const [address, setAddress]         = useState('');
+  const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([]);
+  const [addressLoading, setAddressLoading] = useState(false);
+  const [addressFocused, setAddressFocused] = useState(false);
+  const [selectedAddressCoords, setSelectedAddressCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarFile, setAvatarFile]   = useState<File | null>(null);
   const [saving, setSaving]           = useState(false);
   const [error, setError]             = useState<string | null>(null);
   const [success, setSuccess]         = useState(false);
+  const skipAutocompleteRef = useRef(false);
+  const addressWrapRef = useRef<HTMLDivElement>(null);
 
   // Sync form from user when user loads or changes identity
   useEffect(() => {
@@ -78,9 +91,89 @@ export default function ProfileEditor() {
     setDialCode(parsed.dialCode);
     setLocalNumber(parsed.localNumber);
     setAddress(user.address ?? '');
+    setSelectedAddressCoords(null);
     setAvatarPreview(isManagedAvatarUrl(user.avatar_url) ? user.avatar_url : null);
     setAvatarFile(null);
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    function handleDocumentClick(event: MouseEvent) {
+      if (!addressWrapRef.current) return;
+      if (!addressWrapRef.current.contains(event.target as Node)) {
+        setAddressFocused(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleDocumentClick);
+    return () => document.removeEventListener('mousedown', handleDocumentClick);
+  }, []);
+
+  useEffect(() => {
+    if (skipAutocompleteRef.current) {
+      skipAutocompleteRef.current = false;
+      return;
+    }
+
+    const query = address.trim();
+    if (query.length < 3) {
+      setAddressSuggestions([]);
+      setAddressLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        setAddressLoading(true);
+        const languageCode = es ? 'es' : 'en';
+        const params = new URLSearchParams({
+          format: 'jsonv2',
+          addressdetails: '0',
+          limit: '5',
+          'accept-language': languageCode,
+          q: query,
+        });
+
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Address search failed: ${response.status}`);
+        }
+
+        const data = (await response.json()) as Array<{ place_id: number; display_name: string; lat: string; lon: string }>;
+        const nextSuggestions = data.map((item) => ({
+          id: String(item.place_id),
+          label: item.display_name,
+          latitude: Number(item.lat),
+          longitude: Number(item.lon),
+        }));
+
+        setAddressSuggestions(nextSuggestions);
+      } catch (searchError) {
+        if ((searchError as Error).name !== 'AbortError') {
+          setAddressSuggestions([]);
+        }
+      } finally {
+        setAddressLoading(false);
+      }
+    }, 280);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeoutId);
+    };
+  }, [address, es]);
+
+  const showAddressDropdown = useMemo(
+    () => addressFocused && (addressLoading || addressSuggestions.length > 0),
+    [addressFocused, addressLoading, addressSuggestions.length]
+  );
+  const hasVerifiedAddress = useMemo(
+    () => Boolean(selectedAddressCoords && address.trim().length > 0),
+    [selectedAddressCoords, address]
+  );
 
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -146,6 +239,24 @@ export default function ProfileEditor() {
     if (updateError) {
       setError(updateError.message);
       return;
+    }
+
+    if (selectedAddressCoords && address.trim()) {
+      const { error: locationError } = await supabase
+        .from('locations')
+        .upsert(
+          {
+            user_id: user.id,
+            latitude: selectedAddressCoords.latitude,
+            longitude: selectedAddressCoords.longitude,
+            address: address.trim(),
+          },
+          { onConflict: 'user_id' }
+        );
+
+      if (locationError) {
+        console.warn('Location save failed for selected address:', locationError.message);
+      }
     }
 
     await refreshUser();
@@ -256,7 +367,7 @@ export default function ProfileEditor() {
           </div>
 
           {/* Address */}
-          <div>
+          <div className="relative" ref={addressWrapRef}>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">
               {es ? 'Dirección' : 'Address'}
             </label>
@@ -264,9 +375,50 @@ export default function ProfileEditor() {
               type="text"
               className="input"
               value={address}
-              onChange={(e) => setAddress(e.target.value)}
+              onChange={(e) => {
+                setAddress(e.target.value);
+                setSelectedAddressCoords(null);
+              }}
+              onFocus={() => setAddressFocused(true)}
               placeholder={es ? 'Calle, barrio, ciudad' : 'Street, neighborhood, city'}
+              autoComplete="street-address"
             />
+            {hasVerifiedAddress && (
+              <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                {es ? 'Dirección verificada' : 'Verified address'}
+              </div>
+            )}
+            {showAddressDropdown && (
+              <div className="absolute z-30 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
+                {addressLoading ? (
+                  <div className="px-3 py-2 text-sm text-slate-500">
+                    {es ? 'Buscando direcciones...' : 'Searching addresses...'}
+                  </div>
+                ) : (
+                  <ul className="py-1">
+                    {addressSuggestions.map((suggestion) => (
+                      <li key={suggestion.id}>
+                        <button
+                          type="button"
+                          className="w-full px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-100"
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => {
+                            skipAutocompleteRef.current = true;
+                            setAddress(suggestion.label);
+                            setSelectedAddressCoords({ latitude: suggestion.latitude, longitude: suggestion.longitude });
+                            setAddressSuggestions([]);
+                            setAddressFocused(false);
+                          }}
+                        >
+                          {suggestion.label}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
