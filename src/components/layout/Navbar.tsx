@@ -17,6 +17,7 @@ import {
   Briefcase,
   UserCircle,
   Compass,
+  Bell,
   FileText,
   type LucideIcon,
 } from 'lucide-react';
@@ -163,6 +164,15 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
 
             <button
               type="button"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition-all hover:text-slate-900 hover:shadow-md"
+              aria-label={t('common.notifications')}
+              title={t('common.notifications')}
+            >
+              <Bell className="h-4 w-4" />
+            </button>
+
+            <button
+              type="button"
               onClick={() => setProfileMenuOpen((v) => !v)}
               className="flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-2.5 py-2.5 shadow-sm transition-all hover:shadow-md"
               aria-haspopup="menu"
@@ -263,6 +273,14 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
           <LanguageSwitcher compact />
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="btn-ghost p-2"
+              aria-label={t('common.notifications')}
+              title={t('common.notifications')}
+            >
+              <Bell className="h-5 w-5" />
+            </button>
               <UserAvatar
                 avatarUrl={user?.avatar_url}
                 name={user?.full_name || user?.email}
