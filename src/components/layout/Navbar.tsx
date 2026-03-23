@@ -331,7 +331,7 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
     <>
       <header
         className={clsx(
-          'fixed right-0 top-0 z-40 hidden h-16 items-center border-b border-slate-200 bg-white/95 px-4 backdrop-blur-sm md:flex',
+          'fixed right-0 top-0 z-[1200] hidden h-16 items-center border-b border-slate-200 bg-white/95 px-4 backdrop-blur-sm md:flex',
           sidebarOpen ? 'left-72' : 'left-0'
         )}
       >
@@ -345,7 +345,6 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
           >
             {sidebarOpen ? <ChevronLeft className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
           </button>
-
           <div className="flex items-center gap-2">
             <LanguageSwitcher mode="switch" compact />
 
@@ -429,7 +428,7 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
               </button>
 
               {profileMenuOpen && (
-                <div className="absolute right-0 top-12 z-50 mt-2 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ring-1 ring-slate-900/5">
+                <div className="absolute right-0 top-12 z-[1300] mt-2 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ring-1 ring-slate-900/5">
                 <div className="border-b border-slate-200 px-4 py-3">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-sm font-medium text-slate-600">{t('common.welcomeBack')}</p>
@@ -495,7 +494,7 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
         </div>
       </header>
 
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur-sm md:hidden">
+      <header className="sticky top-0 z-[1200] border-b border-slate-200 bg-white/95 backdrop-blur-sm md:hidden">
         <div className="flex h-16 items-center gap-3 px-4">
           <Link to="/" className="flex items-center gap-2 flex-shrink-0">
             <div className="h-8 w-8 flex items-center justify-center">
@@ -632,7 +631,7 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
       )}
 
       {mobileOpen && (
-        <div className="md:hidden border-b border-slate-200 bg-white px-4 py-3 space-y-1">
+        <div className="fixed left-0 right-0 top-16 z-[1300] border-b border-slate-200 bg-white px-4 py-3 shadow-lg md:hidden space-y-1">
           {navItems.map((item) => (
             (() => {
               const Icon = getNavIcon(item.to, item.label);
