@@ -279,11 +279,11 @@ export default function ClientRequestDetail() {
           <LoadingSpinner size="lg" />
         </div>
       ) : request ? (
-        <div className="grid gap-6 xl:grid-cols-[1.15fr,0.85fr]">
-          <div className="space-y-6">
+        <div className="grid w-full gap-6 xl:grid-cols-[1.15fr,0.85fr]">
+          <div className="min-w-0 space-y-6">
             <div className="card">
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div>
+                <div className="min-w-0">
                   <p className="text-sm text-slate-500">{request.service?.name || t('clientRequestDetail.serviceRequest')}</p>
                   <div className="mt-2">
                     <span className="inline-flex max-w-full rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
@@ -291,7 +291,7 @@ export default function ClientRequestDetail() {
                     </span>
                   </div>
                   <h1 className="mt-1 text-2xl font-bold text-slate-900">{t('clientRequestDetail.requestPrefix')} #{request.id.slice(0, 8)}</h1>
-                  <p className="mt-3 text-sm text-slate-500">{request.description || t('clientRequestDetail.noDescription')}</p>
+                  <p className="mt-3 break-words text-sm text-slate-500">{request.description || t('clientRequestDetail.noDescription')}</p>
                 </div>
                 <StatusBadge status={request.status} />
               </div>
@@ -310,7 +310,7 @@ export default function ClientRequestDetail() {
                       />
                       <div className="min-w-0">
                         <p className="font-medium text-slate-900 truncate">{request.provider.full_name || t('clientRequestDetail.awaitingProvider')}</p>
-                        <p className="mt-1 text-sm text-slate-500">{request.provider.email || t('clientRequestDetail.providerFallback')}</p>
+                        <p className="mt-1 break-all text-sm text-slate-500">{request.provider.email || t('clientRequestDetail.providerFallback')}</p>
                         <div className="mt-2 flex items-center gap-2 text-sm text-slate-500">
                           <StarRating value={request.provider.avg_rating ?? 0} readonly size="sm" />
                           <span>
@@ -332,7 +332,7 @@ export default function ClientRequestDetail() {
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{t('clientRequestDetail.created')}</p>
                   <p className="mt-2 font-medium text-slate-900">{formatDateTime(request.created_at, language)}</p>
                   <p className="mt-4 text-xs font-medium uppercase tracking-wide text-slate-500">{t('clientRequestDetail.address')}</p>
-                  <p className="mt-1 text-sm text-slate-500">{request.address || t('clientRequestDetail.notProvided')}</p>
+                  <p className="mt-1 break-words text-sm text-slate-500">{request.address || t('clientRequestDetail.notProvided')}</p>
                 </div>
               </div>
 
@@ -377,17 +377,17 @@ export default function ClientRequestDetail() {
             </div>
           </div>
 
-          <div className="space-y-6">
+          <div className="min-w-0 space-y-6">
             <div className="card">
               <h2 className="text-lg font-semibold text-slate-900">{t('clientRequestDetail.requestInfo')}</h2>
               <dl className="mt-4 space-y-3 text-sm">
-                <div className="flex justify-between gap-4">
+                <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">
                   <dt className="text-slate-500">{t('clientRequestDetail.address')}</dt>
-                  <dd className="text-right text-slate-800">{request.address || t('clientRequestDetail.notProvided')}</dd>
+                  <dd className="break-words text-slate-800 sm:text-right">{request.address || t('clientRequestDetail.notProvided')}</dd>
                 </div>
-                <div className="flex justify-between gap-4">
+                <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">
                   <dt className="text-slate-500">{t('clientRequestDetail.coordinates')}</dt>
-                  <dd className="text-right text-slate-800">
+                  <dd className="break-all text-slate-800 sm:text-right">
                     {request.latitude !== null && request.latitude !== undefined && request.longitude !== null && request.longitude !== undefined
                       ? `${request.latitude.toFixed(5)}, ${request.longitude.toFixed(5)}`
                       : t('clientRequestDetail.unavailable')}
