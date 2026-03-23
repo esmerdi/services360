@@ -43,6 +43,21 @@ export default function ClientRequestService() {
   const [budget, setBudget] = useState('');
   const [address, setAddress] = useState('');
 
+  useEffect(() => {
+    if (!user?.address) return;
+    setAddress((current) => (current.trim().length > 0 ? current : user.address ?? ''));
+  }, [user?.address]);
+
+  const addressPlaceholder = useMemo(() => {
+    if (user?.address?.trim()) {
+      return user.address;
+    }
+    if (coords) {
+      return `${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`;
+    }
+    return t('clientRequestService.addressPlaceholder');
+  }, [coords, t, user?.address]);
+
   const categoryMap = useMemo(
     () => new Map(categories.map((category) => [category.id, category] as const)),
     [categories]
@@ -340,7 +355,7 @@ export default function ClientRequestService() {
                 <label className="label">{t('clientRequestService.addressLabel')}</label>
                 <input
                   className="input"
-                  placeholder={t('clientRequestService.addressPlaceholder')}
+                  placeholder={addressPlaceholder}
                   value={address}
                   onChange={(event: React.ChangeEvent<HTMLInputElement>) => setAddress(event.target.value)}
                 />
