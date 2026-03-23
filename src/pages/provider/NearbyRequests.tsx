@@ -101,10 +101,12 @@ export default function ProviderNearbyRequests() {
         const distanceMap = new Map<string, number>(
           rpcRows.map((request: NearbyRequestRpcRow) => [request.id, request.distance_km])
         );
-        const merged = ((details as NearbyRequest[]) ?? []).map((request) => ({
-          ...request,
-          distance_km: distanceMap.get(request.id),
-        }));
+        const merged = ((details as NearbyRequest[]) ?? [])
+          .filter((request) => request.provider_id === null || request.provider_id === currentUser.id)
+          .map((request) => ({
+            ...request,
+            distance_km: distanceMap.get(request.id),
+          }));
         merged.sort((left, right) => (left.distance_km ?? Infinity) - (right.distance_km ?? Infinity));
         setRequests(merged);
       }
@@ -190,7 +192,8 @@ export default function ProviderNearbyRequests() {
       .from('service_requests')
       .update({ provider_id: user.id, status: 'accepted' })
       .eq('id', requestId)
-      .is('provider_id', null);
+      .eq('status', 'pending')
+      .or(`provider_id.is.null,provider_id.eq.${user.id}`);
 
     if (updateError) {
       setActingId(null);
@@ -225,7 +228,44 @@ export default function ProviderNearbyRequests() {
         return;
       }
 
-      if (!currentRequest || currentRequest.status !== 'pending' || currentRequest.provider_id) {
+      if (currentRequest && currentRequest.status === 'pending' && currentRequest.provider_id === user.id) {
+        const { error: confirmError } = await supabase
+          .from('service_requests')
+          .update({ status: 'accepted' })
+          .eq('id', requestId)
+          .eq('provider_id', user.id)
+          .eq('status', 'pending');
+
+        if (confirmError) {
+          setError(confirmError.message);
+          return;
+        }
+
+        const { data: confirmedRequest, error: confirmedRequestError } = await supabase
+          .from('service_requests')
+          .select('id')
+          .eq('id', requestId)
+          .eq('provider_id', user.id)
+          .eq('status', 'accepted')
+          .maybeSingle();
+
+        if (confirmedRequestError) {
+          setError(confirmedRequestError.message);
+          return;
+        }
+
+        if (confirmedRequest) {
+          setRequests((current) => current.filter((request) => request.id !== requestId));
+          setSuccessMessage(es ? 'Solicitud aceptada correctamente.' : 'Request accepted successfully.');
+
+          if (redirectToJobs) {
+            window.setTimeout(() => navigate('/provider/jobs'), 900);
+          }
+          return;
+        }
+      }
+
+      if (!currentRequest || currentRequest.status !== 'pending' || (currentRequest.provider_id && currentRequest.provider_id !== user.id)) {
         setRequests((current) => current.filter((request) => request.id !== requestId));
         setError(es ? 'La solicitud ya fue tomada o dejó de estar disponible.' : 'This request was already taken or is no longer available.');
         return;
@@ -254,7 +294,9 @@ export default function ProviderNearbyRequests() {
         serviceText: request.service?.name || (es ? 'Solicitud de servicio' : 'Service request'),
         description: request.address || (es ? 'Ubicacion del cliente' : 'Client location'),
         imageUrl: resolveAvatarUrl(request.client?.avatar_url),
-        actionLabel: es ? 'Aceptar solicitud' : 'Accept request',
+        actionLabel: request.provider_id === user?.id
+          ? (es ? 'Confirmar solicitud' : 'Confirm request')
+          : (es ? 'Aceptar solicitud' : 'Accept request'),
         actionRequestId: request.id,
         color: getCategoryMarkerColor(request.service?.category_id),
         glyph: getCategoryMarkerGlyph(request.service?.category?.icon, request.service?.category?.name),
@@ -274,7 +316,7 @@ export default function ProviderNearbyRequests() {
     }
 
     return markers;
-  }, [coords, es, requests, resolveAvatarUrl]);
+  }, [coords, es, requests, resolveAvatarUrl, user?.id]);
 
   const visibleNearbyCount = React.useMemo(() => {
     const requestIds = new Set(requests.map((request) => request.id));
@@ -412,7 +454,11 @@ export default function ProviderNearbyRequests() {
                   className="btn-primary mt-5 w-full justify-center"
                   disabled={actingId === request.id}
                 >
-                  {actingId === request.id ? <LoadingSpinner size="sm" /> : (es ? 'Aceptar solicitud' : 'Accept request')}
+                  {actingId === request.id ? <LoadingSpinner size="sm" /> : (
+                    request.provider_id === user?.id
+                      ? (es ? 'Confirmar solicitud' : 'Confirm request')
+                      : (es ? 'Aceptar solicitud' : 'Accept request')
+                  )}
                 </button>
               </div>
             ))}
