@@ -429,7 +429,7 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
               </button>
 
               {profileMenuOpen && (
-                <div className="absolute right-0 top-12 mt-2 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ring-1 ring-slate-900/5">
+                <div className="absolute right-0 top-12 z-50 mt-2 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ring-1 ring-slate-900/5">
                 <div className="border-b border-slate-200 px-4 py-3">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-sm font-medium text-slate-600">{t('common.welcomeBack')}</p>
