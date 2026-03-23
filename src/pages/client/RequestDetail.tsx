@@ -459,6 +459,7 @@ export default function ClientRequestDetail() {
           otherUserName={request.provider.full_name}
           otherUserAvatar={request.provider.avatar_url}
           isOpen={chatOpen}
+          onOpen={() => setChatOpen(true)}
           onClose={() => setChatOpen(false)}
         />
       )}

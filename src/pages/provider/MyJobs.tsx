@@ -177,6 +177,7 @@ export default function ProviderMyJobs() {
             otherUserName={chatJob.client?.full_name ?? null}
             otherUserAvatar={chatJob.client?.avatar_url ?? null}
             isOpen={true}
+            onOpen={() => setChatJobId(chatJob.id)}
             onClose={() => setChatJobId(null)}
           />
         );

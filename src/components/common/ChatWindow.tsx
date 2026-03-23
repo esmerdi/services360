@@ -12,6 +12,7 @@ interface ChatWindowProps {
   otherUserName: string | null;
   otherUserAvatar: string | null;
   isOpen: boolean;
+  onOpen?: () => void;
   onClose: () => void;
 }
 
@@ -21,14 +22,21 @@ export default function ChatWindow({
   otherUserName,
   otherUserAvatar,
   isOpen,
+  onOpen,
   onClose,
 }: ChatWindowProps) {
   const { t, language } = useI18n();
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  const [isOtherTyping, setIsOtherTyping] = useState(false);
+  const [chatNotice, setChatNotice] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const typingHideTimerRef = useRef<number | null>(null);
+  const typingDebounceRef = useRef<number | null>(null);
+  const lastTypingSentAtRef = useRef(0);
 
   const markRead = useCallback(async () => {
     await supabase
@@ -48,11 +56,30 @@ export default function ChatWindow({
     setMessages((data as Message[]) ?? []);
   }, [requestId]);
 
-  // Load messages + subscribe to realtime when open
-  useEffect(() => {
-    if (!isOpen) return;
+  const sendTypingSignal = useCallback(() => {
+    const now = Date.now();
+    if (now - lastTypingSentAtRef.current < 900) return;
+    lastTypingSentAtRef.current = now;
 
-    void loadMessages().then(() => markRead());
+    const channel = channelRef.current;
+    if (!channel) return;
+
+    void channel.send({
+      type: 'broadcast',
+      event: 'typing',
+      payload: {
+        requestId,
+        senderId: currentUserId,
+      },
+    });
+  }, [currentUserId, requestId]);
+
+  // Load messages + subscribe to realtime
+  useEffect(() => {
+    if (isOpen) {
+      void loadMessages().then(() => markRead());
+      setChatNotice(null);
+    }
 
     const channel = supabase
       .channel(`chat:${requestId}`)
@@ -71,16 +98,49 @@ export default function ChatWindow({
             return [...prev, incoming];
           });
           if (incoming.sender_id !== currentUserId) {
-            void markRead();
+            if (isOpen) {
+              void markRead();
+            } else {
+              setChatNotice(t('chat.newMessageNotification'));
+            }
           }
+        }
+      )
+      .on(
+        'broadcast',
+        { event: 'typing' },
+        ({ payload }) => {
+          const senderId = String(payload?.senderId ?? '');
+          if (!senderId || senderId === currentUserId) return;
+
+          setIsOtherTyping(true);
+          if (!isOpen) {
+            setChatNotice(t('chat.typingNotification'));
+          }
+
+          if (typingHideTimerRef.current) {
+            window.clearTimeout(typingHideTimerRef.current);
+          }
+          typingHideTimerRef.current = window.setTimeout(() => {
+            setIsOtherTyping(false);
+          }, 1800);
         }
       )
       .subscribe();
 
+    channelRef.current = channel;
+
     return () => {
+      if (typingHideTimerRef.current) {
+        window.clearTimeout(typingHideTimerRef.current);
+      }
+      if (typingDebounceRef.current) {
+        window.clearTimeout(typingDebounceRef.current);
+      }
       void supabase.removeChannel(channel);
+      channelRef.current = null;
     };
-  }, [isOpen, requestId, currentUserId, loadMessages, markRead]);
+  }, [isOpen, requestId, currentUserId, loadMessages, markRead, t]);
 
   // Auto-scroll to latest message
   useEffect(() => {
@@ -101,11 +161,21 @@ export default function ChatWindow({
 
   // Auto-resize textarea
   function handleTextChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
-    setText(e.target.value);
+    const value = e.target.value;
+    setText(value);
     const el = textareaRef.current;
     if (el) {
       el.style.height = 'auto';
       el.style.height = `${Math.min(el.scrollHeight, 96)}px`;
+    }
+
+    if (isOpen && value.trim().length > 0) {
+      if (typingDebounceRef.current) {
+        window.clearTimeout(typingDebounceRef.current);
+      }
+      typingDebounceRef.current = window.setTimeout(() => {
+        sendTypingSignal();
+      }, 180);
     }
   }
 
@@ -132,7 +202,26 @@ export default function ChatWindow({
     }
   }
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return chatNotice ? (
+      <div className="fixed bottom-6 right-6 z-40 w-[calc(100%-2rem)] max-w-sm rounded-xl border border-sky-200 bg-white p-4 shadow-xl sm:w-full">
+        <p className="text-sm font-medium text-slate-900">{otherUserName ?? t('chat.unknownUser')}</p>
+        <p className="mt-1 text-sm text-slate-600">{chatNotice}</p>
+        <button
+          type="button"
+          onClick={() => {
+            setChatNotice(null);
+            setIsOtherTyping(false);
+            onOpen?.();
+            void loadMessages().then(() => markRead());
+          }}
+          className="btn-primary mt-3 w-full justify-center"
+        >
+          {t('chat.openChat')}
+        </button>
+      </div>
+    ) : null;
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex">
@@ -201,6 +290,13 @@ export default function ChatWindow({
               </div>
             );
           })}
+          {isOtherTyping && (
+            <div className="flex justify-start">
+              <div className="rounded-2xl rounded-bl-sm bg-slate-100 px-4 py-2 text-xs font-medium text-slate-500 shadow-sm">
+                {t('chat.typingLabel')}
+              </div>
+            </div>
+          )}
           <div ref={bottomRef} />
         </div>
 
