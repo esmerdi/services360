@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { MessageCircle } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
@@ -45,6 +45,7 @@ export default function ClientRequestDetail() {
   const [score, setScore] = useState(5);
   const [comment, setComment] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
+  const ratingSectionRef = useRef<HTMLDivElement | null>(null);
 
   const categoryMap = useMemo(
     () => new Map(categories.map((category) => [category.id, category] as const)),
@@ -206,6 +207,10 @@ export default function ClientRequestDetail() {
     return markers;
   }, [getCategoryPath, request, t]);
 
+  const scrollToRating = useCallback(() => {
+    ratingSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
+
   async function submitRating(event: React.FormEvent) {
     event.preventDefault();
     if (!request || !request.provider_id || !user) return;
@@ -341,6 +346,16 @@ export default function ClientRequestDetail() {
                 </div>
               )}
 
+              {request.status === 'completed' && request.provider_id && (
+                <button
+                  type="button"
+                  className="btn-secondary mt-4"
+                  onClick={scrollToRating}
+                >
+                  {t('clientRequestDetail.goToRating')}
+                </button>
+              )}
+
               {shouldShowOpenRequestHint && (
                 <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700">
                   {t('clientRequestDetail.switchOpenWaitHint').replace('{{minutes}}', String(OPEN_REQUEST_FALLBACK_MINUTES))}
@@ -408,7 +423,7 @@ export default function ClientRequestDetail() {
               )}
             </div>
 
-            <div className="card">
+            <div ref={ratingSectionRef} className="card">
               <h2 className="text-lg font-semibold text-slate-900">{t('clientRequestDetail.rateProvider')}</h2>
               {rating ? (
                 <div className="mt-4 space-y-3">
