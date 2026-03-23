@@ -68,6 +68,7 @@ export default function ClientBrowse() {
   const [selectedRootCategory, setSelectedRootCategory] = useState<string | null>(null);
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
+  const [requestMode, setRequestMode] = useState<'direct' | 'open'>('direct');
   const [visibleMarkerIds, setVisibleMarkerIds] = useState<string[]>([]);
   const [fitBoundsTrigger, setFitBoundsTrigger] = useState(0);
 
@@ -91,6 +92,7 @@ export default function ClientBrowse() {
 
   useEffect(() => {
     setSelectedProviderId(null);
+    setRequestMode('direct');
   }, [selectedService]);
 
   useEffect(() => {
@@ -496,6 +498,15 @@ export default function ClientBrowse() {
     [providerOptions, selectedProviderId]
   );
 
+  const canUseDirectMode = providerOptions.length > 0;
+
+  useEffect(() => {
+    if (!selectedService) return;
+    if (!canUseDirectMode) {
+      setRequestMode('open');
+    }
+  }, [canUseDirectMode, selectedService]);
+
   const handleQuickRequest = useCallback(async (marker: LocationMapMarker) => {
     if (!user || !marker.actionServiceId || !marker.actionProviderId || !coords) {
       setError(t('clientRequestService.locationRequiredError'));
@@ -553,6 +564,35 @@ export default function ClientBrowse() {
     setQuickRequestingMarkerId(null);
     navigate('/client/requests');
   }, [coords, navigate, selectedProviderId, selectedService, t, user]);
+
+  const handleOpenRequest = useCallback(async () => {
+    if (!user || !selectedService || !coords) {
+      setError(t('clientRequestService.locationRequiredError'));
+      return;
+    }
+
+    setQuickRequestingMarkerId('open-request');
+    setError(null);
+
+    const { error: requestError } = await supabase.from('service_requests').insert({
+      client_id: user.id,
+      provider_id: null,
+      service_id: selectedService,
+      description: null,
+      latitude: coords.latitude,
+      longitude: coords.longitude,
+      address: null,
+    });
+
+    if (requestError) {
+      setError(requestError.message);
+      setQuickRequestingMarkerId(null);
+      return;
+    }
+
+    setQuickRequestingMarkerId(null);
+    navigate('/client/requests');
+  }, [coords, navigate, selectedService, t, user]);
 
   return (
     <Layout navItems={CLIENT_NAV} title="Browse Services">
@@ -702,6 +742,50 @@ export default function ClientBrowse() {
                 </div>
 
                 <div className="mb-4 space-y-2">
+                  <p className="text-sm font-semibold text-slate-800">{t('clientBrowse.requestModeLabel')}</p>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={() => setRequestMode('direct')}
+                      disabled={!canUseDirectMode}
+                      className={`rounded-xl border px-3 py-2 text-left transition ${
+                        requestMode === 'direct'
+                          ? 'border-sky-400 bg-sky-50'
+                          : 'border-slate-200 bg-white hover:border-slate-300'
+                      } ${!canUseDirectMode ? 'cursor-not-allowed opacity-60' : ''}`}
+                    >
+                      <p className="text-sm font-semibold text-slate-900">{t('clientBrowse.requestModeDirectTitle')}</p>
+                      <p className="mt-1 text-xs text-slate-500">{t('clientBrowse.requestModeDirectDesc')}</p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRequestMode('open')}
+                      className={`rounded-xl border px-3 py-2 text-left transition ${
+                        requestMode === 'open'
+                          ? 'border-sky-400 bg-sky-50'
+                          : 'border-slate-200 bg-white hover:border-slate-300'
+                      }`}
+                    >
+                      <p className="text-sm font-semibold text-slate-900">{t('clientBrowse.requestModeOpenTitle')}</p>
+                      <p className="mt-1 text-xs text-slate-500">{t('clientBrowse.requestModeOpenDesc')}</p>
+                    </button>
+                  </div>
+
+                  {!canUseDirectMode ? (
+                    <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                      {t('clientBrowse.requestModeAutoOpenNotice')}
+                    </p>
+                  ) : null}
+
+                  {requestMode === 'open' ? (
+                    <p className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-700">
+                      {t('clientBrowse.requestModeOpenHint')}
+                    </p>
+                  ) : null}
+                </div>
+
+                {requestMode === 'direct' ? (
+                  <div className="mb-4 space-y-2">
                   <p className="text-sm font-semibold text-slate-800">{t('clientBrowse.selectNearbyProvider')}</p>
                   {providerOptions.length === 0 ? (
                     <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
@@ -748,46 +832,57 @@ export default function ClientBrowse() {
                       })}
                     </div>
                   )}
-                </div>
+                  </div>
+                ) : null}
 
-                <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                    {t('clientBrowse.selectedProviderLabel')}
-                  </p>
-                  {selectedProviderOption ? (
-                    <div className="mt-2 flex items-center gap-3">
-                      {selectedProviderOption.avatar ? (
-                        <img
-                          src={selectedProviderOption.avatar}
-                          alt={selectedProviderOption.displayName}
-                          className="h-9 w-9 rounded-full border border-slate-200 object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-xs font-semibold text-slate-500">
-                          {selectedProviderOption.displayName.slice(0, 2).toUpperCase()}
+                {requestMode === 'direct' ? (
+                  <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                      {t('clientBrowse.selectedProviderLabel')}
+                    </p>
+                    {selectedProviderOption ? (
+                      <div className="mt-2 flex items-center gap-3">
+                        {selectedProviderOption.avatar ? (
+                          <img
+                            src={selectedProviderOption.avatar}
+                            alt={selectedProviderOption.displayName}
+                            className="h-9 w-9 rounded-full border border-slate-200 object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-xs font-semibold text-slate-500">
+                            {selectedProviderOption.displayName.slice(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-slate-900">{selectedProviderOption.displayName}</p>
+                          <p className="text-xs text-slate-500">{selectedProviderOption.distanceLabel}</p>
                         </div>
-                      )}
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-slate-900">{selectedProviderOption.displayName}</p>
-                        <p className="text-xs text-slate-500">{selectedProviderOption.distanceLabel}</p>
                       </div>
-                    </div>
-                  ) : (
-                    <p className="mt-2 text-sm text-slate-500">{t('clientBrowse.selectProviderFirst')}</p>
-                  )}
-                </div>
+                    ) : (
+                      <p className="mt-2 text-sm text-slate-500">{t('clientBrowse.selectProviderFirst')}</p>
+                    )}
+                  </div>
+                ) : null}
 
                 <button
                   type="button"
                   className="btn-primary w-full justify-center"
-                  onClick={handleProviderRequest}
-                  disabled={!selectedProviderId || quickRequestingMarkerId === selectedProviderId}
+                  onClick={requestMode === 'open' ? handleOpenRequest : handleProviderRequest}
+                  disabled={
+                    requestMode === 'open'
+                      ? quickRequestingMarkerId === 'open-request'
+                      : !selectedProviderId || quickRequestingMarkerId === selectedProviderId
+                  }
                 >
-                  {quickRequestingMarkerId === selectedProviderId
-                    ? t('clientBrowse.requestingProvider')
-                    : selectedProviderId
-                      ? t('clientBrowse.requestSelectedProvider')
-                      : t('clientBrowse.selectProviderFirstButton')}
+                  {requestMode === 'open'
+                    ? quickRequestingMarkerId === 'open-request'
+                      ? t('clientBrowse.requestingOpen')
+                      : t('clientBrowse.requestOpenButton')
+                    : quickRequestingMarkerId === selectedProviderId
+                      ? t('clientBrowse.requestingProvider')
+                      : selectedProviderId
+                        ? t('clientBrowse.requestSelectedProvider')
+                        : t('clientBrowse.selectProviderFirstButton')}
                   <ArrowRight className="h-4 w-4" />
                 </button>
 

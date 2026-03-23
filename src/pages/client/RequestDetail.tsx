@@ -24,6 +24,11 @@ const CLIENT_NAV = [
   { label: 'Profile',     to: '/client/profile' },
 ];
 
+const openRequestFallbackMinutesEnv = Number(import.meta.env.VITE_OPEN_REQUEST_FALLBACK_MINUTES);
+const OPEN_REQUEST_FALLBACK_MINUTES = Number.isFinite(openRequestFallbackMinutesEnv)
+  ? Math.min(Math.max(Math.trunc(openRequestFallbackMinutesEnv), 1), 120)
+  : 5;
+
 export default function ClientRequestDetail() {
   const { id } = useParams();
   const { user } = useAuth();
@@ -34,7 +39,9 @@ export default function ClientRequestDetail() {
   const [rating, setRating] = useState<Rating | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingRating, setSavingRating] = useState(false);
+  const [openingRequest, setOpeningRequest] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [score, setScore] = useState(5);
   const [comment, setComment] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
@@ -155,6 +162,23 @@ export default function ClientRequestDetail() {
     [request, rating, user]
   );
 
+  const canSwitchToOpenRequest = useMemo(() => {
+    if (!request || !user) return false;
+    if (request.client_id !== user.id) return false;
+    if (request.status !== 'pending' || !request.provider_id) return false;
+
+    const createdAtMs = Date.parse(request.created_at);
+    if (!Number.isFinite(createdAtMs)) return false;
+
+    return Date.now() - createdAtMs >= OPEN_REQUEST_FALLBACK_MINUTES * 60 * 1000;
+  }, [request, user]);
+
+  const shouldShowOpenRequestHint = useMemo(() => {
+    if (!request || !user) return false;
+    if (request.client_id !== user.id) return false;
+    return request.status === 'pending' && Boolean(request.provider_id) && !canSwitchToOpenRequest;
+  }, [canSwitchToOpenRequest, request, user]);
+
   const requestMarkers = useMemo(() => {
     if (
       !request ||
@@ -208,9 +232,47 @@ export default function ClientRequestDetail() {
     setRating(data as Rating);
   }
 
+  async function switchToOpenRequest() {
+    if (!request || !user || !request.provider_id) return;
+
+    setOpeningRequest(true);
+    setError(null);
+    setSuccessMessage(null);
+
+    const { data, error: updateError } = await supabase
+      .from('service_requests')
+      .update({ provider_id: null, status: 'pending' })
+      .eq('id', request.id)
+      .eq('client_id', user.id)
+      .eq('status', 'pending')
+      .eq('provider_id', request.provider_id)
+      .select('id')
+      .maybeSingle();
+
+    setOpeningRequest(false);
+
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+
+    if (!data) {
+      setError(t('clientRequestDetail.switchOpenUnavailable'));
+      return;
+    }
+
+    setRequest((current) => (current ? { ...current, provider_id: null, provider: undefined } : current));
+    setSuccessMessage(t('clientRequestDetail.switchOpenSuccess'));
+  }
+
   return (
     <Layout navItems={CLIENT_NAV} title="Request Details">
       {error && <ErrorMessage message={error} className="mb-4" />}
+      {successMessage && (
+        <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          {successMessage}
+        </div>
+      )}
 
       {loading ? (
         <div className="flex justify-center py-20">
@@ -273,6 +335,27 @@ export default function ClientRequestDetail() {
                   <p className="mt-1 text-sm text-slate-500">{request.address || t('clientRequestDetail.notProvided')}</p>
                 </div>
               </div>
+
+              {shouldShowOpenRequestHint && (
+                <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700">
+                  {t('clientRequestDetail.switchOpenWaitHint').replace('{{minutes}}', String(OPEN_REQUEST_FALLBACK_MINUTES))}
+                </div>
+              )}
+
+              {canSwitchToOpenRequest && (
+                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                  <p className="text-sm font-semibold text-amber-900">{t('clientRequestDetail.switchOpenTitle')}</p>
+                  <p className="mt-1 text-sm text-amber-800">{t('clientRequestDetail.switchOpenDescription')}</p>
+                  <button
+                    type="button"
+                    className="btn-secondary mt-3"
+                    onClick={switchToOpenRequest}
+                    disabled={openingRequest}
+                  >
+                    {openingRequest ? t('clientRequestDetail.switchOpening') : t('clientRequestDetail.switchOpenButton')}
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="card">
