@@ -224,16 +224,16 @@ export default function ChatWindow({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex">
+    <div className="fixed inset-0 z-50 flex items-end justify-end sm:p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm sm:bg-black/20"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      {/* Sliding panel from the right */}
-      <div className="relative z-10 ml-auto flex h-full w-full max-w-md flex-col bg-white shadow-2xl">
+      {/* Chat panel */}
+      <div className="relative z-10 flex h-full w-full flex-col bg-white shadow-2xl sm:h-[78vh] sm:max-h-[760px] sm:w-[380px] sm:rounded-2xl sm:border sm:border-slate-200">
         {/* Header */}
         <div className="flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3">
           <UserAvatar
