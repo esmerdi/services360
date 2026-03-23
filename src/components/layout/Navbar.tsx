@@ -37,6 +37,7 @@ interface NavbarNotification {
   title: string;
   description: string;
   to: string;
+  createdAt: string;
 }
 
 interface NavbarProps {
@@ -120,6 +121,8 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
     const currentUser = user;
 
     async function loadNotifications() {
+      const nextNotifications: NavbarNotification[] = [];
+
       const { data, error } = await supabase
         .from('messages')
         .select(`
@@ -143,56 +146,121 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
         .order('created_at', { ascending: false })
         .limit(10);
 
-      if (error) {
-        return;
+      if (!error) {
+        const rows = ((data ?? []) as unknown[]) as Array<{
+          id?: string;
+          request_id?: string;
+          content?: string;
+          created_at?: string;
+          request?: unknown;
+        }>;
+
+        const mappedMessages = rows.map((item) => {
+          const requestRaw = Array.isArray(item.request) ? item.request[0] : item.request;
+          const requestData = (requestRaw ?? null) as {
+            id?: string;
+            client?: unknown;
+            provider?: unknown;
+          } | null;
+
+          const clientRaw = requestData?.client;
+          const providerRaw = requestData?.provider;
+          const clientData = (Array.isArray(clientRaw) ? clientRaw[0] : clientRaw) as { full_name?: string | null; email?: string | null } | undefined;
+          const providerData = (Array.isArray(providerRaw) ? providerRaw[0] : providerRaw) as { full_name?: string | null; email?: string | null } | undefined;
+
+          const requestId = item.request_id ?? '';
+          const content = item.content ?? '';
+
+          const senderName = currentUser.role === 'provider'
+            ? clientData?.full_name || clientData?.email || t('roles.client')
+            : providerData?.full_name || providerData?.email || t('roles.provider');
+
+          const titleText = t('common.newMessageFrom').replace('{{name}}', senderName);
+          const descriptionText = content.length > 90 ? `${content.slice(0, 90)}...` : content;
+
+          const to = currentUser.role === 'client'
+            ? `/client/requests/${requestId}`
+            : currentUser.role === 'provider'
+              ? '/provider/jobs'
+              : '/admin/requests';
+
+          return {
+            id: item.id ?? `${requestId}-${content.slice(0, 12)}`,
+            requestId,
+            title: titleText,
+            description: descriptionText,
+            to,
+            createdAt: item.created_at ?? new Date().toISOString(),
+          };
+        }).filter((item) => Boolean(item.requestId));
+
+        nextNotifications.push(...mappedMessages);
       }
 
-      const rows = ((data ?? []) as unknown[]) as Array<{
-        id?: string;
-        request_id?: string;
-        content?: string;
-        request?: unknown;
-      }>;
+      if (currentUser.role === 'client') {
+        const { data: completedRequests, error: completedRequestsError } = await supabase
+          .from('service_requests')
+          .select(`
+            id,
+            created_at,
+            service:services(name),
+            provider:users!service_requests_provider_id_fkey(full_name, email)
+          `)
+          .eq('client_id', currentUser.id)
+          .eq('status', 'completed')
+          .order('created_at', { ascending: false })
+          .limit(20);
 
-      const mapped = rows.map((item) => {
-        const requestRaw = Array.isArray(item.request) ? item.request[0] : item.request;
-        const requestData = (requestRaw ?? null) as {
-          id?: string;
-          client?: unknown;
-          provider?: unknown;
-        } | null;
+        if (!completedRequestsError) {
+          const completedRows = ((completedRequests ?? []) as unknown[]) as Array<{
+            id?: string;
+            created_at?: string;
+            service?: unknown;
+            provider?: unknown;
+          }>;
 
-        const clientRaw = requestData?.client;
-        const providerRaw = requestData?.provider;
-        const clientData = (Array.isArray(clientRaw) ? clientRaw[0] : clientRaw) as { full_name?: string | null; email?: string | null } | undefined;
-        const providerData = (Array.isArray(providerRaw) ? providerRaw[0] : providerRaw) as { full_name?: string | null; email?: string | null } | undefined;
+          const requestIds = completedRows.map((item) => item.id).filter((id): id is string => Boolean(id));
+          let ratedRequestIds = new Set<string>();
 
-        const requestId = item.request_id ?? '';
-        const content = item.content ?? '';
+          if (requestIds.length > 0) {
+            const { data: ratings, error: ratingsError } = await supabase
+              .from('ratings')
+              .select('request_id')
+              .in('request_id', requestIds);
 
-        const senderName = currentUser.role === 'provider'
-          ? clientData?.full_name || clientData?.email || t('roles.client')
-          : providerData?.full_name || providerData?.email || t('roles.provider');
+            if (!ratingsError) {
+              ratedRequestIds = new Set(((ratings as Array<{ request_id: string }> | null) ?? []).map((item) => item.request_id));
+            }
+          }
 
-        const titleText = t('common.newMessageFrom').replace('{{name}}', senderName);
-        const descriptionText = content.length > 90 ? `${content.slice(0, 90)}...` : content;
+          const ratingNotifications = completedRows
+            .filter((item) => item.id && !ratedRequestIds.has(item.id))
+            .map((item) => {
+              const serviceRaw = Array.isArray(item.service) ? item.service[0] : item.service;
+              const providerRaw = Array.isArray(item.provider) ? item.provider[0] : item.provider;
+              const serviceData = (serviceRaw ?? null) as { name?: string | null } | null;
+              const providerData = (providerRaw ?? null) as { full_name?: string | null; email?: string | null } | null;
+              const serviceName = serviceData?.name || t('myRequests.table.serviceRequest');
+              const providerName = providerData?.full_name || providerData?.email || t('clientRequestDetail.provider');
 
-        const to = currentUser.role === 'client'
-          ? `/client/requests/${requestId}`
-          : currentUser.role === 'provider'
-            ? '/provider/jobs'
-            : '/admin/requests';
+              return {
+                id: `rate-${item.id}`,
+                requestId: item.id as string,
+                title: t('common.rateServiceTitle'),
+                description: t('common.rateServiceDescription')
+                  .replace('{{service}}', serviceName)
+                  .replace('{{provider}}', providerName),
+                to: `/client/requests/${item.id}`,
+                createdAt: item.created_at ?? new Date().toISOString(),
+              };
+            });
 
-        return {
-          id: item.id ?? `${requestId}-${content.slice(0, 12)}`,
-          requestId,
-          title: titleText,
-          description: descriptionText,
-          to,
-        };
-      }).filter((item) => Boolean(item.requestId));
+          nextNotifications.push(...ratingNotifications);
+        }
+      }
 
-      setNotifications(mapped);
+      nextNotifications.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+      setNotifications(nextNotifications.slice(0, 20));
     }
 
     void loadNotifications();
@@ -200,6 +268,12 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
     const channel = supabase
       .channel(`navbar-notifications-${currentUser.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
+        void loadNotifications();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, () => {
+        void loadNotifications();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ratings' }, () => {
         void loadNotifications();
       })
       .subscribe();
