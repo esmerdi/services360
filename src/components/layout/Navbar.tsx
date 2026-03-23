@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Menu,
@@ -99,22 +99,32 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const profileMenuRef = useRef<HTMLDivElement | null>(null);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+
+  const notifications = useMemo(
+    () => [] as Array<{ id: string; title: string; description?: string }>,
+    []
+  );
 
   const quickLinks = useMemo(() => navItems.slice(0, 2), [navItems]);
 
   useEffect(() => {
     function handleOutsideClick(event: MouseEvent) {
-      if (!profileMenuRef.current) return;
+      const target = event.target as HTMLElement;
 
-      if (!profileMenuRef.current.contains(event.target as Node)) {
+      if (!target.closest('[data-profile-menu]')) {
         setProfileMenuOpen(false);
+      }
+
+      if (!target.closest('[data-notifications-menu]')) {
+        setNotificationsOpen(false);
       }
     }
 
     function handleEscape(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         setProfileMenuOpen(false);
+        setNotificationsOpen(false);
       }
     }
 
@@ -159,42 +169,76 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
             {sidebarOpen ? <ChevronLeft className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
           </button>
 
-          <div className="flex items-center gap-2" ref={profileMenuRef}>
+          <div className="flex items-center gap-2">
             <LanguageSwitcher mode="switch" compact />
 
-            <button
-              type="button"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition-all hover:text-slate-900 hover:shadow-md"
-              aria-label={t('common.notifications')}
-              title={t('common.notifications')}
-            >
-              <Bell className="h-4 w-4" />
-            </button>
+            <div className="relative" data-notifications-menu>
+              <button
+                type="button"
+                onClick={() => {
+                  setNotificationsOpen((v) => !v);
+                  setProfileMenuOpen(false);
+                }}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition-all hover:text-slate-900 hover:shadow-md"
+                aria-label={t('common.notifications')}
+                title={t('common.notifications')}
+                aria-haspopup="menu"
+                aria-expanded={notificationsOpen}
+              >
+                <Bell className="h-4 w-4" />
+              </button>
 
-            <button
-              type="button"
-              onClick={() => setProfileMenuOpen((v) => !v)}
-              className="flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-2.5 py-2.5 shadow-sm transition-all hover:shadow-md"
-              aria-haspopup="menu"
-              aria-expanded={profileMenuOpen}
-              aria-label={t('common.openProfileMenu')}
-            >
-              <UserAvatar
-                avatarUrl={user?.avatar_url}
-                name={user?.full_name || user?.email}
-                className="h-9 w-9 overflow-hidden rounded-full bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center flex-shrink-0"
-                fallbackClassName="text-white text-xs font-semibold"
-              />
-              <ChevronDown
-                className={clsx(
-                  'h-4 w-4 text-slate-500 transition-transform',
-                  profileMenuOpen && 'rotate-180'
-                )}
-              />
-            </button>
+              {notificationsOpen && (
+                <div className="absolute right-0 top-12 mt-2 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ring-1 ring-slate-900/5">
+                  <div className="border-b border-slate-200 px-4 py-3">
+                    <p className="text-sm font-semibold text-slate-900">{t('common.notifications')}</p>
+                  </div>
+                  <div className="max-h-80 overflow-y-auto px-4 py-3">
+                    {notifications.length === 0 ? (
+                      <p className="text-sm text-slate-500">{t('common.noNotifications')}</p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {notifications.map((item) => (
+                          <li key={item.id} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                            <p className="text-sm font-medium text-slate-900">{item.title}</p>
+                            {item.description ? <p className="mt-1 text-xs text-slate-500">{item.description}</p> : null}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
-            {profileMenuOpen && (
-              <div className="absolute right-0 top-12 mt-2 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ring-1 ring-slate-900/5">
+            <div className="relative" data-profile-menu>
+              <button
+                type="button"
+                onClick={() => {
+                  setProfileMenuOpen((v) => !v);
+                  setNotificationsOpen(false);
+                }}
+                className="flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-2.5 py-2.5 shadow-sm transition-all hover:shadow-md"
+                aria-haspopup="menu"
+                aria-expanded={profileMenuOpen}
+                aria-label={t('common.openProfileMenu')}
+              >
+                <UserAvatar
+                  avatarUrl={user?.avatar_url}
+                  name={user?.full_name || user?.email}
+                  className="h-9 w-9 overflow-hidden rounded-full bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center flex-shrink-0"
+                  fallbackClassName="text-white text-xs font-semibold"
+                />
+                <ChevronDown
+                  className={clsx(
+                    'h-4 w-4 text-slate-500 transition-transform',
+                    profileMenuOpen && 'rotate-180'
+                  )}
+                />
+              </button>
+
+              {profileMenuOpen && (
+                <div className="absolute right-0 top-12 mt-2 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ring-1 ring-slate-900/5">
                 <div className="border-b border-slate-200 px-4 py-3">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-sm font-medium text-slate-600">{t('common.welcomeBack')}</p>
@@ -254,7 +298,8 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
                   </button>
                 </div>
               </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -273,14 +318,30 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
           <LanguageSwitcher compact />
 
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="btn-ghost p-2"
-              aria-label={t('common.notifications')}
-              title={t('common.notifications')}
-            >
-              <Bell className="h-5 w-5" />
-            </button>
+            <div className="relative" data-notifications-menu>
+              <button
+                type="button"
+                className="btn-ghost p-2"
+                aria-label={t('common.notifications')}
+                title={t('common.notifications')}
+                aria-haspopup="menu"
+                aria-expanded={notificationsOpen}
+                onClick={() => setNotificationsOpen((v) => !v)}
+              >
+                <Bell className="h-5 w-5" />
+              </button>
+
+              {notificationsOpen && (
+                <div className="absolute right-0 top-11 z-50 mt-2 w-72 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ring-1 ring-slate-900/5">
+                  <div className="border-b border-slate-200 px-4 py-3">
+                    <p className="text-sm font-semibold text-slate-900">{t('common.notifications')}</p>
+                  </div>
+                  <div className="px-4 py-3">
+                    <p className="text-sm text-slate-500">{t('common.noNotifications')}</p>
+                  </div>
+                </div>
+              )}
+            </div>
               <UserAvatar
                 avatarUrl={user?.avatar_url}
                 name={user?.full_name || user?.email}
