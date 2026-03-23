@@ -444,7 +444,7 @@ export default function ClientRequestDetail() {
       ) && (
         <button
           onClick={() => setChatOpen(true)}
-          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-blue-700"
+          className="fixed bottom-6 right-6 z-[1300] flex items-center gap-2 rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-blue-700"
           aria-label={t('chat.openChat')}
         >
           <MessageCircle className="h-5 w-5" />

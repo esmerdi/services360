@@ -214,7 +214,7 @@ export default function ChatWindow({
 
   if (!isOpen) {
     return chatNotice ? createPortal(
-      <div className="fixed bottom-6 right-6 z-40 w-[calc(100%-2rem)] max-w-sm rounded-xl border border-sky-200 bg-white p-4 shadow-xl sm:w-full">
+      <div className="fixed bottom-6 right-6 z-[1300] w-[calc(100%-2rem)] max-w-sm rounded-xl border border-sky-200 bg-white p-4 shadow-xl sm:w-full">
         <p className="text-sm font-medium text-slate-900">{otherUserName ?? t('chat.unknownUser')}</p>
         <p className="mt-1 text-sm text-slate-600">{chatNotice}</p>
         <button
@@ -235,7 +235,7 @@ export default function ChatWindow({
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-end sm:p-4">
+    <div className="fixed inset-0 z-[1400] flex items-end justify-end sm:p-4">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm sm:bg-black/20"
