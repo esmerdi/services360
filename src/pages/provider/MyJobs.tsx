@@ -5,6 +5,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import StatusBadge from '../../components/common/StatusBadge';
 import ChatWindow from '../../components/common/ChatWindow';
+import UserAvatar from '../../components/common/UserAvatar';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
@@ -44,7 +45,7 @@ export default function ProviderMyJobs() {
         .from('service_requests')
         .select(`
           *,
-          client:users!service_requests_client_id_fkey(id, full_name, email),
+          client:users!service_requests_client_id_fkey(id, full_name, email, avatar_url),
           service:services(id, name)
         `)
         .eq('provider_id', currentUser.id)
@@ -118,10 +119,19 @@ export default function ProviderMyJobs() {
           {filteredJobs.map((job) => (
             <div key={job.id} className="card">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div>
-                  <p className="text-sm text-slate-500">{job.service?.name || (es ? 'Solicitud de servicio' : 'Service Request')}</p>
-                  <h2 className="mt-1 text-lg font-semibold text-slate-900">{job.client?.full_name || (es ? 'Cliente' : 'Client')}</h2>
-                  <p className="mt-2 text-sm text-slate-500">{job.description || (es ? 'Sin descripcion adicional.' : 'No additional description.')}</p>
+                <div className="flex items-start gap-3 min-w-0">
+                  <UserAvatar
+                    avatarUrl={job.client?.avatar_url}
+                    name={job.client?.full_name || job.client?.email || (es ? 'Cliente' : 'Client')}
+                    alt={job.client?.full_name || job.client?.email || (es ? 'Cliente' : 'Client')}
+                    className="h-11 w-11 overflow-hidden rounded-full border border-slate-200 bg-slate-100"
+                    fallbackClassName="text-xs font-semibold text-slate-600"
+                  />
+                  <div className="min-w-0">
+                    <p className="text-sm text-slate-500">{job.service?.name || (es ? 'Solicitud de servicio' : 'Service Request')}</p>
+                    <h2 className="mt-1 truncate text-lg font-semibold text-slate-900">{job.client?.full_name || (es ? 'Cliente' : 'Client')}</h2>
+                    <p className="mt-2 text-sm text-slate-500">{job.description || (es ? 'Sin descripcion adicional.' : 'No additional description.')}</p>
+                  </div>
                 </div>
                 <StatusBadge status={job.status} />
               </div>
@@ -165,7 +175,7 @@ export default function ProviderMyJobs() {
             requestId={chatJob.id}
             currentUserId={user?.id ?? ''}
             otherUserName={chatJob.client?.full_name ?? null}
-            otherUserAvatar={null}
+            otherUserAvatar={chatJob.client?.avatar_url ?? null}
             isOpen={true}
             onClose={() => setChatJobId(null)}
           />
