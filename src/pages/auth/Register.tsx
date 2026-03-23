@@ -54,7 +54,19 @@ export default function Register() {
       await signUp(email, password, role, fullName);
       navigate(`/verify-email?email=${encodeURIComponent(email)}`, { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('register.registrationFailed'));
+      const message = err instanceof Error ? err.message : t('register.registrationFailed');
+      const alreadyRegistered = message.toLowerCase().includes('already registered');
+
+      if (alreadyRegistered) {
+        try {
+          await signIn(email, password, role);
+          navigate(`/${role}`, { replace: true });
+        } catch (signInErr) {
+          setError(signInErr instanceof Error ? signInErr.message : t('login.signInFailed'));
+        }
+      } else {
+        setError(message);
+      }
     } finally {
       setLoading(false);
     }

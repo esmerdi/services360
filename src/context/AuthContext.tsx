@@ -14,7 +14,7 @@ interface AuthContextValue {
   session: Session | null;
   user: User | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string, role?: UserRole) => Promise<void>;
   signUp: (
     email: string,
     password: string,
@@ -84,9 +84,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [fetchUser]);
 
   // ─── Actions ──────────────────────────────────────────────────────────────
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const signIn = async (email: string, password: string, role?: UserRole) => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw new Error(error.message);
+
+    const signedUserId = data.user?.id;
+    if (!signedUserId || !role) return;
+
+    const { data: profile, error: profileError } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', signedUserId)
+      .single();
+
+    if (profileError) throw new Error(profileError.message);
+
+    // Keep admin role immutable through public login role switch.
+    if (profile.role !== 'admin' && profile.role !== role) {
+      const { error: roleUpdateError } = await supabase
+        .from('users')
+        .update({ role })
+        .eq('id', signedUserId);
+      if (roleUpdateError) throw new Error(roleUpdateError.message);
+    }
+
+    await fetchUser(signedUserId);
   };
 
   const signUp = async (
