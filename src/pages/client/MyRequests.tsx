@@ -239,47 +239,59 @@ export default function ClientMyRequests() {
                   </tr>
                 )}
                 {filteredRequests.map((request) => (
-                  <tr key={request.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3">
-                      <Link to={`/client/requests/${request.id}`} className="font-medium text-slate-900 hover:text-blue-600">
-                        {request.service?.name || t('myRequests.table.serviceRequest')}
-                      </Link>
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                        <span className="inline-flex max-w-full rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
-                          <span className="truncate">{getCategoryPath(request.service?.category_id)}</span>
-                        </span>
-                      </div>
-                      <p className="mt-2 text-xs text-slate-400">{request.address || t('myRequests.table.addressPending')}</p>
-                    </td>
-                    <td className="px-4 py-3 text-slate-600">
-                      {request.provider ? (
-                        <div className="space-y-1">
-                          <p className="font-medium text-slate-700">{request.provider.full_name || request.provider.email}</p>
-                          <div className="flex items-center gap-2 text-xs text-slate-500">
-                            <StarRating value={request.provider.avg_rating ?? 0} readonly size="sm" />
-                            <span>
-                              {request.provider.ratings_count && request.provider.ratings_count > 0
-                                ? `${(request.provider.avg_rating ?? 0).toFixed(1)} (${request.provider.ratings_count})`
-                                : t('myRequests.table.noRatingsYet')}
-                            </span>
-                          </div>
-                          {request.status === 'completed' && !ratedRequestIds.has(request.id) && (
-                            <Link to={`/client/requests/${request.id}`} className="inline-flex text-xs font-medium text-amber-700 hover:text-amber-800">
-                              {t('myRequests.table.rateNow')}
-                            </Link>
-                          )}
+                  <React.Fragment key={request.id}>
+                    <tr className="hover:bg-slate-50">
+                      <td className="px-4 py-3">
+                        <Link to={`/client/requests/${request.id}`} className="font-medium text-slate-900 hover:text-blue-600">
+                          {request.service?.name || t('myRequests.table.serviceRequest')}
+                        </Link>
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <span className="inline-flex max-w-full rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                            <span className="truncate">{getCategoryPath(request.service?.category_id)}</span>
+                          </span>
                         </div>
-                      ) : (
-                        t('myRequests.table.awaitingAcceptance')
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <StatusBadge status={request.status} />
-                    </td>
-                    <td className="px-4 py-3 text-slate-500 hidden lg:table-cell">
-                      {formatDateTime(request.created_at, language)}
-                    </td>
-                  </tr>
+                        <p className="mt-2 text-xs text-slate-400">{request.address || t('myRequests.table.addressPending')}</p>
+                      </td>
+                      <td className="px-4 py-3 text-slate-600">
+                        {request.provider ? (
+                          <p className="font-medium text-slate-700">{request.provider.full_name || request.provider.email}</p>
+                        ) : (
+                          t('myRequests.table.awaitingAcceptance')
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <StatusBadge status={request.status} />
+                      </td>
+                      <td className="px-4 py-3 text-slate-500 hidden lg:table-cell">
+                        {formatDateTime(request.created_at, language)}
+                      </td>
+                    </tr>
+
+                    {request.provider && (
+                      (request.provider.ratings_count ?? 0) > 0 ||
+                      (request.status === 'completed' && !ratedRequestIds.has(request.id))
+                    ) && (
+                      <tr className="bg-slate-50/60">
+                        <td colSpan={4} className="px-4 pb-3 pt-0">
+                          <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                              <StarRating value={request.provider.avg_rating ?? 0} readonly size="sm" />
+                              <span>
+                                {request.provider.ratings_count && request.provider.ratings_count > 0
+                                  ? `${(request.provider.avg_rating ?? 0).toFixed(1)} (${request.provider.ratings_count})`
+                                  : t('myRequests.table.noRatingsYet')}
+                              </span>
+                            </div>
+                            {request.status === 'completed' && !ratedRequestIds.has(request.id) && (
+                              <Link to={`/client/requests/${request.id}`} className="mt-2 inline-flex text-xs font-medium text-amber-700 hover:text-amber-800">
+                                {t('myRequests.table.rateNow')}
+                              </Link>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>

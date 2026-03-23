@@ -311,14 +311,6 @@ export default function ClientRequestDetail() {
                       <div className="min-w-0">
                         <p className="font-medium text-slate-900 truncate">{request.provider.full_name || t('clientRequestDetail.awaitingProvider')}</p>
                         <p className="mt-1 break-all text-sm text-slate-500">{request.provider.email || t('clientRequestDetail.providerFallback')}</p>
-                        <div className="mt-2 flex items-center gap-2 text-sm text-slate-500">
-                          <StarRating value={request.provider.avg_rating ?? 0} readonly size="sm" />
-                          <span>
-                            {request.provider.ratings_count && request.provider.ratings_count > 0
-                              ? `${(request.provider.avg_rating ?? 0).toFixed(1)} (${request.provider.ratings_count})`
-                              : t('clientRequestDetail.noRatingsYet')}
-                          </span>
-                        </div>
                       </div>
                     </div>
                   ) : (
@@ -335,6 +327,19 @@ export default function ClientRequestDetail() {
                   <p className="mt-1 break-words text-sm text-slate-500">{request.address || t('clientRequestDetail.notProvided')}</p>
                 </div>
               </div>
+
+              {request.provider && (
+                <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
+                    <StarRating value={request.provider.avg_rating ?? 0} readonly size="sm" />
+                    <span>
+                      {request.provider.ratings_count && request.provider.ratings_count > 0
+                        ? `${(request.provider.avg_rating ?? 0).toFixed(1)} (${request.provider.ratings_count})`
+                        : t('clientRequestDetail.noRatingsYet')}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {shouldShowOpenRequestHint && (
                 <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700">
