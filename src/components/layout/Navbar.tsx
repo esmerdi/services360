@@ -199,6 +199,54 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
         nextNotifications.push(...mappedMessages);
       }
 
+      if (currentUser.role === 'client') {
+        const { data: acceptedRequests, error: acceptedRequestsError } = await supabase
+          .from('service_requests')
+          .select(`
+            id,
+            created_at,
+            service:services(name),
+            provider:users!service_requests_provider_id_fkey(full_name, email)
+          `)
+          .eq('client_id', currentUser.id)
+          .eq('status', 'accepted')
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        if (!acceptedRequestsError) {
+          const rows = ((acceptedRequests ?? []) as unknown[]) as Array<{
+            id?: string;
+            created_at?: string;
+            service?: unknown;
+            provider?: unknown;
+          }>;
+
+          const acceptedNotifications = rows
+            .filter((item) => Boolean(item.id))
+            .map((item) => {
+              const serviceRaw = Array.isArray(item.service) ? item.service[0] : item.service;
+              const providerRaw = Array.isArray(item.provider) ? item.provider[0] : item.provider;
+              const serviceData = (serviceRaw ?? null) as { name?: string | null } | null;
+              const providerData = (providerRaw ?? null) as { full_name?: string | null; email?: string | null } | null;
+              const serviceName = serviceData?.name || t('myRequests.table.serviceRequest');
+              const providerName = providerData?.full_name || providerData?.email || t('roles.provider');
+
+              return {
+                id: `accepted-${item.id}`,
+                requestId: item.id as string,
+                title: t('common.requestAcceptedTitle'),
+                description: t('common.requestAcceptedDescription')
+                  .replace('{{service}}', serviceName)
+                  .replace('{{provider}}', providerName),
+                to: `/client/requests/${item.id}?openChat=1`,
+                createdAt: item.created_at ?? new Date().toISOString(),
+              };
+            });
+
+          nextNotifications.push(...acceptedNotifications);
+        }
+      }
+
       if (currentUser.role === 'provider') {
         let providerCoords = coords;
 

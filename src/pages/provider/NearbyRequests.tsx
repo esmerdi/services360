@@ -182,8 +182,45 @@ export default function ProviderNearbyRequests() {
     return () => window.clearTimeout(timer);
   }, [infoMessage]);
 
+  async function sendWelcomeMessage(requestId: string, clientName: string) {
+    if (!user) return;
+
+    const { data: existingMessage, error: existingMessageError } = await supabase
+      .from('messages')
+      .select('id')
+      .eq('request_id', requestId)
+      .eq('sender_id', user.id)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (existingMessageError) {
+      console.error('Error checking welcome message:', existingMessageError.message);
+      return;
+    }
+
+    if (existingMessage) return;
+
+    const content = es
+      ? `Hola, ${clientName} es un gusto atenderte. ¿En qué te puedo colaborar?`
+      : `Hi ${clientName}, it is a pleasure to help you. How can I assist you?`;
+
+    const { error: insertMessageError } = await supabase.from('messages').insert({
+      request_id: requestId,
+      sender_id: user.id,
+      content,
+    });
+
+    if (insertMessageError) {
+      console.error('Error sending welcome message:', insertMessageError.message);
+    }
+  }
+
   async function acceptRequest(requestId: string, redirectToJobs = false) {
     if (!user) return;
+    const currentRequest = requests.find((request) => request.id === requestId);
+    const clientName = currentRequest?.client?.full_name || currentRequest?.client?.email || (es ? 'cliente' : 'client');
+
     setError(null);
     setSuccessMessage(null);
     setInfoMessage(null);
@@ -255,6 +292,7 @@ export default function ProviderNearbyRequests() {
         }
 
         if (confirmedRequest) {
+          await sendWelcomeMessage(requestId, clientName);
           setRequests((current) => current.filter((request) => request.id !== requestId));
           setSuccessMessage(es ? 'Solicitud aceptada correctamente.' : 'Request accepted successfully.');
 
@@ -275,6 +313,7 @@ export default function ProviderNearbyRequests() {
       return;
     }
 
+    await sendWelcomeMessage(requestId, clientName);
     setRequests((current) => current.filter((request) => request.id !== requestId));
     setSuccessMessage(es ? 'Solicitud aceptada correctamente.' : 'Request accepted successfully.');
 

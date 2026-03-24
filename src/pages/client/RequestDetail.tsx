@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { MessageCircle } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -31,6 +31,7 @@ const OPEN_REQUEST_FALLBACK_MINUTES = Number.isFinite(openRequestFallbackMinutes
 
 export default function ClientRequestDetail() {
   const { id } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { t, language } = useI18n();
   const [request, setRequest] = useState<ServiceRequest | null>(null);
@@ -215,6 +216,20 @@ export default function ClientRequestDetail() {
     }
     return () => { document.body.style.overflow = ''; };
   }, [canRate]);
+
+  useEffect(() => {
+    const shouldOpenChat = searchParams.get('openChat') === '1';
+    const hasAssignedProvider = Boolean(request?.provider_id && request?.provider);
+    const chatEligibleStatus = request ? ['accepted', 'in_progress', 'completed'].includes(request.status) : false;
+
+    if (shouldOpenChat && hasAssignedProvider && chatEligibleStatus) {
+      setChatOpen(true);
+
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('openChat');
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [request, searchParams, setSearchParams]);
 
   async function submitRating(event: React.FormEvent) {
     event.preventDefault();
