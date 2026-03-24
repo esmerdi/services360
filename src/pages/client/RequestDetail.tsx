@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { MessageCircle } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
@@ -45,7 +45,6 @@ export default function ClientRequestDetail() {
   const [score, setScore] = useState(5);
   const [comment, setComment] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
-  const ratingSectionRef = useRef<HTMLDivElement | null>(null);
 
   const categoryMap = useMemo(
     () => new Map(categories.map((category) => [category.id, category] as const)),
@@ -372,6 +371,12 @@ export default function ClientRequestDetail() {
                   </button>
                 </div>
               )}
+
+              {rating && (
+                <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <p className="text-sm text-slate-600">{rating.comment || t('clientRequestDetail.noComment')}</p>
+                </div>
+              )}
             </div>
 
             <div className="card">
@@ -416,38 +421,6 @@ export default function ClientRequestDetail() {
                   <p className="text-sm font-medium text-slate-800">{t('clientRequestDetail.locationMap')}</p>
                   <LocationMap markers={requestMarkers} heightClassName="h-72" />
                 </div>
-              )}
-            </div>
-
-            <div ref={ratingSectionRef} className="card">
-              <h2 className="text-lg font-semibold text-slate-900">{t('clientRequestDetail.rateProvider')}</h2>
-              {rating ? (
-                <div className="mt-4 space-y-3">
-                  <StarRating value={rating.rating} readonly />
-                  <p className="text-sm text-slate-500">{rating.comment || t('clientRequestDetail.noComment')}</p>
-                </div>
-              ) : canRate ? (
-                <form onSubmit={submitRating} className="mt-4 space-y-4">
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                    <p className="font-medium">{t('clientRequestDetail.ratingReminderTitle')}</p>
-                    <p className="mt-1 text-amber-700">{t('clientRequestDetail.ratingReminderDescription')}</p>
-                  </div>
-                  <StarRating value={score} onChange={setScore} />
-                  <textarea
-                    className="input resize-none"
-                    rows={4}
-                    placeholder={t('clientRequestDetail.shareExperience')}
-                    value={comment}
-                    onChange={(event) => setComment(event.target.value)}
-                  />
-                  <button type="submit" className="btn-primary w-full justify-center" disabled={savingRating}>
-                    {savingRating ? <LoadingSpinner size="sm" /> : t('clientRequestDetail.submitRating')}
-                  </button>
-                </form>
-              ) : (
-                <p className="mt-4 text-sm text-slate-500">
-                  {t('clientRequestDetail.ratingAvailableLater')}
-                </p>
               )}
             </div>
           </div>
