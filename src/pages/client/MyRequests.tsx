@@ -242,6 +242,11 @@ export default function ClientMyRequests() {
                   <React.Fragment key={request.id}>
                     <tr className="hover:bg-slate-50">
                       <td className="px-4 py-3">
+                        {request.status === 'pending' && request.provider && (
+                          <p className="mb-1 text-sm font-semibold text-slate-800">
+                            {request.provider.full_name || request.provider.email}
+                          </p>
+                        )}
                         <Link to={`/client/requests/${request.id}`} className="font-medium text-slate-900 hover:text-blue-600">
                           {request.service?.name || t('myRequests.table.serviceRequest')}
                         </Link>
