@@ -197,6 +197,38 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
         nextNotifications.push(...mappedMessages);
       }
 
+      if (currentUser.role === 'provider') {
+        const { data: providerLocation, error: providerLocationError } = await supabase
+          .from('locations')
+          .select('latitude, longitude')
+          .eq('user_id', currentUser.id)
+          .maybeSingle();
+
+        if (!providerLocationError && providerLocation) {
+          const { data: nearbyRows, error: nearbyRowsError } = await supabase.rpc('get_nearby_requests', {
+            provider_lat: providerLocation.latitude,
+            provider_lon: providerLocation.longitude,
+            p_provider_id: currentUser.id,
+            radius_km: 20,
+          });
+
+          if (!nearbyRowsError) {
+            const nearbyCount = ((nearbyRows as Array<{ id: string }> | null) ?? []).length;
+
+            if (nearbyCount > 0) {
+              nextNotifications.push({
+                id: `provider-nearby-${currentUser.id}`,
+                requestId: 'provider-nearby',
+                title: t('common.nearbyRequestsTitle'),
+                description: t('common.nearbyRequestsDescription').replace('{{count}}', String(nearbyCount)),
+                to: '/provider/nearby',
+                createdAt: new Date().toISOString(),
+              });
+            }
+          }
+        }
+      }
+
       nextNotifications.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
       setNotifications(nextNotifications.slice(0, 20));
     }
