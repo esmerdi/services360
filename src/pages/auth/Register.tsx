@@ -8,7 +8,7 @@ import ErrorMessage from '../../components/common/ErrorMessage';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 export default function Register() {
-  const { signUp, user } = useAuth();
+  const { signUp, signIn, user } = useAuth();
   const { t } = useI18n();
   const navigate = useNavigate();
 
