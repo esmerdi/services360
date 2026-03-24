@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation as useRouterLocation, useNavigate } from 'react-router-dom';
 import {
   LogOut,
@@ -114,6 +114,43 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
 
   const quickLinks = useMemo(() => navItems.slice(0, 2), [navItems]);
 
+  const getDismissedAcceptedNotificationIds = useCallback((userId: string) => {
+    if (typeof window === 'undefined') return new Set<string>();
+
+    const storageKey = `taskly.dismissedAcceptedNotifications.${userId}`;
+    const raw = window.localStorage.getItem(storageKey);
+    if (!raw) return new Set<string>();
+
+    try {
+      const parsed = JSON.parse(raw) as string[];
+      return new Set(parsed.filter((item) => typeof item === 'string'));
+    } catch {
+      return new Set<string>();
+    }
+  }, []);
+
+  const dismissAcceptedNotification = useCallback((userId: string, notificationId: string) => {
+    if (typeof window === 'undefined') return;
+    if (!notificationId.startsWith('accepted-')) return;
+
+    const storageKey = `taskly.dismissedAcceptedNotifications.${userId}`;
+    const dismissed = getDismissedAcceptedNotificationIds(userId);
+    dismissed.add(notificationId.replace('accepted-', ''));
+
+    window.localStorage.setItem(storageKey, JSON.stringify(Array.from(dismissed)));
+  }, [getDismissedAcceptedNotificationIds]);
+
+  const handleNotificationClick = useCallback((item: NavbarNotification) => {
+    if (user) {
+      dismissAcceptedNotification(user.id, item.id);
+    }
+
+    setNotifications((current) => current.filter((entry) => entry.id !== item.id));
+    setNotificationsOpen(false);
+    setMobileOpen(false);
+    navigate(item.to);
+  }, [dismissAcceptedNotification, navigate, user]);
+
   useEffect(() => {
     if (!user) {
       setNotifications([]);
@@ -214,6 +251,7 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
           .limit(10);
 
         if (!acceptedRequestsError) {
+          const dismissedAcceptedIds = getDismissedAcceptedNotificationIds(currentUser.id);
           const rows = ((acceptedRequests ?? []) as unknown[]) as Array<{
             id?: string;
             created_at?: string;
@@ -222,7 +260,7 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
           }>;
 
           const acceptedNotifications = rows
-            .filter((item) => Boolean(item.id))
+            .filter((item) => Boolean(item.id) && !dismissedAcceptedIds.has(item.id as string))
             .map((item) => {
               const serviceRaw = Array.isArray(item.service) ? item.service[0] : item.service;
               const providerRaw = Array.isArray(item.provider) ? item.provider[0] : item.provider;
@@ -309,7 +347,7 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [coords, t, user]);
+  }, [coords, getDismissedAcceptedNotificationIds, t, user]);
 
   const unreadCount = notifications.length;
 
@@ -411,10 +449,7 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
                           <li key={item.id}>
                             <button
                               type="button"
-                              onClick={() => {
-                                setNotificationsOpen(false);
-                                navigate(item.to);
-                              }}
+                              onClick={() => handleNotificationClick(item)}
                               className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left transition hover:border-sky-200 hover:bg-sky-50"
                             >
                               <p className="text-sm font-medium text-slate-900">{item.title}</p>
@@ -568,11 +603,7 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
                           <li key={item.id}>
                             <button
                               type="button"
-                              onClick={() => {
-                                setNotificationsOpen(false);
-                                setMobileOpen(false);
-                                navigate(item.to);
-                              }}
+                              onClick={() => handleNotificationClick(item)}
                               className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left transition hover:border-sky-200 hover:bg-sky-50"
                             >
                               <p className="text-sm font-medium text-slate-900">{item.title}</p>
