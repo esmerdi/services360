@@ -197,68 +197,6 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
         nextNotifications.push(...mappedMessages);
       }
 
-      if (currentUser.role === 'client') {
-        const { data: completedRequests, error: completedRequestsError } = await supabase
-          .from('service_requests')
-          .select(`
-            id,
-            created_at,
-            service:services(name),
-            provider:users!service_requests_provider_id_fkey(full_name, email)
-          `)
-          .eq('client_id', currentUser.id)
-          .eq('status', 'completed')
-          .order('created_at', { ascending: false })
-          .limit(20);
-
-        if (!completedRequestsError) {
-          const completedRows = ((completedRequests ?? []) as unknown[]) as Array<{
-            id?: string;
-            created_at?: string;
-            service?: unknown;
-            provider?: unknown;
-          }>;
-
-          const requestIds = completedRows.map((item) => item.id).filter((id): id is string => Boolean(id));
-          let ratedRequestIds = new Set<string>();
-
-          if (requestIds.length > 0) {
-            const { data: ratings, error: ratingsError } = await supabase
-              .from('ratings')
-              .select('request_id')
-              .in('request_id', requestIds);
-
-            if (!ratingsError) {
-              ratedRequestIds = new Set(((ratings as Array<{ request_id: string }> | null) ?? []).map((item) => item.request_id));
-            }
-          }
-
-          const ratingNotifications = completedRows
-            .filter((item) => item.id && !ratedRequestIds.has(item.id))
-            .map((item) => {
-              const serviceRaw = Array.isArray(item.service) ? item.service[0] : item.service;
-              const providerRaw = Array.isArray(item.provider) ? item.provider[0] : item.provider;
-              const serviceData = (serviceRaw ?? null) as { name?: string | null } | null;
-              const providerData = (providerRaw ?? null) as { full_name?: string | null; email?: string | null } | null;
-              const serviceName = serviceData?.name || t('myRequests.table.serviceRequest');
-              const providerName = providerData?.full_name || providerData?.email || t('clientRequestDetail.provider');
-
-              return {
-                id: `rate-${item.id}`,
-                requestId: item.id as string,
-                title: t('common.rateServiceTitle'),
-                description: t('common.rateServiceDescription')
-                  .replace('{{service}}', serviceName)
-                  .replace('{{provider}}', providerName),
-                to: `/client/requests/${item.id}`,
-                createdAt: item.created_at ?? new Date().toISOString(),
-              };
-            });
-
-          nextNotifications.push(...ratingNotifications);
-        }
-      }
-
       nextNotifications.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
       setNotifications(nextNotifications.slice(0, 20));
     }
@@ -271,9 +209,6 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
         void loadNotifications();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, () => {
-        void loadNotifications();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ratings' }, () => {
         void loadNotifications();
       })
       .subscribe();
