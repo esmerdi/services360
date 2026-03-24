@@ -287,11 +287,6 @@ export default function ClientMyRequests() {
                                   : t('myRequests.table.noRatingsYet')}
                               </span>
                             </div>
-                            {request.status === 'completed' && !ratedRequestIds.has(request.id) && (
-                              <Link to={`/client/requests/${request.id}`} className="mt-2 inline-flex text-xs font-medium text-amber-700 hover:text-amber-800">
-                                {t('myRequests.table.rateNow')}
-                              </Link>
-                            )}
                           </div>
                         </td>
                       </tr>

@@ -217,10 +217,6 @@ export default function ClientRequestDetail() {
     return () => { document.body.style.overflow = ''; };
   }, [canRate]);
 
-  const scrollToRating = useCallback(() => {
-    ratingSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, []);
-
   async function submitRating(event: React.FormEvent) {
     event.preventDefault();
     if (!request || !request.provider_id || !user) return;
@@ -354,16 +350,6 @@ export default function ClientRequestDetail() {
                     </span>
                   </div>
                 </div>
-              )}
-
-              {request.status === 'completed' && request.provider_id && (
-                <button
-                  type="button"
-                  className="mt-4 inline-flex items-center justify-center rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-300"
-                  onClick={scrollToRating}
-                >
-                  {t('clientRequestDetail.goToRating')}
-                </button>
               )}
 
               {shouldShowOpenRequestHint && (
