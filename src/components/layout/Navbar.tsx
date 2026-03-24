@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation as useRouterLocation, useNavigate } from 'react-router-dom';
 import {
   LogOut,
@@ -111,6 +111,7 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<NavbarNotification[]>([]);
+  const promptedCompletedRequestsRef = useRef<Set<string>>(new Set());
 
   const quickLinks = useMemo(() => navItems.slice(0, 2), [navItems]);
 
@@ -158,6 +159,25 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
     }
 
     const currentUser = user;
+
+    async function maybePromptClientRating(requestId: string) {
+      if (currentUser.role !== 'client') return;
+      if (!requestId || promptedCompletedRequestsRef.current.has(requestId)) return;
+
+      const { data: existingRating, error: existingRatingError } = await supabase
+        .from('ratings')
+        .select('id')
+        .eq('request_id', requestId)
+        .maybeSingle();
+
+      if (existingRatingError || existingRating) return;
+
+      promptedCompletedRequestsRef.current.add(requestId);
+
+      if (location.pathname === `/client/requests/${requestId}`) return;
+
+      navigate(`/client/requests/${requestId}?openRating=1`);
+    }
 
     async function loadNotifications() {
       const nextNotifications: NavbarNotification[] = [];
@@ -339,7 +359,14 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
       .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
         void loadNotifications();
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, (payload) => {
+        if (currentUser.role === 'client' && payload.eventType === 'UPDATE') {
+          const updated = payload.new as Partial<{ id: string; client_id: string; status: string }>;
+          if (updated?.id && updated.client_id === currentUser.id && updated.status === 'completed') {
+            void maybePromptClientRating(updated.id);
+          }
+        }
+
         void loadNotifications();
       })
       .subscribe();
@@ -347,7 +374,7 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [coords, getDismissedAcceptedNotificationIds, t, user]);
+  }, [coords, getDismissedAcceptedNotificationIds, location.pathname, navigate, t, user]);
 
   const unreadCount = notifications.length;
 
