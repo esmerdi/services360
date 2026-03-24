@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation as useRouterLocation, useNavigate } from 'react-router-dom';
 import {
   LogOut,
   LayoutDashboard,
@@ -22,6 +22,7 @@ import {
 import clsx from 'clsx';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
+import { useLocation as useCurrentLocation } from '../../context/LocationContext';
 import { supabase } from '../../lib/supabase';
 import LanguageSwitcher from '../common/LanguageSwitcher';
 import UserAvatar from '../common/UserAvatar';
@@ -103,7 +104,8 @@ function getNavTranslationKey(label: string): string | null {
 export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }: NavbarProps) {
   const { user, signOut } = useAuth();
   const { t } = useI18n();
-  const location = useLocation();
+  const { coords } = useCurrentLocation();
+  const location = useRouterLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -198,16 +200,27 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
       }
 
       if (currentUser.role === 'provider') {
-        const { data: providerLocation, error: providerLocationError } = await supabase
-          .from('locations')
-          .select('latitude, longitude')
-          .eq('user_id', currentUser.id)
-          .maybeSingle();
+        let providerCoords = coords;
 
-        if (!providerLocationError && providerLocation) {
+        if (!providerCoords) {
+          const { data: providerLocation, error: providerLocationError } = await supabase
+            .from('locations')
+            .select('latitude, longitude')
+            .eq('user_id', currentUser.id)
+            .maybeSingle();
+
+          if (!providerLocationError && providerLocation) {
+            providerCoords = {
+              latitude: Number(providerLocation.latitude),
+              longitude: Number(providerLocation.longitude),
+            };
+          }
+        }
+
+        if (providerCoords) {
           const { data: nearbyRows, error: nearbyRowsError } = await supabase.rpc('get_nearby_requests', {
-            provider_lat: providerLocation.latitude,
-            provider_lon: providerLocation.longitude,
+            provider_lat: providerCoords.latitude,
+            provider_lon: providerCoords.longitude,
             p_provider_id: currentUser.id,
             radius_km: 20,
           });
@@ -248,7 +261,7 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [t, user]);
+  }, [coords, t, user]);
 
   const unreadCount = notifications.length;
 
