@@ -251,6 +251,9 @@ const translations: Record<Language, TranslationMap> = {
       switchOpenSuccess: 'Your request is now open for nearby providers.',
       switchOpenUnavailable: 'This request can no longer be switched to open mode.',
       switchOpenWaitHint: 'If this provider does not accept in {{minutes}} minutes, you can switch to open request mode.',
+      ratingPopupTitle: 'How was your experience?',
+      ratingPopupCompletedBy: 'Service completed by',
+      ratingPopupCta: 'Share your rating to continue',
     },
     landing: {
       badge: 'Smart matching in minutes',
@@ -596,6 +599,9 @@ const translations: Record<Language, TranslationMap> = {
       switchOpenSuccess: 'Tu solicitud ahora está abierta para proveedores cercanos.',
       switchOpenUnavailable: 'Esta solicitud ya no se puede cambiar a modo abierto.',
       switchOpenWaitHint: 'Si este proveedor no acepta en {{minutes}} minutos, podrás cambiar a modo de solicitud abierta.',
+      ratingPopupTitle: '¿Cómo fue tu experiencia?',
+      ratingPopupCompletedBy: 'Servicio completado por',
+      ratingPopupCta: 'Comparte tu calificación para continuar',
     },
     landing: {
       badge: 'Emparejamiento inteligente en minutos',
