@@ -105,9 +105,9 @@ export default function Landing() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 md:px-6">
           <Link to="/" className="flex items-center gap-2">
             <div className="h-9 w-9 flex items-center justify-center">
-              <img src="/taskly-logo.svg" alt="Taskly logo" className="h-7 w-7 object-contain drop-shadow-[0_4px_8px_rgba(15,23,42,0.24)]" />
+              <img src="/zippy-logo.png" alt="Zippy logo" className="h-7 w-7 object-contain" />
             </div>
-            <span className="font-display text-xl tracking-tight text-slate-900">Taskly</span>
+            <span className="font-display text-xl tracking-tight text-slate-900">Zippy</span>
           </Link>
           <div className="relative z-[90] flex flex-col md:flex-row items-stretch md:items-center gap-2 md:gap-3">
             <LanguageSwitcher compact />
@@ -249,7 +249,7 @@ export default function Landing() {
       </section>
 
       <footer className="border-t border-slate-200 bg-slate-950 px-4 py-8 text-center text-sm text-slate-300">
-        <p>© {new Date().getFullYear()} Taskly. {t('landing.footer')}</p>
+        <p>© {new Date().getFullYear()} Zippy. {t('landing.footer')}</p>
       </footer>
     </div>
   );

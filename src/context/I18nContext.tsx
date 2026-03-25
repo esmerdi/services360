@@ -15,7 +15,8 @@ interface I18nContextValue {
   t: (key: string, fallback?: string) => string;
 }
 
-const LANGUAGE_STORAGE_KEY = 'taskly.language';
+const LANGUAGE_STORAGE_KEY = 'zippy.language';
+const LEGACY_LANGUAGE_STORAGE_KEY = 'taskly.language';
 
 const translations: Record<Language, TranslationMap> = {
   en: {
@@ -263,7 +264,7 @@ const translations: Record<Language, TranslationMap> = {
       badge: 'Smart matching in minutes',
       headline: 'Find trusted local help with a bold, modern workflow.',
       description:
-        'Taskly connects clients with verified providers for home services, beauty appointments, and everyday tasks. Post a request, compare options, and get things done faster.',
+        'Zippy connects clients with verified providers for home services, beauty appointments, and everyday tasks. Post a request, compare options, and get things done faster.',
       findService: 'Find a Service',
       becomeProvider: 'Become a Provider',
       checklist: {
@@ -299,7 +300,7 @@ const translations: Record<Language, TranslationMap> = {
           description: 'Get responses from available providers within minutes.',
         },
       },
-      howWorksTitle: 'How Taskly works',
+      howWorksTitle: 'How Zippy works',
       howWorksSubtitle: 'A fast 3-step flow designed for clarity on mobile and desktop.',
       steps: {
         browse: {
@@ -615,7 +616,7 @@ const translations: Record<Language, TranslationMap> = {
       badge: 'Emparejamiento inteligente en minutos',
       headline: 'Encuentra ayuda local confiable con un flujo moderno y claro.',
       description:
-        'Taskly conecta clientes con proveedores verificados para servicios del hogar, belleza y tareas diarias. Publica una solicitud, compara opciones y resuelve más rápido.',
+        'Zippy conecta clientes con proveedores verificados para servicios del hogar, belleza y tareas diarias. Publica una solicitud, compara opciones y resuelve más rápido.',
       findService: 'Buscar servicio',
       becomeProvider: 'Ser proveedor',
       checklist: {
@@ -651,7 +652,7 @@ const translations: Record<Language, TranslationMap> = {
           description: 'Recibe respuestas de proveedores disponibles en minutos.',
         },
       },
-      howWorksTitle: '¿Cómo funciona Taskly?',
+      howWorksTitle: '¿Cómo funciona Zippy?',
       howWorksSubtitle: 'Un flujo de 3 pasos rápido y claro para móvil y escritorio.',
       steps: {
         browse: {
@@ -750,6 +751,14 @@ function getDefaultLanguage(): Language {
     return saved;
   }
 
+  // Backward compatibility: migrate persisted language from the old brand key.
+  const legacySaved = window.localStorage.getItem(LEGACY_LANGUAGE_STORAGE_KEY);
+  if (legacySaved === 'es' || legacySaved === 'en') {
+    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, legacySaved);
+    window.localStorage.removeItem(LEGACY_LANGUAGE_STORAGE_KEY);
+    return legacySaved;
+  }
+
   return 'es';
 }
 
@@ -767,6 +776,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(LANGUAGE_STORAGE_KEY, nextLanguage);
+      window.localStorage.removeItem(LEGACY_LANGUAGE_STORAGE_KEY);
       document.documentElement.lang = nextLanguage;
     }
   };

@@ -201,9 +201,9 @@ export default function VerifyEmail() {
         <div className="mb-8 text-center">
           <Link to="/" className="inline-flex items-center gap-2">
             <div className="h-10 w-10 flex items-center justify-center">
-              <img src="/taskly-logo.svg" alt="Taskly logo" className="h-7 w-7 object-contain drop-shadow-[0_4px_8px_rgba(15,23,42,0.24)]" />
+              <img src="/zippy-logo.png" alt="Zippy logo" className="h-7 w-7 object-contain" />
             </div>
-            <span className="font-display text-2xl text-slate-900">Taskly</span>
+            <span className="font-display text-2xl text-slate-900">Zippy</span>
           </Link>
         </div>
 

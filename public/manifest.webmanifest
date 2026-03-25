@@ -1,0 +1,23 @@
+{
+  "name": "Zippy",
+  "short_name": "Zippy",
+  "description": "Book home, beauty, and everyday services with trusted local providers.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F5F2EE",
+  "theme_color": "#F07060",
+  "icons": [
+    {
+      "src": "/zippy-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/zippy-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
