@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { MessageCircle } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -28,6 +29,7 @@ const NEXT_STATUS: Record<'accepted' | 'in_progress', RequestStatus> = {
 export default function ProviderMyJobs() {
   const { user } = useAuth();
   const { language } = useI18n();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [jobs, setJobs] = useState<ServiceRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -66,6 +68,23 @@ export default function ProviderMyJobs() {
     () => jobs.filter((job) => filter === 'all' || job.status === filter),
     [filter, jobs]
   );
+
+  useEffect(() => {
+    if (loading) return;
+
+    const shouldOpenChat = searchParams.get('openChat') === '1';
+    const requestId = searchParams.get('requestId');
+    if (!shouldOpenChat || !requestId) return;
+
+    if (jobs.some((job) => job.id === requestId)) {
+      setChatJobId(requestId);
+    }
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('openChat');
+    nextParams.delete('requestId');
+    setSearchParams(nextParams, { replace: true });
+  }, [jobs, loading, searchParams, setSearchParams]);
 
   async function updateStatus(job: ServiceRequest) {
     if (!(job.status === 'accepted' || job.status === 'in_progress')) return;

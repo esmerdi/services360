@@ -210,7 +210,7 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
           const to = currentUser.role === 'client'
             ? `/client/requests/${requestId}?openChat=1`
             : currentUser.role === 'provider'
-              ? '/provider/jobs'
+              ? `/provider/jobs?openChat=1&requestId=${requestId}`
               : '/admin/requests';
 
           return {
