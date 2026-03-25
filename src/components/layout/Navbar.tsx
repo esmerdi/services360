@@ -115,42 +115,12 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
 
   const quickLinks = useMemo(() => navItems.slice(0, 2), [navItems]);
 
-  const getDismissedAcceptedNotificationIds = useCallback((userId: string) => {
-    if (typeof window === 'undefined') return new Set<string>();
-
-    const storageKey = `taskly.dismissedAcceptedNotifications.${userId}`;
-    const raw = window.localStorage.getItem(storageKey);
-    if (!raw) return new Set<string>();
-
-    try {
-      const parsed = JSON.parse(raw) as string[];
-      return new Set(parsed.filter((item) => typeof item === 'string'));
-    } catch {
-      return new Set<string>();
-    }
-  }, []);
-
-  const dismissAcceptedNotification = useCallback((userId: string, notificationId: string) => {
-    if (typeof window === 'undefined') return;
-    if (!notificationId.startsWith('accepted-')) return;
-
-    const storageKey = `taskly.dismissedAcceptedNotifications.${userId}`;
-    const dismissed = getDismissedAcceptedNotificationIds(userId);
-    dismissed.add(notificationId.replace('accepted-', ''));
-
-    window.localStorage.setItem(storageKey, JSON.stringify(Array.from(dismissed)));
-  }, [getDismissedAcceptedNotificationIds]);
-
   const handleNotificationClick = useCallback((item: NavbarNotification) => {
-    if (user) {
-      dismissAcceptedNotification(user.id, item.id);
-    }
-
     setNotifications((current) => current.filter((entry) => entry.id !== item.id));
     setNotificationsOpen(false);
     setMobileOpen(false);
     navigate(item.to);
-  }, [dismissAcceptedNotification, navigate, user]);
+  }, [navigate]);
 
   useEffect(() => {
     if (!user) {
@@ -238,7 +208,7 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
           const descriptionText = content.length > 90 ? `${content.slice(0, 90)}...` : content;
 
           const to = currentUser.role === 'client'
-            ? `/client/requests/${requestId}`
+            ? `/client/requests/${requestId}?openChat=1`
             : currentUser.role === 'provider'
               ? '/provider/jobs'
               : '/admin/requests';
@@ -254,55 +224,6 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
         }).filter((item) => Boolean(item.requestId));
 
         nextNotifications.push(...mappedMessages);
-      }
-
-      if (currentUser.role === 'client') {
-        const { data: acceptedRequests, error: acceptedRequestsError } = await supabase
-          .from('service_requests')
-          .select(`
-            id,
-            created_at,
-            service:services(name),
-            provider:users!service_requests_provider_id_fkey(full_name, email)
-          `)
-          .eq('client_id', currentUser.id)
-          .eq('status', 'accepted')
-          .order('created_at', { ascending: false })
-          .limit(10);
-
-        if (!acceptedRequestsError) {
-          const dismissedAcceptedIds = getDismissedAcceptedNotificationIds(currentUser.id);
-          const rows = ((acceptedRequests ?? []) as unknown[]) as Array<{
-            id?: string;
-            created_at?: string;
-            service?: unknown;
-            provider?: unknown;
-          }>;
-
-          const acceptedNotifications = rows
-            .filter((item) => Boolean(item.id) && !dismissedAcceptedIds.has(item.id as string))
-            .map((item) => {
-              const serviceRaw = Array.isArray(item.service) ? item.service[0] : item.service;
-              const providerRaw = Array.isArray(item.provider) ? item.provider[0] : item.provider;
-              const serviceData = (serviceRaw ?? null) as { name?: string | null } | null;
-              const providerData = (providerRaw ?? null) as { full_name?: string | null; email?: string | null } | null;
-              const serviceName = serviceData?.name || t('myRequests.table.serviceRequest');
-              const providerName = providerData?.full_name || providerData?.email || t('roles.provider');
-
-              return {
-                id: `accepted-${item.id}`,
-                requestId: item.id as string,
-                title: t('common.requestAcceptedTitle'),
-                description: t('common.requestAcceptedDescription')
-                  .replace('{{service}}', serviceName)
-                  .replace('{{provider}}', providerName),
-                to: `/client/requests/${item.id}?openChat=1`,
-                createdAt: item.created_at ?? new Date().toISOString(),
-              };
-            });
-
-          nextNotifications.push(...acceptedNotifications);
-        }
       }
 
       if (currentUser.role === 'provider') {
@@ -374,7 +295,7 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [coords, getDismissedAcceptedNotificationIds, location.pathname, navigate, t, user]);
+  }, [coords, location.pathname, navigate, t, user]);
 
   const unreadCount = notifications.length;
 
