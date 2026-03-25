@@ -506,12 +506,15 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
       </header>
 
       <header className="sticky top-0 z-[1200] border-b border-slate-200 bg-white/95 backdrop-blur-sm md:hidden">
-        <div className="flex h-16 items-center gap-3 px-4">
+        <div className="flex min-h-16 items-center gap-3 px-4 py-3">
           <Link to="/" className="flex items-center gap-2 flex-shrink-0">
             <div className="h-8 w-8 flex items-center justify-center">
               <img src="/zippy-logo.png?v=2" alt="ZippyGo logo" className="h-6 w-6 object-contain" />
             </div>
-            <span className="font-display text-lg text-slate-900">Zippy<span className="font-bold">Go</span></span>
+            <div className="min-w-0">
+              <p className="font-display text-lg leading-none text-slate-900">Zippy<span className="font-bold">Go</span></p>
+              <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-slate-500">{t('common.controlPanel')}</p>
+            </div>
           </Link>
 
           <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-700">{translatedTitle}</span>
