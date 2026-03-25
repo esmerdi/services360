@@ -84,9 +84,9 @@ export default function Register() {
           <div className="mb-8 text-center">
           <Link to="/" className="inline-flex items-center gap-2">
             <div className="h-10 w-10 flex items-center justify-center">
-              <img src="/zippy-logo.png?v=2" alt="Zippy logo" className="h-7 w-7 object-contain" />
+              <img src="/zippy-logo.png?v=2" alt="ZippyGo logo" className="h-7 w-7 object-contain" />
             </div>
-            <span className="font-display text-2xl text-slate-900">Zippy</span>
+            <span className="font-display text-2xl text-slate-900">Zippy<span className="font-bold">Go</span></span>
           </Link>
             <p className="mt-3 text-slate-500">{t('register.subtitle')}</p>
           </div>

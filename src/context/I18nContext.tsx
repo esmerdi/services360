@@ -264,7 +264,7 @@ const translations: Record<Language, TranslationMap> = {
       badge: 'Smart matching in minutes',
       headline: 'Find trusted local help with a bold, modern workflow.',
       description:
-        'Zippy connects clients with verified providers for home services, beauty appointments, and everyday tasks. Post a request, compare options, and get things done faster.',
+        'ZippyGo connects clients with verified providers for home services, beauty appointments, and everyday tasks. Post a request, compare options, and get things done faster.',
       findService: 'Find a Service',
       becomeProvider: 'Become a Provider',
       checklist: {
@@ -300,7 +300,7 @@ const translations: Record<Language, TranslationMap> = {
           description: 'Get responses from available providers within minutes.',
         },
       },
-      howWorksTitle: 'How Zippy works',
+      howWorksTitle: 'How ZippyGo works',
       howWorksSubtitle: 'A fast 3-step flow designed for clarity on mobile and desktop.',
       steps: {
         browse: {
@@ -616,7 +616,7 @@ const translations: Record<Language, TranslationMap> = {
       badge: 'Emparejamiento inteligente en minutos',
       headline: 'Encuentra ayuda local confiable con un flujo moderno y claro.',
       description:
-        'Zippy conecta clientes con proveedores verificados para servicios del hogar, belleza y tareas diarias. Publica una solicitud, compara opciones y resuelve más rápido.',
+        'ZippyGo conecta clientes con proveedores verificados para servicios del hogar, belleza y tareas diarias. Publica una solicitud, compara opciones y resuelve más rápido.',
       findService: 'Buscar servicio',
       becomeProvider: 'Ser proveedor',
       checklist: {
@@ -652,7 +652,7 @@ const translations: Record<Language, TranslationMap> = {
           description: 'Recibe respuestas de proveedores disponibles en minutos.',
         },
       },
-      howWorksTitle: '¿Cómo funciona Zippy?',
+      howWorksTitle: '¿Cómo funciona ZippyGo?',
       howWorksSubtitle: 'Un flujo de 3 pasos rápido y claro para móvil y escritorio.',
       steps: {
         browse: {

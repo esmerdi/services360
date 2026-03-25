@@ -509,9 +509,9 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
         <div className="flex h-16 items-center gap-3 px-4">
           <Link to="/" className="flex items-center gap-2 flex-shrink-0">
             <div className="h-8 w-8 flex items-center justify-center">
-              <img src="/zippy-logo.png?v=2" alt="Zippy logo" className="h-6 w-6 object-contain" />
+              <img src="/zippy-logo.png?v=2" alt="ZippyGo logo" className="h-6 w-6 object-contain" />
             </div>
-            <span className="font-display text-lg text-slate-900">Zippy</span>
+            <span className="font-display text-lg text-slate-900">Zippy<span className="font-bold">Go</span></span>
           </Link>
 
           <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-700">{translatedTitle}</span>
@@ -597,10 +597,10 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
         <div className="border-b border-slate-200 px-5 py-5">
           <Link to="/" className="flex items-center gap-3 min-w-0">
             <div className="h-10 w-10 flex items-center justify-center">
-              <img src="/zippy-logo.png?v=2" alt="Zippy logo" className="h-7 w-7 object-contain" />
+              <img src="/zippy-logo.png?v=2" alt="ZippyGo logo" className="h-7 w-7 object-contain" />
             </div>
             <div className="min-w-0">
-              <p className="font-display text-lg leading-none text-slate-900">Zippy</p>
+              <p className="font-display text-lg leading-none text-slate-900">Zippy<span className="font-bold">Go</span></p>
               <p className="mt-1 text-xs uppercase tracking-[0.14em] text-slate-500">{t('common.controlPanel')}</p>
             </div>
           </Link>

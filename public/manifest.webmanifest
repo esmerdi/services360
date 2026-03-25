@@ -1,6 +1,6 @@
 {
-  "name": "Zippy",
-  "short_name": "Zippy",
+  "name": "ZippyGo",
+  "short_name": "ZippyGo",
   "description": "Book home, beauty, and everyday services with trusted local providers.",
   "start_url": "/",
   "display": "standalone",
