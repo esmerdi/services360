@@ -8,13 +8,13 @@
   "theme_color": "#F07060",
   "icons": [
     {
-      "src": "/zippy-logo.png",
+      "src": "/zippy-logo.png?v=2",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/zippy-logo.png",
+      "src": "/zippy-logo.png?v=2",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

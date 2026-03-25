@@ -509,7 +509,7 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
         <div className="flex h-16 items-center gap-3 px-4">
           <Link to="/" className="flex items-center gap-2 flex-shrink-0">
             <div className="h-8 w-8 flex items-center justify-center">
-              <img src="/zippy-logo.png" alt="Zippy logo" className="h-6 w-6 object-contain" />
+              <img src="/zippy-logo.png?v=2" alt="Zippy logo" className="h-6 w-6 object-contain" />
             </div>
             <span className="font-display text-lg text-slate-900">Zippy</span>
           </Link>
@@ -597,7 +597,7 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
         <div className="border-b border-slate-200 px-5 py-5">
           <Link to="/" className="flex items-center gap-3 min-w-0">
             <div className="h-10 w-10 flex items-center justify-center">
-              <img src="/zippy-logo.png" alt="Zippy logo" className="h-7 w-7 object-contain" />
+              <img src="/zippy-logo.png?v=2" alt="Zippy logo" className="h-7 w-7 object-contain" />
             </div>
             <div className="min-w-0">
               <p className="font-display text-lg leading-none text-slate-900">Zippy</p>
