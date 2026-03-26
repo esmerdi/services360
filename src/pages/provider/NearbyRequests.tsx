@@ -1,21 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, Info, MapPin } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
-import LocationMap from '../../components/common/LocationMap';
-import UserAvatar from '../../components/common/UserAvatar';
-import type { LocationMapMarker } from '../../components/common/LocationMap';
-import StatusBadge from '../../components/common/StatusBadge';
+import LazyLocationMap from '../../components/common/LazyLocationMap';
+import type { LocationMapMarker } from '../../components/common/LazyLocationMap';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
 import { useLocation } from '../../context/LocationContext';
-import { formatDistance } from '../../utils/distance';
 import { extractManagedAvatarPath } from '../../utils/helpers';
 import { getCategoryMarkerColor, getCategoryMarkerGlyph } from '../../utils/mapMarkers';
-import type { ServiceRequest } from '../../types';
+import NearbyRequestCard from './nearby/NearbyRequestCard';
+import { useNearbyRequestActions } from './nearby/useNearbyRequestActions';
+import { useNearbyRequestsData } from './nearby/useNearbyRequestsData';
 
 const PROVIDER_NAV = [
   { label: 'Dashboard', to: '/provider' },
@@ -25,25 +24,34 @@ const PROVIDER_NAV = [
   { label: 'Subscription', to: '/provider/subscription' },
 ];
 
-type NearbyRequest = ServiceRequest & { client?: { full_name?: string | null; email?: string | null; avatar_url?: string | null } };
-type NearbyRequestRpcRow = { id: string; distance_km: number };
-
 export default function ProviderNearbyRequests() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { language } = useI18n();
   const es = language === 'es';
   const { coords, refresh } = useLocation();
-  const [requests, setRequests] = useState<NearbyRequest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [infoMessage, setInfoMessage] = useState<string | null>(null);
-  const [actingId, setActingId] = useState<string | null>(null);
   const [visibleMarkerIds, setVisibleMarkerIds] = useState<string[]>([]);
   const [fitBoundsTrigger, setFitBoundsTrigger] = useState(0);
 
-  const resolveAvatarUrl = React.useCallback((value: string | null | undefined): string | undefined => {
+  const {
+    requests,
+    loading,
+    error,
+    successMessage,
+    infoMessage,
+    actingId,
+    setRequests,
+    setError,
+    setSuccessMessage,
+    setInfoMessage,
+    setActingId,
+  } = useNearbyRequestsData({
+    userId: user?.id,
+    coords,
+    es,
+  });
+
+  const resolveAvatarUrl = useCallback((value: string | null | undefined): string | undefined => {
     if (!value) return undefined;
 
     const objectPath = extractManagedAvatarPath(value);
@@ -55,274 +63,19 @@ export default function ProviderNearbyRequests() {
     return data.publicUrl || value;
   }, []);
 
-  useEffect(() => {
-    if (!user || !coords) {
-      setLoading(false);
-      return;
-    }
-    const currentUser = user;
-    const currentCoords = coords;
+  const { acceptRequest } = useNearbyRequestActions({
+    userId: user?.id,
+    es,
+    requests,
+    setRequests,
+    setError,
+    setSuccessMessage,
+    setInfoMessage,
+    setActingId,
+    onAcceptedRedirect: () => navigate('/provider/jobs'),
+  });
 
-    async function fetchRequests() {
-      setLoading(true);
-      const { data, error: requestError } = await supabase.rpc('get_nearby_requests', {
-        provider_lat: currentCoords.latitude,
-        provider_lon: currentCoords.longitude,
-        p_provider_id: currentUser.id,
-        radius_km: 20,
-      });
-
-      if (requestError) {
-        setError(requestError.message);
-        setLoading(false);
-        return;
-      }
-
-      const rpcRows = (data as NearbyRequestRpcRow[] | null) ?? [];
-      const requestIds = rpcRows.map((request: NearbyRequestRpcRow) => request.id);
-      if (requestIds.length === 0) {
-        setRequests([]);
-        setLoading(false);
-        return;
-      }
-
-      const { data: details, error: detailsError } = await supabase
-        .from('service_requests')
-        .select(`
-          *,
-          service:services(id, name, category_id, category:categories(id, name, icon)),
-          client:users!service_requests_client_id_fkey(id, full_name, email, avatar_url)
-        `)
-        .in('id', requestIds);
-
-      if (detailsError) {
-        setError(detailsError.message);
-      } else {
-        const distanceMap = new Map<string, number>(
-          rpcRows.map((request: NearbyRequestRpcRow) => [request.id, request.distance_km])
-        );
-        const merged = ((details as NearbyRequest[]) ?? [])
-          .filter((request) => request.provider_id === null || request.provider_id === currentUser.id)
-          .map((request) => ({
-            ...request,
-            distance_km: distanceMap.get(request.id),
-          }));
-        merged.sort((left, right) => (left.distance_km ?? Infinity) - (right.distance_km ?? Infinity));
-        setRequests(merged);
-      }
-      setLoading(false);
-    }
-
-    fetchRequests();
-  }, [coords, user]);
-
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel(`provider-nearby-requests-${user.id}`)
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'service_requests' },
-        (payload) => {
-          const updated = payload.new as Partial<ServiceRequest>;
-          if (!updated?.id) return;
-
-          let removedRequest: NearbyRequest | undefined;
-          if (updated.status !== 'pending' || updated.provider_id) {
-            setRequests((current) => {
-              removedRequest = current.find((request) => request.id === updated.id);
-              return current.filter((request) => request.id !== updated.id);
-            });
-
-            if (removedRequest && actingId !== updated.id) {
-              setInfoMessage(
-                updated.provider_id && updated.provider_id !== user.id
-                  ? (es ? 'Una solicitud cercana fue tomada por otro proveedor.' : 'A nearby request was taken by another provider.')
-                  : (es ? 'Una solicitud cercana dejó de estar disponible.' : 'A nearby request is no longer available.')
-              );
-            }
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'service_requests' },
-        (payload) => {
-          const removed = payload.old as Partial<ServiceRequest>;
-          if (!removed?.id) return;
-
-          let removedRequest: NearbyRequest | undefined;
-          setRequests((current) => {
-            removedRequest = current.find((request) => request.id === removed.id);
-            return current.filter((request) => request.id !== removed.id);
-          });
-
-          if (removedRequest && actingId !== removed.id) {
-            setInfoMessage(es ? 'Una solicitud cercana dejó de estar disponible.' : 'A nearby request is no longer available.');
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [actingId, es, user]);
-
-  useEffect(() => {
-    if (!successMessage) return;
-    const timer = window.setTimeout(() => setSuccessMessage(null), 3500);
-    return () => window.clearTimeout(timer);
-  }, [successMessage]);
-
-  useEffect(() => {
-    if (!infoMessage) return;
-    const timer = window.setTimeout(() => setInfoMessage(null), 3500);
-    return () => window.clearTimeout(timer);
-  }, [infoMessage]);
-
-  async function sendWelcomeMessage(requestId: string, clientName: string) {
-    if (!user) return;
-
-    const { data: existingMessage, error: existingMessageError } = await supabase
-      .from('messages')
-      .select('id')
-      .eq('request_id', requestId)
-      .eq('sender_id', user.id)
-      .order('created_at', { ascending: true })
-      .limit(1)
-      .maybeSingle();
-
-    if (existingMessageError) {
-      console.error('Error checking welcome message:', existingMessageError.message);
-      return;
-    }
-
-    if (existingMessage) return;
-
-    const content = es
-      ? `Hola, ${clientName} es un gusto atenderte. ¿En qué te puedo colaborar?`
-      : `Hi ${clientName}, it is a pleasure to help you. How can I assist you?`;
-
-    const { error: insertMessageError } = await supabase.from('messages').insert({
-      request_id: requestId,
-      sender_id: user.id,
-      content,
-    });
-
-    if (insertMessageError) {
-      console.error('Error sending welcome message:', insertMessageError.message);
-    }
-  }
-
-  async function acceptRequest(requestId: string, redirectToJobs = false) {
-    if (!user) return;
-    const currentRequest = requests.find((request) => request.id === requestId);
-    const clientName = currentRequest?.client?.full_name || currentRequest?.client?.email || (es ? 'cliente' : 'client');
-
-    setError(null);
-    setSuccessMessage(null);
-    setInfoMessage(null);
-    setActingId(requestId);
-    const { error: updateError } = await supabase
-      .from('service_requests')
-      .update({ provider_id: user.id, status: 'accepted' })
-      .eq('id', requestId)
-      .eq('status', 'pending')
-      .or(`provider_id.is.null,provider_id.eq.${user.id}`);
-
-    if (updateError) {
-      setActingId(null);
-      setError(updateError.message);
-      return;
-    }
-
-    const { data: acceptedRequest, error: acceptedRequestError } = await supabase
-      .from('service_requests')
-      .select('id')
-      .eq('id', requestId)
-      .eq('provider_id', user.id)
-      .eq('status', 'accepted')
-      .maybeSingle();
-
-    setActingId(null);
-
-    if (acceptedRequestError) {
-      setError(acceptedRequestError.message);
-      return;
-    }
-
-    if (!acceptedRequest) {
-      const { data: currentRequest, error: currentRequestError } = await supabase
-        .from('service_requests')
-        .select('id, status, provider_id')
-        .eq('id', requestId)
-        .maybeSingle();
-
-      if (currentRequestError) {
-        setError(currentRequestError.message);
-        return;
-      }
-
-      if (currentRequest && currentRequest.status === 'pending' && currentRequest.provider_id === user.id) {
-        const { error: confirmError } = await supabase
-          .from('service_requests')
-          .update({ status: 'accepted' })
-          .eq('id', requestId)
-          .eq('provider_id', user.id)
-          .eq('status', 'pending');
-
-        if (confirmError) {
-          setError(confirmError.message);
-          return;
-        }
-
-        const { data: confirmedRequest, error: confirmedRequestError } = await supabase
-          .from('service_requests')
-          .select('id')
-          .eq('id', requestId)
-          .eq('provider_id', user.id)
-          .eq('status', 'accepted')
-          .maybeSingle();
-
-        if (confirmedRequestError) {
-          setError(confirmedRequestError.message);
-          return;
-        }
-
-        if (confirmedRequest) {
-          await sendWelcomeMessage(requestId, clientName);
-          setRequests((current) => current.filter((request) => request.id !== requestId));
-          setSuccessMessage(es ? 'Solicitud aceptada correctamente.' : 'Request accepted successfully.');
-
-          if (redirectToJobs) {
-            window.setTimeout(() => navigate('/provider/jobs'), 900);
-          }
-          return;
-        }
-      }
-
-      if (!currentRequest || currentRequest.status !== 'pending' || (currentRequest.provider_id && currentRequest.provider_id !== user.id)) {
-        setRequests((current) => current.filter((request) => request.id !== requestId));
-        setError(es ? 'La solicitud ya fue tomada o dejó de estar disponible.' : 'This request was already taken or is no longer available.');
-        return;
-      }
-
-      setError(es ? 'No tienes permiso para aceptar esta solicitud.' : 'You do not have permission to accept this request.');
-      return;
-    }
-
-    await sendWelcomeMessage(requestId, clientName);
-    setRequests((current) => current.filter((request) => request.id !== requestId));
-    setSuccessMessage(es ? 'Solicitud aceptada correctamente.' : 'Request accepted successfully.');
-
-    if (redirectToJobs) {
-      window.setTimeout(() => navigate('/provider/jobs'), 900);
-    }
-  }
-
-  const requestMarkers = React.useMemo(() => {
+  const requestMarkers = useMemo(() => {
     const markers: LocationMapMarker[] = requests
       .filter((request) => request.latitude !== null && request.latitude !== undefined && request.longitude !== null && request.longitude !== undefined)
       .map((request) => ({
@@ -357,10 +110,14 @@ export default function ProviderNearbyRequests() {
     return markers;
   }, [coords, es, requests, resolveAvatarUrl, user?.id]);
 
-  const visibleNearbyCount = React.useMemo(() => {
+  const visibleNearbyCount = useMemo(() => {
     const requestIds = new Set(requests.map((request) => request.id));
     return visibleMarkerIds.filter((markerId) => requestIds.has(markerId)).length;
   }, [requests, visibleMarkerIds]);
+
+  const handleAcceptCardRequest = useCallback((requestId: string) => {
+    void acceptRequest(requestId);
+  }, [acceptRequest]);
 
   return (
     <Layout navItems={PROVIDER_NAV} title="Nearby Requests">
@@ -442,7 +199,7 @@ export default function ProviderNearbyRequests() {
               <h2 className="text-lg font-semibold text-slate-900">{es ? 'Mapa de solicitudes' : 'Requests map'}</h2>
               <p className="mt-1 text-sm text-slate-500">{es ? 'Visualiza tu posicion y las solicitudes cercanas sobre OpenStreetMap.' : 'See your position and nearby requests on OpenStreetMap.'}</p>
             </div>
-            <LocationMap
+            <LazyLocationMap
               markers={requestMarkers}
               enableClustering={requestMarkers.length > 8}
               onMarkerActionClick={(marker: LocationMapMarker) => acceptRequest(marker.actionRequestId ?? marker.id, true)}
@@ -459,47 +216,14 @@ export default function ProviderNearbyRequests() {
               </div>
             )}
             {requests.map((request) => (
-              <div key={request.id} className="card">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex min-w-0 items-start gap-3">
-                    <UserAvatar
-                      avatarUrl={request.client?.avatar_url}
-                      name={request.client?.full_name || request.client?.email || (es ? 'Cliente' : 'Client')}
-                      alt={request.client?.full_name || request.client?.email || (es ? 'Cliente' : 'Client')}
-                      className="h-11 w-11 overflow-hidden rounded-full border border-slate-200 bg-slate-100"
-                      fallbackClassName="text-xs font-semibold text-slate-600"
-                    />
-                    <div className="min-w-0">
-                      <p className="text-sm text-slate-500">{request.service?.name || (es ? 'Solicitud de servicio' : 'Service Request')}</p>
-                      <h2 className="mt-1 truncate text-lg font-semibold text-slate-900">{request.client?.full_name || (es ? 'Solicitud de cliente' : 'Client request')}</h2>
-                    </div>
-                  </div>
-                  <StatusBadge status={request.status} />
-                </div>
-
-                <p className="mt-3 text-sm text-slate-500">{request.description || (es ? 'No hay detalles adicionales.' : 'No extra details provided.')}</p>
-
-                <div className="mt-4 grid gap-3 md:grid-cols-2">
-                  <div className="surface-muted text-sm text-slate-600">
-                    <p className="font-medium text-slate-800">{es ? 'Distancia' : 'Distance'}</p>
-                    <p className="mt-1">{request.distance_km !== undefined ? formatDistance(request.distance_km) : (es ? 'No disponible' : 'Unavailable')}</p>
-                  </div>
-                </div>
-
-                <p className="mt-4 text-sm text-slate-500">{request.address || (es ? 'Sin referencia de direccion.' : 'No address reference supplied.')}</p>
-
-                <button
-                  onClick={() => acceptRequest(request.id)}
-                  className="btn-primary mt-5 w-full justify-center"
-                  disabled={actingId === request.id}
-                >
-                  {actingId === request.id ? <LoadingSpinner size="sm" /> : (
-                    request.provider_id === user?.id
-                      ? (es ? 'Confirmar solicitud' : 'Confirm request')
-                      : (es ? 'Aceptar solicitud' : 'Accept request')
-                  )}
-                </button>
-              </div>
+              <NearbyRequestCard
+                key={request.id}
+                request={request}
+                es={es}
+                userId={user?.id}
+                actingId={actingId}
+                onAccept={handleAcceptCardRequest}
+              />
             ))}
           </div>
         </div>

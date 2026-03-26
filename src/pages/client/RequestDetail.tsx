@@ -4,18 +4,20 @@ import { MessageCircle } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
-import LocationMap from '../../components/common/LocationMap';
+import LazyLocationMap from '../../components/common/LazyLocationMap';
 import UserAvatar from '../../components/common/UserAvatar';
 import ChatWindow from '../../components/common/ChatWindow';
-import type { LocationMapMarker } from '../../components/common/LocationMap';
+import type { LocationMapMarker } from '../../components/common/LazyLocationMap';
 import StatusBadge from '../../components/common/StatusBadge';
 import StarRating from '../../components/common/StarRating';
-import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
 import { formatDateTime } from '../../utils/helpers';
 import { getCategoryMarkerColor, getCategoryMarkerGlyph } from '../../utils/mapMarkers';
 import type { Category, Rating, RequestStatusHistory, ServiceRequest } from '../../types';
+import MandatoryRatingModal from './request-detail/MandatoryRatingModal';
+import { useRequestDetailActions } from './request-detail/useRequestDetailActions';
+import { useRequestDetailData } from './request-detail/useRequestDetailData';
 
 const CLIENT_NAV = [
   { label: 'Dashboard', to: '/client' },
@@ -34,14 +36,19 @@ export default function ClientRequestDetail() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { t, language } = useI18n();
-  const [request, setRequest] = useState<ServiceRequest | null>(null);
-  const [categories, setCategories] = useState<Array<Pick<Category, 'id' | 'name' | 'parent_id'>>>([]);
-  const [history, setHistory] = useState<RequestStatusHistory[]>([]);
-  const [rating, setRating] = useState<Rating | null>(null);
-  const [loading, setLoading] = useState(true);
+  const {
+    request,
+    categories,
+    history,
+    rating,
+    loading,
+    error,
+    setRequest,
+    setRating,
+    setError,
+  } = useRequestDetailData({ requestId: id });
   const [savingRating, setSavingRating] = useState(false);
   const [openingRequest, setOpeningRequest] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [score, setScore] = useState(5);
   const [comment, setComment] = useState('');
@@ -68,95 +75,6 @@ export default function ClientRequestDetail() {
 
     return path.length > 0 ? path.join(' > ') : t('clientBrowse.generalCategory');
   }, [categoryMap, t]);
-
-  useEffect(() => {
-    if (!id) return;
-
-    async function fetchDetails() {
-      setLoading(true);
-      const [requestRes, historyRes, ratingRes, categoriesRes] = await Promise.all([
-        supabase
-          .from('service_requests')
-          .select(`
-            *,
-            service:services(id, name, category_id, category:categories(id, name, icon)),
-            client:users!service_requests_client_id_fkey(id, full_name, email),
-            provider:users!service_requests_provider_id_fkey(id, full_name, email, avatar_url)
-          `)
-          .eq('id', id)
-          .single(),
-        supabase.from('request_status_history').select('*').eq('request_id', id).order('created_at'),
-        supabase.from('ratings').select('*').eq('request_id', id).maybeSingle(),
-        supabase.from('categories').select('id, name, parent_id'),
-      ]);
-
-      if (requestRes.error) {
-        setError(requestRes.error.message);
-      } else if (categoriesRes.error) {
-        setError(categoriesRes.error.message);
-      } else {
-        const requestData = requestRes.data as ServiceRequest;
-
-        if (requestData.provider_id) {
-          const { data: providerRatings, error: providerRatingsError } = await supabase
-            .from('ratings')
-            .select('rating')
-            .eq('to_user_id', requestData.provider_id);
-
-          if (providerRatingsError) {
-            setError(providerRatingsError.message);
-            setLoading(false);
-            return;
-          }
-
-          const ratings = (providerRatings as Array<{ rating: number }>) ?? [];
-          const ratingsCount = ratings.length;
-          const avgRating = ratingsCount > 0
-            ? ratings.reduce((sum, item) => sum + item.rating, 0) / ratingsCount
-            : 0;
-
-          if (requestData.provider) {
-            requestData.provider = {
-              ...requestData.provider,
-              avg_rating: avgRating,
-              ratings_count: ratingsCount,
-            };
-          }
-        }
-
-        setRequest(requestData);
-        setCategories((categoriesRes.data as Array<Pick<Category, 'id' | 'name' | 'parent_id'>>) ?? []);
-      }
-
-      setHistory((historyRes.data as RequestStatusHistory[]) ?? []);
-      setRating((ratingRes.data as Rating | null) ?? null);
-      setLoading(false);
-    }
-
-    fetchDetails();
-
-    const channel = supabase
-      .channel(`request-detail-${id}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'service_requests', filter: `id=eq.${id}` },
-        () => {
-          fetchDetails();
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'request_status_history', filter: `request_id=eq.${id}` },
-        () => {
-          fetchDetails();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [id]);
 
   const canRate = useMemo(
     () => !!request && request.status === 'completed' && !!request.provider_id && !rating && !!user,
@@ -231,64 +149,19 @@ export default function ClientRequestDetail() {
     }
   }, [request, searchParams, setSearchParams]);
 
-  async function submitRating(event: React.FormEvent) {
-    event.preventDefault();
-    if (!request || !request.provider_id || !user) return;
-
-    setSavingRating(true);
-    const { data, error: ratingError } = await supabase
-      .from('ratings')
-      .insert({
-        request_id: request.id,
-        from_user_id: user.id,
-        to_user_id: request.provider_id,
-        rating: score,
-        comment: comment.trim() || null,
-      })
-      .select('*')
-      .single();
-    setSavingRating(false);
-
-    if (ratingError) {
-      setError(ratingError.message);
-      return;
-    }
-
-    setRating(data as Rating);
-  }
-
-  async function switchToOpenRequest() {
-    if (!request || !user || !request.provider_id) return;
-
-    setOpeningRequest(true);
-    setError(null);
-    setSuccessMessage(null);
-
-    const { data, error: updateError } = await supabase
-      .from('service_requests')
-      .update({ provider_id: null, status: 'pending' })
-      .eq('id', request.id)
-      .eq('client_id', user.id)
-      .eq('status', 'pending')
-      .eq('provider_id', request.provider_id)
-      .select('id')
-      .maybeSingle();
-
-    setOpeningRequest(false);
-
-    if (updateError) {
-      setError(updateError.message);
-      return;
-    }
-
-    if (!data) {
-      setError(t('clientRequestDetail.switchOpenUnavailable'));
-      return;
-    }
-
-    setRequest((current) => (current ? { ...current, provider_id: null, provider: undefined } : current));
-    setSuccessMessage(t('clientRequestDetail.switchOpenSuccess'));
-  }
+  const { submitRating, switchToOpenRequest } = useRequestDetailActions({
+    request,
+    userId: user?.id,
+    score,
+    comment,
+    t,
+    setSavingRating,
+    setOpeningRequest,
+    setError,
+    setRating,
+    setRequest,
+    setSuccessMessage,
+  });
 
   return (
     <Layout navItems={CLIENT_NAV} title="Request Details">
@@ -434,7 +307,7 @@ export default function ClientRequestDetail() {
               {requestMarkers.length > 0 && (
                 <div className="mt-5 space-y-3">
                   <p className="text-sm font-medium text-slate-800">{t('clientRequestDetail.locationMap')}</p>
-                  <LocationMap markers={requestMarkers} heightClassName="h-72" />
+                  <LazyLocationMap markers={requestMarkers} heightClassName="h-72" />
                 </div>
               )}
             </div>
@@ -468,69 +341,18 @@ export default function ClientRequestDetail() {
         />
       )}
 
-      {/* Mandatory rating popup — no close button, no backdrop click, no Escape */}
-      {canRate && request?.provider && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" aria-hidden="true" />
-          <div
-            className="relative z-10 w-full max-w-sm rounded-2xl bg-white shadow-2xl"
-            role="dialog"
-            aria-modal="true"
-          >
-            {/* Provider card header */}
-            <div className="rounded-t-2xl bg-gradient-to-br from-amber-400 to-orange-500 px-6 pb-7 pt-8 text-center">
-              <UserAvatar
-                avatarUrl={request.provider.avatar_url}
-                name={request.provider.full_name || request.provider.email}
-                alt={request.provider.full_name || request.provider.email || ''}
-                className="mx-auto h-20 w-20 overflow-hidden rounded-full border-4 border-white/80 shadow-lg bg-gradient-to-br from-amber-300 to-orange-400 flex items-center justify-center"
-                fallbackClassName="text-2xl font-bold text-white"
-              />
-              <p className="mt-3 text-lg font-semibold text-white">
-                {request.provider.full_name || request.provider.email}
-              </p>
-              <p className="mt-1 text-sm text-amber-100">
-                {t('clientRequestDetail.ratingPopupCompletedBy')}{request.service?.name ? ` ${request.service.name}` : ''}
-              </p>
-            </div>
-
-            {/* Rating form */}
-            <div className="px-6 py-5">
-              <p className="text-center text-base font-semibold text-slate-900">
-                {t('clientRequestDetail.ratingPopupTitle')}
-              </p>
-              <p className="mt-1 text-center text-sm text-slate-500">
-                {t('clientRequestDetail.ratingPopupCta')}
-              </p>
-
-              {error && (
-                <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                  {error}
-                </div>
-              )}
-
-              <form onSubmit={submitRating} className="mt-5 space-y-4">
-                <div className="flex justify-center">
-                  <StarRating value={score} onChange={setScore} size="lg" />
-                </div>
-                <textarea
-                  className="input resize-none"
-                  rows={3}
-                  placeholder={t('clientRequestDetail.shareExperience')}
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                />
-                <button
-                  type="submit"
-                  className="btn-primary w-full justify-center"
-                  disabled={savingRating}
-                >
-                  {savingRating ? <LoadingSpinner size="sm" /> : t('clientRequestDetail.submitRating')}
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
+      {canRate && request && (
+        <MandatoryRatingModal
+          request={request}
+          error={error}
+          score={score}
+          comment={comment}
+          savingRating={savingRating}
+          t={t}
+          onScoreChange={setScore}
+          onCommentChange={setComment}
+          onSubmit={submitRating}
+        />
       )}
     </Layout>
   );

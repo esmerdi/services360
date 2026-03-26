@@ -5,34 +5,30 @@ import { LocationProvider } from './context/LocationContext';
 import { I18nProvider } from './context/I18nContext';
 import LoadingSpinner from './components/common/LoadingSpinner';
 
-// Auth pages
-import Login       from './pages/auth/Login';
-import Register    from './pages/auth/Register';
-import VerifyEmail from './pages/auth/VerifyEmail';
-import Landing     from './pages/Landing';
+const Login = React.lazy(() => import('./pages/auth/Login'));
+const Register = React.lazy(() => import('./pages/auth/Register'));
+const VerifyEmail = React.lazy(() => import('./pages/auth/VerifyEmail'));
+const Landing = React.lazy(() => import('./pages/Landing'));
 
-// Admin pages
-import AdminDashboard  from './pages/admin/Dashboard';
-import AdminUsers      from './pages/admin/Users';
-import AdminCategories from './pages/admin/Categories';
-import AdminServices   from './pages/admin/Services';
-import AdminRequests   from './pages/admin/Requests';
-import AdminPlans      from './pages/admin/Plans';
+const AdminDashboard = React.lazy(() => import('./pages/admin/Dashboard'));
+const AdminUsers = React.lazy(() => import('./pages/admin/Users'));
+const AdminCategories = React.lazy(() => import('./pages/admin/Categories'));
+const AdminServices = React.lazy(() => import('./pages/admin/Services'));
+const AdminRequests = React.lazy(() => import('./pages/admin/Requests'));
+const AdminPlans = React.lazy(() => import('./pages/admin/Plans'));
 
-// Client pages
-import ClientDashboard     from './pages/client/Dashboard';
-import ClientBrowse        from './pages/client/Browse';
-import ClientRequestService from './pages/client/RequestService';
-import ClientMyRequests    from './pages/client/MyRequests';
-import ClientRequestDetail from './pages/client/RequestDetail';
-import ClientProfile       from './pages/client/Profile';
+const ClientDashboard = React.lazy(() => import('./pages/client/Dashboard'));
+const ClientBrowse = React.lazy(() => import('./pages/client/Browse'));
+const ClientRequestService = React.lazy(() => import('./pages/client/RequestService'));
+const ClientMyRequests = React.lazy(() => import('./pages/client/MyRequests'));
+const ClientRequestDetail = React.lazy(() => import('./pages/client/RequestDetail'));
+const ClientProfile = React.lazy(() => import('./pages/client/Profile'));
 
-// Provider pages
-import ProviderDashboard      from './pages/provider/Dashboard';
-import ProviderNearbyRequests from './pages/provider/NearbyRequests';
-import ProviderMyJobs         from './pages/provider/MyJobs';
-import ProviderProfile        from './pages/provider/Profile';
-import ProviderSubscription   from './pages/provider/Subscription';
+const ProviderDashboard = React.lazy(() => import('./pages/provider/Dashboard'));
+const ProviderNearbyRequests = React.lazy(() => import('./pages/provider/NearbyRequests'));
+const ProviderMyJobs = React.lazy(() => import('./pages/provider/MyJobs'));
+const ProviderProfile = React.lazy(() => import('./pages/provider/Profile'));
+const ProviderSubscription = React.lazy(() => import('./pages/provider/Subscription'));
 
 // ─── Route Guards ─────────────────────────────────────────────────────────────
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -71,6 +67,10 @@ function FullPageLoader() {
   );
 }
 
+function RoutePage({ children }: { children: React.ReactNode }) {
+  return <React.Suspense fallback={<FullPageLoader />}>{children}</React.Suspense>;
+}
+
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
   return (
@@ -80,10 +80,10 @@ export default function App() {
           <BrowserRouter>
             <Routes>
             {/* Public */}
-            <Route path="/" element={<Landing />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/" element={<RoutePage><Landing /></RoutePage>} />
+            <Route path="/login" element={<RoutePage><Login /></RoutePage>} />
+            <Route path="/register" element={<RoutePage><Register /></RoutePage>} />
+            <Route path="/verify-email" element={<RoutePage><VerifyEmail /></RoutePage>} />
 
             {/* Role redirect */}
             <Route
@@ -100,7 +100,7 @@ export default function App() {
               path="/admin"
               element={
                 <RequireRole role="admin">
-                  <AdminDashboard />
+                  <RoutePage><AdminDashboard /></RoutePage>
                 </RequireRole>
               }
             />
@@ -108,7 +108,7 @@ export default function App() {
               path="/admin/users"
               element={
                 <RequireRole role="admin">
-                  <AdminUsers />
+                  <RoutePage><AdminUsers /></RoutePage>
                 </RequireRole>
               }
             />
@@ -116,7 +116,7 @@ export default function App() {
               path="/admin/categories"
               element={
                 <RequireRole role="admin">
-                  <AdminCategories />
+                  <RoutePage><AdminCategories /></RoutePage>
                 </RequireRole>
               }
             />
@@ -124,7 +124,7 @@ export default function App() {
               path="/admin/services"
               element={
                 <RequireRole role="admin">
-                  <AdminServices />
+                  <RoutePage><AdminServices /></RoutePage>
                 </RequireRole>
               }
             />
@@ -132,7 +132,7 @@ export default function App() {
               path="/admin/requests"
               element={
                 <RequireRole role="admin">
-                  <AdminRequests />
+                  <RoutePage><AdminRequests /></RoutePage>
                 </RequireRole>
               }
             />
@@ -140,7 +140,7 @@ export default function App() {
               path="/admin/plans"
               element={
                 <RequireRole role="admin">
-                  <AdminPlans />
+                  <RoutePage><AdminPlans /></RoutePage>
                 </RequireRole>
               }
             />
@@ -150,7 +150,7 @@ export default function App() {
               path="/client"
               element={
                 <RequireRole role="client">
-                  <ClientDashboard />
+                  <RoutePage><ClientDashboard /></RoutePage>
                 </RequireRole>
               }
             />
@@ -158,7 +158,7 @@ export default function App() {
               path="/client/browse"
               element={
                 <RequireRole role="client">
-                  <ClientBrowse />
+                  <RoutePage><ClientBrowse /></RoutePage>
                 </RequireRole>
               }
             />
@@ -166,7 +166,7 @@ export default function App() {
               path="/client/request/:serviceId"
               element={
                 <RequireRole role="client">
-                  <ClientRequestService />
+                  <RoutePage><ClientRequestService /></RoutePage>
                 </RequireRole>
               }
             />
@@ -174,7 +174,7 @@ export default function App() {
               path="/client/requests"
               element={
                 <RequireRole role="client">
-                  <ClientMyRequests />
+                  <RoutePage><ClientMyRequests /></RoutePage>
                 </RequireRole>
               }
             />
@@ -182,7 +182,7 @@ export default function App() {
               path="/client/requests/:id"
               element={
                 <RequireRole role="client">
-                  <ClientRequestDetail />
+                  <RoutePage><ClientRequestDetail /></RoutePage>
                 </RequireRole>
               }
             />
@@ -190,7 +190,7 @@ export default function App() {
               path="/client/profile"
               element={
                 <RequireRole role="client">
-                  <ClientProfile />
+                  <RoutePage><ClientProfile /></RoutePage>
                 </RequireRole>
               }
             />
@@ -200,7 +200,7 @@ export default function App() {
               path="/provider"
               element={
                 <RequireRole role="provider">
-                  <ProviderDashboard />
+                  <RoutePage><ProviderDashboard /></RoutePage>
                 </RequireRole>
               }
             />
@@ -208,7 +208,7 @@ export default function App() {
               path="/provider/nearby"
               element={
                 <RequireRole role="provider">
-                  <ProviderNearbyRequests />
+                  <RoutePage><ProviderNearbyRequests /></RoutePage>
                 </RequireRole>
               }
             />
@@ -216,7 +216,7 @@ export default function App() {
               path="/provider/jobs"
               element={
                 <RequireRole role="provider">
-                  <ProviderMyJobs />
+                  <RoutePage><ProviderMyJobs /></RoutePage>
                 </RequireRole>
               }
             />
@@ -224,7 +224,7 @@ export default function App() {
               path="/provider/profile"
               element={
                 <RequireRole role="provider">
-                  <ProviderProfile />
+                  <RoutePage><ProviderProfile /></RoutePage>
                 </RequireRole>
               }
             />
@@ -232,7 +232,7 @@ export default function App() {
               path="/provider/subscription"
               element={
                 <RequireRole role="provider">
-                  <ProviderSubscription />
+                  <RoutePage><ProviderSubscription /></RoutePage>
                 </RequireRole>
               }
             />
