@@ -80,6 +80,15 @@ export function buildNearbyProviderMarkers({
       ? servicesByCategory.find((item) => item.id === selectedServiceId) ?? null
       : null;
     const markerService = preferredService ?? servicesByCategory[0] ?? provider.offered_services[0] ?? null;
+    const allRelatedServiceNames = (servicesByCategory.length > 0 ? servicesByCategory : provider.offered_services)
+      .map((service) => service.name)
+      .filter((serviceName, index, list) => Boolean(serviceName) && list.indexOf(serviceName) === index);
+
+    const visibleRelatedServiceNames = allRelatedServiceNames.slice(0, 4);
+    const extraServicesCount = Math.max(0, allRelatedServiceNames.length - visibleRelatedServiceNames.length);
+    const relatedServiceTags = extraServicesCount > 0
+      ? [...visibleRelatedServiceNames, `+${extraServicesCount}`]
+      : visibleRelatedServiceNames;
 
     return {
       id: provider.id,
@@ -90,6 +99,7 @@ export function buildNearbyProviderMarkers({
       hasRating,
       categoryText: rootCategory?.name || t('clientBrowse.generalCategory'),
       serviceText: markerService?.name || t('clientBrowse.popupNoServiceAvailable'),
+      serviceTags: relatedServiceTags.length > 1 ? relatedServiceTags : undefined,
       description: distanceLabel,
       actionUrl: markerService ? `/client/request/${markerService.id}` : undefined,
       actionLabel: t('clientBrowse.popupRequestShortcut'),

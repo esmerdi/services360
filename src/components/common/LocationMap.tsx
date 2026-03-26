@@ -14,6 +14,7 @@ export interface LocationMapMarker {
   hasRating?: boolean;
   categoryText?: string;
   serviceText?: string;
+  serviceTags?: string[];
   actionUrl?: string;
   actionLabel?: string;
   actionRequestId?: string;
@@ -171,6 +172,20 @@ export default function LocationMap({
                     <span className="mt-1 inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium leading-tight text-blue-700">
                       {marker.serviceText}
                     </span>
+                  ) : null}
+                  {marker.serviceTags && marker.serviceTags.length > 0 ? (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {marker.serviceTags.map((serviceTag) => (
+                        <span
+                          key={`${marker.id}-${serviceTag}`}
+                          className={serviceTag.startsWith('+')
+                            ? 'inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600'
+                            : 'inline-flex rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-medium text-sky-700'}
+                        >
+                          {serviceTag}
+                        </span>
+                      ))}
+                    </div>
                   ) : null}
                   {marker.description ? <p className="mt-1 text-sm leading-tight text-slate-600">{marker.description}</p> : null}
                   {marker.actionLabel ? (
