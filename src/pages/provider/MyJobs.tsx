@@ -4,6 +4,7 @@ import { MessageCircle } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
+import Modal from '../../components/common/Modal';
 import StatusBadge from '../../components/common/StatusBadge';
 import ChatWindow from '../../components/common/ChatWindow';
 import UserAvatar from '../../components/common/UserAvatar';
@@ -33,9 +34,11 @@ export default function ProviderMyJobs() {
   const [jobs, setJobs] = useState<ServiceRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | RequestStatus>('all');
   const [actingId, setActingId] = useState<string | null>(null);
   const [chatJobId, setChatJobId] = useState<string | null>(null);
+  const [pendingCancelJob, setPendingCancelJob] = useState<ServiceRequest | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -89,6 +92,8 @@ export default function ProviderMyJobs() {
   async function updateStatus(job: ServiceRequest) {
     if (!(job.status === 'accepted' || job.status === 'in_progress')) return;
     const status = NEXT_STATUS[job.status];
+    setError(null);
+    setSuccessMessage(null);
     setActingId(job.id);
     const { error: updateError } = await supabase
       .from('service_requests')
@@ -102,6 +107,58 @@ export default function ProviderMyJobs() {
     }
 
     setJobs((current) => current.map((item) => (item.id === job.id ? { ...item, status } : item)));
+  }
+
+  async function reopenRequest(job: ServiceRequest) {
+    if (!user || job.status !== 'accepted') return;
+
+    setPendingCancelJob(null);
+    setError(null);
+    setSuccessMessage(null);
+    setActingId(job.id);
+
+    const { data, error: reopenError } = await supabase
+      .from('service_requests')
+      .update({ status: 'pending', provider_id: null })
+      .eq('id', job.id)
+      .eq('provider_id', user.id)
+      .eq('status', 'accepted')
+      .select('id')
+      .maybeSingle();
+
+    setActingId(null);
+
+    if (reopenError) {
+      setError(reopenError.message);
+      return;
+    }
+
+    if (!data) {
+      setError(es ? 'La solicitud ya no está disponible para cancelar.' : 'This request is no longer available to cancel.');
+      return;
+    }
+
+    const serviceName = job.service?.name || (es ? 'el servicio' : 'the service');
+    const content = es
+      ? `Hola, por ahora no podré tomar ${serviceName}. Dejé tu solicitud abierta para que otro proveedor pueda ayudarte.`
+      : `Hi, I cannot take ${serviceName} right now. I reopened your request so another provider can help you.`;
+
+    const { error: messageError } = await supabase.from('messages').insert({
+      request_id: job.id,
+      sender_id: user.id,
+      content,
+    });
+
+    if (messageError) {
+      console.error('Error sending reopen notification message:', messageError.message);
+    }
+
+    setJobs((current) => current.filter((item) => item.id !== job.id));
+    setSuccessMessage(
+      es
+        ? 'Solicitud cancelada y publicada de nuevo. Se notificó al cliente.'
+        : 'Request cancelled and reopened. The client was notified.'
+    );
   }
 
   const es = language === 'es';
@@ -123,6 +180,11 @@ export default function ProviderMyJobs() {
       </div>
 
       {error && <ErrorMessage message={error} className="mb-4" />}
+      {successMessage && (
+        <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          {successMessage}
+        </div>
+      )}
 
       {loading ? (
         <div className="flex justify-center py-20">
@@ -172,6 +234,11 @@ export default function ProviderMyJobs() {
                     {actingId === job.id ? <LoadingSpinner size="sm" /> : job.status === 'accepted' ? (es ? 'Iniciar trabajo' : 'Start job') : (es ? 'Marcar completado' : 'Mark completed')}
                   </button>
                 )}
+                {job.status === 'accepted' && (
+                  <button onClick={() => setPendingCancelJob(job)} className="btn-secondary" disabled={actingId === job.id}>
+                    {actingId === job.id ? <LoadingSpinner size="sm" /> : (es ? 'Cancelar y reabrir' : 'Cancel and reopen')}
+                  </button>
+                )}
                 {(job.status === 'accepted' || job.status === 'in_progress') && job.client && (
                   <button
                     onClick={() => setChatJobId(job.id)}
@@ -201,6 +268,51 @@ export default function ProviderMyJobs() {
           />
         );
       })()}
+
+      <Modal
+        isOpen={Boolean(pendingCancelJob)}
+        onClose={() => {
+          if (!actingId) setPendingCancelJob(null);
+        }}
+        title={es ? 'Cancelar y reabrir solicitud' : 'Cancel and reopen request'}
+        size="sm"
+      >
+        <p className="text-sm text-slate-600">
+          {es
+            ? '¿Seguro que quieres cancelar este trabajo? La solicitud volverá a estado pendiente y quedará abierta para otros proveedores.'
+            : 'Are you sure you want to cancel this job? The request will return to pending status and will be open for other providers.'}
+        </p>
+        <p className="mt-2 text-xs text-slate-500">
+          {es
+            ? 'También se enviará un mensaje automático al cliente para notificar este cambio.'
+            : 'An automatic message will also be sent to the client to notify this change.'}
+        </p>
+
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => setPendingCancelJob(null)}
+            disabled={Boolean(actingId)}
+          >
+            {es ? 'Volver' : 'Go back'}
+          </button>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => {
+              if (pendingCancelJob) {
+                void reopenRequest(pendingCancelJob);
+              }
+            }}
+            disabled={Boolean(actingId)}
+          >
+            {actingId && pendingCancelJob && actingId === pendingCancelJob.id
+              ? <LoadingSpinner size="sm" />
+              : (es ? 'Confirmar cancelación' : 'Confirm cancellation')}
+          </button>
+        </div>
+      </Modal>
     </Layout>
   );
 }
