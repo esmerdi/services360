@@ -80,9 +80,15 @@ export function buildNearbyProviderMarkers({
       ? servicesByCategory.find((item) => item.id === selectedServiceId) ?? null
       : null;
     const markerService = preferredService ?? servicesByCategory[0] ?? provider.offered_services[0] ?? null;
+    const primaryServiceName = markerService?.name?.trim().toLowerCase();
     const allRelatedServiceNames = (servicesByCategory.length > 0 ? servicesByCategory : provider.offered_services)
       .map((service) => service.name)
-      .filter((serviceName, index, list) => Boolean(serviceName) && list.indexOf(serviceName) === index);
+      .filter((serviceName, index, list) => {
+        if (!serviceName) return false;
+        const normalizedName = serviceName.trim().toLowerCase();
+        if (primaryServiceName && normalizedName === primaryServiceName) return false;
+        return list.findIndex((item) => item.trim().toLowerCase() === normalizedName) === index;
+      });
 
     const visibleRelatedServiceNames = allRelatedServiceNames.slice(0, 4);
     const extraServicesCount = Math.max(0, allRelatedServiceNames.length - visibleRelatedServiceNames.length);
