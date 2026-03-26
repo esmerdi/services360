@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
+import { Settings2, ChevronDown } from 'lucide-react';
 import { useI18n } from '../../context/I18nContext';
 
 interface LanguageSwitcherProps {
@@ -10,6 +11,21 @@ interface LanguageSwitcherProps {
 export default function LanguageSwitcher({ compact = false, mode = 'buttons' }: LanguageSwitcherProps) {
   const { language, setLanguage, t } = useI18n();
   const current = language;
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (mode !== 'list' || !open) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [mode, open]);
 
   if (mode === 'switch') {
     return (
@@ -61,18 +77,53 @@ export default function LanguageSwitcher({ compact = false, mode = 'buttons' }: 
 
   if (mode === 'list') {
     return (
-      <label className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-2 py-1 shadow-sm">
-        <span className="sr-only">{t('language.label')}</span>
-        <select
-          value={current}
-          onChange={(e) => setLanguage(e.target.value as 'en' | 'es')}
-          className="bg-transparent text-xs font-semibold text-slate-700 outline-none"
+      <div className="relative" ref={dropdownRef}>
+        <button
+          type="button"
+          className="inline-flex h-8 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
           aria-label={t('language.label')}
+          title={t('language.label')}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
         >
-          <option value="es">ES</option>
-          <option value="en">EN</option>
-        </select>
-      </label>
+          <Settings2 className="h-4 w-4" />
+          <ChevronDown className={clsx('h-3.5 w-3.5 transition-transform', open && 'rotate-180')} />
+        </button>
+
+        {open ? (
+          <div className="absolute right-0 top-9 z-50 w-20 overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-lg" role="menu" aria-label={t('language.label')}>
+            <button
+              type="button"
+              className={clsx(
+                'w-full rounded-md px-2 py-1.5 text-left text-xs font-semibold transition-colors',
+                current === 'es' ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-100'
+              )}
+              onClick={() => {
+                setLanguage('es');
+                setOpen(false);
+              }}
+              role="menuitem"
+            >
+              ES
+            </button>
+            <button
+              type="button"
+              className={clsx(
+                'mt-1 w-full rounded-md px-2 py-1.5 text-left text-xs font-semibold transition-colors',
+                current === 'en' ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-100'
+              )}
+              onClick={() => {
+                setLanguage('en');
+                setOpen(false);
+              }}
+              role="menuitem"
+            >
+              EN
+            </button>
+          </div>
+        ) : null}
+      </div>
     );
   }
 
