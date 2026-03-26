@@ -43,17 +43,6 @@ type NearbyProviderMap = {
   offered_services: Array<{ id: string; name: string; root_category_id: string | null }>;
 };
 
-const CATEGORY_PALETTE = [
-  { badge: 'bg-violet-50 text-violet-700', dot: 'bg-violet-500', ring: 'border-violet-300 hover:border-violet-400' },
-  { badge: 'bg-sky-50 text-sky-700',       dot: 'bg-sky-500',    ring: 'border-sky-300 hover:border-sky-400' },
-  { badge: 'bg-emerald-50 text-emerald-700', dot: 'bg-emerald-500', ring: 'border-emerald-300 hover:border-emerald-400' },
-  { badge: 'bg-amber-50 text-amber-700',   dot: 'bg-amber-500',  ring: 'border-amber-300 hover:border-amber-400' },
-  { badge: 'bg-rose-50 text-rose-700',     dot: 'bg-rose-500',   ring: 'border-rose-300 hover:border-rose-400' },
-  { badge: 'bg-teal-50 text-teal-700',     dot: 'bg-teal-500',   ring: 'border-teal-300 hover:border-teal-400' },
-  { badge: 'bg-orange-50 text-orange-700', dot: 'bg-orange-500', ring: 'border-orange-300 hover:border-orange-400' },
-  { badge: 'bg-pink-50 text-pink-700',     dot: 'bg-pink-500',   ring: 'border-pink-300 hover:border-pink-400' },
-] as const;
-
 export default function ClientBrowse() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -116,7 +105,7 @@ export default function ClientBrowse() {
         const providerLinks = (providerServiceRes.data as Array<{ service_id: string; provider_id: string }>) ?? [];
         const providerIds = Array.from(new Set(providerLinks.map((item) => item.provider_id)));
 
-        let providerRatingMap = new Map<string, { total: number; count: number }>();
+        const providerRatingMap = new Map<string, { total: number; count: number }>();
         if (providerIds.length > 0) {
           const { data: ratingsData, error: ratingsError } = await supabase
             .from('ratings')
@@ -283,7 +272,7 @@ export default function ClientBrowse() {
     }
 
     fetchData();
-  }, []);
+  }, [coords]);
 
   const categoryMap = useMemo(
     () => new Map(categories.map((category) => [category.id, category] as const)),
@@ -304,23 +293,6 @@ export default function ClientBrowse() {
     return map;
   }, [categories]);
 
-  const getCategoryPath = useCallback((categoryId: string | null | undefined) => {
-    if (!categoryId) return t('clientBrowse.generalCategory');
-
-    const path: string[] = [];
-    const visited = new Set<string>();
-    let current = categoryMap.get(categoryId);
-
-    while (current) {
-      if (visited.has(current.id)) break;
-      visited.add(current.id);
-      path.unshift(current.name);
-      current = current.parent_id ? categoryMap.get(current.parent_id) : undefined;
-    }
-
-    return path.length > 0 ? path.join(' > ') : t('clientBrowse.generalCategory');
-  }, [categoryMap, t]);
-
   const getDescendantCategoryIds = useCallback((rootId: string) => {
     const descendants = new Set<string>();
     const stack = [rootId];
@@ -339,21 +311,10 @@ export default function ClientBrowse() {
     return descendants;
   }, [childrenByParent]);
 
-  const countServicesForCategory = useCallback((categoryId: string) => {
-    const validIds = getDescendantCategoryIds(categoryId);
-    return services.filter((service) => service.category_id && validIds.has(service.category_id)).length;
-  }, [getDescendantCategoryIds, services]);
-
   const topLevelCategories = useMemo(
     () => categories.filter((category: Category) => !category.parent_id),
     [categories]
   );
-
-  const subcategoriesForSelectedRoot = useMemo(() => {
-    if (!selectedRootCategory) return [];
-    const children = childrenByParent.get(selectedRootCategory) ?? [];
-    return children.sort((a, b) => a.name.localeCompare(b.name));
-  }, [selectedRootCategory, childrenByParent]);
 
   const servicesForSelectedRoot = useMemo(() => {
     if (!selectedRootCategory) return [];
@@ -367,33 +328,6 @@ export default function ClientBrowse() {
     if (!selectedService) return null;
     return services.find((s) => s.id === selectedService);
   }, [selectedService, services]);
-
-  const rootColorMap = useMemo(() => {
-    const map = new Map<string, number>();
-    topLevelCategories.forEach((cat, index) => {
-      map.set(cat.id, index % CATEGORY_PALETTE.length);
-    });
-    return map;
-  }, [topLevelCategories]);
-
-  const getRootCategoryId = useCallback((categoryId: string | null | undefined): string | null => {
-    if (!categoryId) return null;
-    const visited = new Set<string>();
-    let current = categoryMap.get(categoryId);
-    while (current) {
-      if (visited.has(current.id)) break;
-      visited.add(current.id);
-      if (!current.parent_id) return current.id;
-      current = categoryMap.get(current.parent_id);
-    }
-    return categoryId;
-  }, [categoryMap]);
-
-  const getCategoryColor = useCallback((categoryId: string | null | undefined) => {
-    const rootId = getRootCategoryId(categoryId);
-    const index = rootId !== null ? (rootColorMap.get(rootId) ?? 0) : 0;
-    return CATEGORY_PALETTE[index % CATEGORY_PALETTE.length];
-  }, [getRootCategoryId, rootColorMap]);
 
   const selectedRootCategoryId = useMemo(() => {
     return selectedRootCategory;
