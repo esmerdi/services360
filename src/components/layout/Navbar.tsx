@@ -506,14 +506,14 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
       </header>
 
       <header className="sticky top-0 z-[1200] border-b border-slate-200 bg-white/95 backdrop-blur-sm md:hidden">
-        <div className="flex min-h-16 items-center gap-3 px-4 py-3">
-          <Link to="/" className="flex items-center gap-2 flex-shrink-0">
-            <div className="h-8 w-8 flex items-center justify-center">
+        <div className="flex min-h-16 items-center gap-2 px-3 py-2.5">
+          <Link to="/" className="flex min-w-0 max-w-[140px] items-center gap-1.5 flex-shrink-0">
+            <div className="h-7 w-7 flex shrink-0 items-center justify-center">
               <img src="/zippy-logo.png?v=2" alt="ZippyGo logo" className="h-6 w-6 object-contain" />
             </div>
             <div className="min-w-0">
-              <p className="font-display text-lg leading-none text-slate-900">Zippy<span className="font-bold">Go</span></p>
-              <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-slate-500">{t('common.controlPanel')}</p>
+              <p className="truncate font-display text-base leading-none text-slate-900 min-[390px]:text-lg">Zippy<span className="font-bold">Go</span></p>
+              <p className="mt-0.5 hidden truncate text-[9px] uppercase tracking-[0.12em] text-slate-500 min-[360px]:block min-[390px]:text-[10px]">{t('common.controlPanel')}</p>
             </div>
           </Link>
 
