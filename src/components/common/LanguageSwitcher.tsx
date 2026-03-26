@@ -4,7 +4,7 @@ import { useI18n } from '../../context/I18nContext';
 
 interface LanguageSwitcherProps {
   compact?: boolean;
-  mode?: 'buttons' | 'flag' | 'switch';
+  mode?: 'buttons' | 'flag' | 'switch' | 'list';
 }
 
 export default function LanguageSwitcher({ compact = false, mode = 'buttons' }: LanguageSwitcherProps) {
@@ -56,6 +56,23 @@ export default function LanguageSwitcher({ compact = false, mode = 'buttons' }: 
         <span className="text-base leading-none" aria-hidden="true">{current === 'en' ? '🇺🇸' : '🇪🇸'}</span>
         <span className="text-xs tracking-[0.08em]">{currentFlag}</span>
       </button>
+    );
+  }
+
+  if (mode === 'list') {
+    return (
+      <label className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-2 py-1 shadow-sm">
+        <span className="sr-only">{t('language.label')}</span>
+        <select
+          value={current}
+          onChange={(e) => setLanguage(e.target.value as 'en' | 'es')}
+          className="bg-transparent text-xs font-semibold text-slate-700 outline-none"
+          aria-label={t('language.label')}
+        >
+          <option value="es">ES</option>
+          <option value="en">EN</option>
+        </select>
+      </label>
     );
   }
 

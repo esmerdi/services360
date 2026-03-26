@@ -519,7 +519,7 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
 
           <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-700">{translatedTitle}</span>
 
-          <LanguageSwitcher compact />
+          <LanguageSwitcher mode="list" compact />
 
           <div className="flex items-center gap-2">
             <div className="relative" data-notifications-menu>
