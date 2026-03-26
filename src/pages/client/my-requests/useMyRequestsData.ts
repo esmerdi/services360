@@ -25,7 +25,7 @@ export function useMyRequestsData({ userId }: UseMyRequestsDataParams) {
           .from('service_requests')
           .select(`
             *,
-            provider:users!service_requests_provider_id_fkey(id, full_name, email),
+            provider:users!service_requests_provider_id_fkey(id, full_name, email, avatar_url),
             service:services(id, name, category_id)
           `)
           .eq('client_id', currentUserId)
@@ -54,7 +54,7 @@ export function useMyRequestsData({ userId }: UseMyRequestsDataParams) {
           ? supabase.from('ratings').select('to_user_id, rating').in('to_user_id', providerIds)
           : Promise.resolve({ data: [], error: null }),
         requestIds.length > 0
-          ? supabase.from('ratings').select('request_id').in('request_id', requestIds)
+          ? supabase.from('ratings').select('request_id').in('request_id', requestIds).eq('from_user_id', currentUserId)
           : Promise.resolve({ data: [], error: null }),
       ]);
 
@@ -98,7 +98,37 @@ export function useMyRequestsData({ userId }: UseMyRequestsDataParams) {
     }
 
     void fetchRequests();
+
+    const channel = supabase
+      .channel(`client-my-requests-${currentUserId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'service_requests', filter: `client_id=eq.${currentUserId}` },
+        () => {
+          void fetchRequests();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'ratings', filter: `from_user_id=eq.${currentUserId}` },
+        () => {
+          void fetchRequests();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
   }, [userId]);
+
+  function markRequestAsRated(requestId: string) {
+    setRatedRequestIds((current) => {
+      const next = new Set(current);
+      next.add(requestId);
+      return next;
+    });
+  }
 
   return {
     requests,
@@ -106,5 +136,6 @@ export function useMyRequestsData({ userId }: UseMyRequestsDataParams) {
     loading,
     error,
     ratedRequestIds,
+    markRequestAsRated,
   };
 }

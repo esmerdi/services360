@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Star } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
@@ -6,9 +6,11 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
-import type { Category, RequestStatus } from '../../types';
+import { supabase } from '../../lib/supabase';
+import type { RequestStatus } from '../../types';
+import MandatoryRatingModal from './request-detail/MandatoryRatingModal';
 import MyRequestsTable from './my-requests/MyRequestsTable';
-import { filterRequests, getCategoryPath } from './my-requests/utils';
+import { filterRequests } from './my-requests/utils';
 import { useMyRequestsData } from './my-requests/useMyRequestsData';
 
 const CLIENT_NAV = [
@@ -23,7 +25,18 @@ export default function ClientMyRequests() {
   const { t, language } = useI18n();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<'all' | RequestStatus>('all');
-  const { requests, categories, loading, error, ratedRequestIds } = useMyRequestsData({ userId: user?.id });
+  const [score, setScore] = useState(5);
+  const [comment, setComment] = useState('');
+  const [savingRating, setSavingRating] = useState(false);
+  const [ratingError, setRatingError] = useState<string | null>(null);
+  const {
+    requests,
+    categories,
+    loading,
+    error,
+    ratedRequestIds,
+    markRequestAsRated,
+  } = useMyRequestsData({ userId: user?.id });
 
   const statusOptions: Array<{ value: 'all' | RequestStatus; label: string }> = useMemo(
     () => [
@@ -52,10 +65,63 @@ export default function ClientMyRequests() {
     });
   }, [categoryMap, requests, search, status, t]);
 
+  const pendingRequestsToRate = useMemo(() => {
+    return requests.filter((request) => (
+      request.status === 'completed'
+      && Boolean(request.provider_id)
+      && Boolean(request.provider)
+      && !ratedRequestIds.has(request.id)
+    ));
+  }, [ratedRequestIds, requests]);
+
+  const ratingTarget = pendingRequestsToRate[0] ?? null;
+
   const pendingReviewCount = useMemo(
-    () => requests.filter((request) => request.status === 'completed' && !ratedRequestIds.has(request.id)).length,
-    [ratedRequestIds, requests]
+    () => pendingRequestsToRate.length,
+    [pendingRequestsToRate]
   );
+
+  useEffect(() => {
+    if (ratingTarget) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [ratingTarget]);
+
+  async function submitPendingRating(event: React.FormEvent) {
+    event.preventDefault();
+    if (!ratingTarget || !ratingTarget.provider_id || !user) return;
+
+    setSavingRating(true);
+    setRatingError(null);
+
+    const { error: submitError } = await supabase
+      .from('ratings')
+      .insert({
+        request_id: ratingTarget.id,
+        from_user_id: user.id,
+        to_user_id: ratingTarget.provider_id,
+        rating: score,
+        comment: comment.trim() || null,
+      });
+
+    setSavingRating(false);
+
+    if (submitError) {
+      setRatingError(submitError.message);
+      return;
+    }
+
+    markRequestAsRated(ratingTarget.id);
+    setScore(5);
+    setComment('');
+    setRatingError(null);
+  }
 
   return (
     <Layout navItems={CLIENT_NAV} title="My Requests">
@@ -116,6 +182,20 @@ export default function ClientMyRequests() {
           requests={filteredRequests}
           ratedRequestIds={ratedRequestIds}
           categoryMap={categoryMap}
+        />
+      )}
+
+      {ratingTarget && (
+        <MandatoryRatingModal
+          request={ratingTarget}
+          error={ratingError}
+          score={score}
+          comment={comment}
+          savingRating={savingRating}
+          t={t}
+          onScoreChange={setScore}
+          onCommentChange={setComment}
+          onSubmit={submitPendingRating}
         />
       )}
     </Layout>
