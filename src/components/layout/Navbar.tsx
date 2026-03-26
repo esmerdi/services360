@@ -517,7 +517,7 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
             </div>
           </Link>
 
-          <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-700">{translatedTitle}</span>
+          <span className="hidden min-w-0 flex-1 truncate text-sm font-medium text-slate-700 min-[390px]:block">{translatedTitle}</span>
 
           <LanguageSwitcher mode="list" compact />
 
