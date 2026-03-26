@@ -112,19 +112,21 @@ export default function ProviderMyJobs() {
   async function reopenRequest(job: ServiceRequest) {
     if (!user || job.status !== 'accepted') return;
 
+    const serviceName = job.service?.name || (es ? 'el servicio' : 'the service');
+    const content = es
+      ? `Hola, por ahora no podré tomar ${serviceName}. Dejé tu solicitud abierta para que otro proveedor pueda ayudarte.`
+      : `Hi, I cannot take ${serviceName} right now. I reopened your request so another provider can help you.`;
+
     setPendingCancelJob(null);
     setError(null);
     setSuccessMessage(null);
     setActingId(job.id);
 
     const { data, error: reopenError } = await supabase
-      .from('service_requests')
-      .update({ status: 'pending', provider_id: null })
-      .eq('id', job.id)
-      .eq('provider_id', user.id)
-      .eq('status', 'accepted')
-      .select('id')
-      .maybeSingle();
+      .rpc('provider_reopen_request', {
+        p_request_id: job.id,
+        p_message: content,
+      });
 
     setActingId(null);
 
@@ -136,21 +138,6 @@ export default function ProviderMyJobs() {
     if (!data) {
       setError(es ? 'La solicitud ya no está disponible para cancelar.' : 'This request is no longer available to cancel.');
       return;
-    }
-
-    const serviceName = job.service?.name || (es ? 'el servicio' : 'the service');
-    const content = es
-      ? `Hola, por ahora no podré tomar ${serviceName}. Dejé tu solicitud abierta para que otro proveedor pueda ayudarte.`
-      : `Hi, I cannot take ${serviceName} right now. I reopened your request so another provider can help you.`;
-
-    const { error: messageError } = await supabase.from('messages').insert({
-      request_id: job.id,
-      sender_id: user.id,
-      content,
-    });
-
-    if (messageError) {
-      console.error('Error sending reopen notification message:', messageError.message);
     }
 
     setJobs((current) => current.filter((item) => item.id !== job.id));
