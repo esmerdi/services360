@@ -507,7 +507,7 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
 
       <header className="sticky top-0 z-[1200] border-b border-slate-200 bg-white/95 backdrop-blur-sm md:hidden">
         <div className="flex min-h-16 items-center gap-2 px-3 py-2.5">
-          <Link to="/" className="flex min-w-0 max-w-[140px] items-center gap-1.5 flex-shrink-0">
+          <Link to="/" className="flex min-w-0 items-center gap-1.5 flex-shrink-0">
             <div className="h-7 w-7 flex shrink-0 items-center justify-center">
               <img src="/zippy-logo.png?v=2" alt="ZippyGo logo" className="h-6 w-6 object-contain" />
             </div>
@@ -516,8 +516,6 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
               <p className="mt-0.5 hidden truncate text-[9px] uppercase tracking-[0.12em] text-slate-500 min-[360px]:block min-[390px]:text-[10px]">{t('common.controlPanel')}</p>
             </div>
           </Link>
-
-          <span className="hidden min-w-0 flex-1 truncate text-sm font-medium text-slate-700 min-[390px]:block">{translatedTitle}</span>
 
           <LanguageSwitcher mode="list" compact />
 
