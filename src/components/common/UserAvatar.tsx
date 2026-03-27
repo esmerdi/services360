@@ -9,6 +9,8 @@ interface UserAvatarProps {
   className: string;
   imageClassName?: string;
   fallbackClassName: string;
+  /** Pixel size for image transformation (width & height). Defaults to 80 (2× for h-10 avatars). */
+  size?: number;
 }
 
 export default function UserAvatar({
@@ -18,6 +20,7 @@ export default function UserAvatar({
   className,
   imageClassName = 'h-full w-full object-cover',
   fallbackClassName,
+  size = 80,
 }: UserAvatarProps) {
   const resolveAvatarSrc = (value: string | null | undefined): string | null => {
     if (!value || !isManagedAvatarUrl(value)) return null;
@@ -31,7 +34,9 @@ export default function UserAvatar({
       return value;
     }
 
-    const { data } = supabase.storage.from('avatars').getPublicUrl(objectPath);
+    const { data } = supabase.storage.from('avatars').getPublicUrl(objectPath, {
+      transform: { width: size, height: size, quality: 80, resize: 'cover' },
+    });
     return data.publicUrl;
   };
 

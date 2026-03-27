@@ -42,6 +42,7 @@ export default function MandatoryRatingModal({
             name={request.provider.full_name || request.provider.email}
             alt={request.provider.full_name || request.provider.email || ''}
             className="mx-auto h-20 w-20 overflow-hidden rounded-full border-4 border-white/80 shadow-lg bg-gradient-to-br from-amber-300 to-orange-400 flex items-center justify-center"
+            size={160}
             fallbackClassName="text-2xl font-bold text-white"
           />
           <p className="mt-3 text-lg font-semibold text-white">
