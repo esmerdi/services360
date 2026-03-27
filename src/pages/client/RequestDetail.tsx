@@ -62,6 +62,8 @@ export default function ClientRequestDetail() {
   const [chatOpen, setChatOpen] = useState(false);
   const [activeDetailTab, setActiveDetailTab] = useState<DetailTab>('overview');
   const [providerServiceTags, setProviderServiceTags] = useState<string[]>([]);
+  const [providerServiceTagsReady, setProviderServiceTagsReady] = useState(true);
+  const [providerServiceTagsCache, setProviderServiceTagsCache] = useState<Record<string, string[]>>({});
 
   const categoryMap = useMemo(
     () => new Map(categories.map((category) => [category.id, category] as const)),
@@ -155,18 +157,31 @@ export default function ClientRequestDetail() {
 
     if (!providerId) {
       setProviderServiceTags([]);
+      setProviderServiceTagsReady(true);
       return;
     }
+
+    const resolvedProviderId: string = providerId;
+
+    const cachedTags = providerServiceTagsCache[resolvedProviderId];
+    if (cachedTags) {
+      setProviderServiceTags(cachedTags);
+      setProviderServiceTagsReady(true);
+      return;
+    }
+
+    setProviderServiceTagsReady(false);
 
     async function loadProviderServiceTags() {
       const { data, error } = await supabase
         .from('provider_services')
         .select('service:services(name)')
-        .eq('provider_id', providerId)
+        .eq('provider_id', resolvedProviderId)
         .limit(6);
 
       if (error || !data) {
         setProviderServiceTags([]);
+        setProviderServiceTagsReady(true);
         return;
       }
 
@@ -181,12 +196,18 @@ export default function ClientRequestDetail() {
       const allNames = Array.from(uniqueNames);
       const visibleNames = allNames.slice(0, 3);
       const remaining = allNames.length - visibleNames.length;
+      const nextTags = remaining > 0 ? [...visibleNames, `+${remaining}`] : visibleNames;
 
-      setProviderServiceTags(remaining > 0 ? [...visibleNames, `+${remaining}`] : visibleNames);
+      setProviderServiceTags(nextTags);
+      setProviderServiceTagsCache((current) => ({
+        ...current,
+        [resolvedProviderId]: nextTags,
+      }));
+      setProviderServiceTagsReady(true);
     }
 
     void loadProviderServiceTags();
-  }, [request?.provider_id]);
+  }, [providerServiceTagsCache, request?.provider_id]);
 
   // Lock body scroll while the mandatory rating popup is visible
   useEffect(() => {
@@ -416,7 +437,13 @@ export default function ClientRequestDetail() {
                 {requestMarkers.length > 0 && (
                   <div className="mt-3 space-y-2">
                     <p className="text-sm font-medium text-slate-800">{t('clientRequestDetail.locationMap')}</p>
-                    <LazyLocationMap markers={requestMarkers} heightClassName="h-64" />
+                    {request.provider_id && !providerServiceTagsReady ? (
+                      <div className="flex h-64 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50">
+                        <LoadingSpinner size="md" />
+                      </div>
+                    ) : (
+                      <LazyLocationMap markers={requestMarkers} heightClassName="h-64" />
+                    )}
                   </div>
                 )}
               </div>
