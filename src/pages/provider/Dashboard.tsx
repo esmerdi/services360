@@ -87,10 +87,10 @@ export default function ProviderDashboard() {
           <div className="flex items-start gap-3">
             <MapPin className="mt-0.5 h-5 w-5 text-blue-600" />
             <div>
-              <p className="font-medium text-slate-900">{es ? 'Tu ubicacion' : 'Your location'}</p>
+              <p className="font-medium text-slate-900">{es ? 'Tu ubicación' : 'Your location'}</p>
               <p className="mt-1 text-sm text-slate-500">
                 {locationLoading
-                  ? (es ? 'Obteniendo ubicacion actual...' : 'Getting current position...')
+                  ? (es ? 'Obteniendo ubicación actual...' : 'Getting current position...')
                   : coords
                     ? `${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`
                     : (es ? 'Activa el GPS para recibir solicitudes cercanas.' : 'Enable GPS to receive nearby requests.')}
@@ -106,7 +106,7 @@ export default function ProviderDashboard() {
       <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
           <Activity className="mb-2 h-6 w-6 text-emerald-700" />
-          <p className="font-display text-xl text-slate-900">{user?.is_available ? (es ? 'En linea' : 'Online') : (es ? 'Desconectado' : 'Offline')}</p>
+          <p className="font-display text-xl text-slate-900">{user?.is_available ? (es ? 'En línea' : 'Online') : (es ? 'Desconectado' : 'Offline')}</p>
           <p className="text-sm text-slate-500">{es ? 'Estado de disponibilidad' : 'Availability status'}</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -137,7 +137,7 @@ export default function ProviderDashboard() {
               <LoadingSpinner size="lg" />
             </div>
           ) : jobs.length === 0 ? (
-            <p className="text-sm text-slate-400">{es ? 'Aun no tienes trabajos asignados.' : 'No jobs assigned yet.'}</p>
+            <p className="text-sm text-slate-400">{es ? 'Aún no tienes trabajos asignados.' : 'No jobs assigned yet.'}</p>
           ) : (
             <div className="space-y-3">
               {jobs.map((job) => (

@@ -61,11 +61,11 @@ export function formatTimeAgo(dateStr: string, language: AppLanguage = 'en'): st
 }
 
 const PLAN_FEATURE_LABELS: Record<string, { en: string; es: string }> = {
-  featured_in_search: { en: 'Featured in search', es: 'Destacado en busqueda' },
-  max_requests_per_month: { en: 'Max requests per month', es: 'Maximo de solicitudes por mes' },
+  featured_in_search: { en: 'Featured in search', es: 'Destacado en búsqueda' },
+  max_requests_per_month: { en: 'Max requests per month', es: 'Máximo de solicitudes por mes' },
   profile_boost: { en: 'Profile boost', es: 'Impulso de perfil' },
   priority_support: { en: 'Priority support', es: 'Soporte prioritario' },
-  instant_notifications: { en: 'Instant notifications', es: 'Notificaciones instantaneas' },
+  instant_notifications: { en: 'Timely notifications', es: 'Notificaciones oportunas' },
 };
 
 export function formatPlanFeature(featureKey: string, featureValue: unknown, language: AppLanguage): string {

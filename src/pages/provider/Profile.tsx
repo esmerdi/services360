@@ -220,16 +220,16 @@ export default function ProviderProfile() {
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
                   <h2 className="text-lg font-semibold text-slate-900">{es ? 'Disponibilidad' : 'Availability'}</h2>
-                  <p className="mt-1 text-sm text-slate-500">{es ? 'Los proveedores en linea reciben solicitudes cercanas de inmediato.' : 'Online providers receive nearby requests immediately.'}</p>
+                  <p className="mt-1 text-sm text-slate-500">{es ? 'Los proveedores en línea pueden recibir solicitudes cercanas según disponibilidad.' : 'Online providers can receive nearby requests based on availability.'}</p>
                 </div>
                 <button onClick={toggleAvailability} className={user?.is_available ? 'btn-secondary' : 'btn-primary'} disabled={savingAvailability}>
                   {savingAvailability ? <LoadingSpinner size="sm" /> : user?.is_available ? (es ? 'Desconectarme' : 'Go offline') : (es ? 'Conectarme' : 'Go online')}
                 </button>
               </div>
               <div className="mt-4 surface-muted text-sm text-slate-600">
-                <p className="font-medium text-slate-800">{es ? 'Ubicacion actual' : 'Current location'}</p>
+                <p className="font-medium text-slate-800">{es ? 'Ubicación actual' : 'Current location'}</p>
                 <p className="mt-1">
-                  {coords ? `${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}` : (es ? 'GPS aun no disponible' : 'GPS not available yet')}
+                  {coords ? `${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}` : (es ? 'GPS aún no disponible' : 'GPS not available yet')}
                 </p>
               </div>
             </div>
@@ -304,7 +304,7 @@ export default function ProviderProfile() {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-lg font-semibold text-slate-900">{es ? 'Calificaciones' : 'Ratings'}</h2>
-                <p className="mt-1 text-sm text-slate-500">{es ? 'Tu reputacion basada en trabajos completados.' : 'Your reputation from completed jobs.'}</p>
+                <p className="mt-1 text-sm text-slate-500">{es ? 'Tu reputación basada en trabajos completados.' : 'Your reputation from completed jobs.'}</p>
               </div>
               <div className="text-right">
                 <p className="text-2xl font-bold text-slate-900">{averageRating.toFixed(1)}</p>
@@ -313,7 +313,7 @@ export default function ProviderProfile() {
             </div>
             <div className="mt-4 space-y-3 overflow-y-auto pr-1 xl:max-h-[500px]">
               {ratings.length === 0 && (
-                <p className="text-sm text-slate-400">{es ? 'Aun no hay calificaciones.' : 'No ratings yet.'}</p>
+                <p className="text-sm text-slate-400">{es ? 'Aún no hay calificaciones.' : 'No ratings yet.'}</p>
               )}
               {visibleRatings.map((rating) => (
                 <div key={rating.id} className="surface-stroke">

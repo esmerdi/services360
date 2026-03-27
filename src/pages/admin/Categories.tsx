@@ -237,12 +237,12 @@ export default function AdminCategories() {
     <Layout navItems={ADMIN_NAV} title="Categories">
       <div className="page-header flex items-center justify-between">
         <div>
-          <h1 className="page-title">{es ? 'Categorias' : 'Categories'}</h1>
-          <p className="page-subtitle">{categories.length} {es ? 'categorias en total' : 'total categories'}</p>
+          <h1 className="page-title">{es ? 'Categorías' : 'Categories'}</h1>
+          <p className="page-subtitle">{categories.length} {es ? 'categorías en total' : 'total categories'}</p>
         </div>
         <button onClick={openCreate} className="btn-primary">
           <Plus className="h-4 w-4" />
-          {es ? 'Nueva categoria' : 'New Category'}
+          {es ? 'Nueva categoría' : 'New Category'}
         </button>
       </div>
 
@@ -255,7 +255,7 @@ export default function AdminCategories() {
       ) : roots.length === 0 ? (
         <div className="card flex flex-col items-center justify-center py-16 text-center">
           <FolderTree className="h-12 w-12 text-slate-300 mb-3" />
-          <p className="text-slate-400">{es ? 'Aun no hay categorias.' : 'No categories yet.'}</p>
+          <p className="text-slate-400">{es ? 'Aún no hay categorías.' : 'No categories yet.'}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -310,7 +310,7 @@ export default function AdminCategories() {
       <Modal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={editing ? (es ? 'Editar categoria' : 'Edit Category') : (es ? 'Nueva categoria' : 'New Category')}
+        title={editing ? (es ? 'Editar categoría' : 'Edit Category') : (es ? 'Nueva categoría' : 'New Category')}
       >
         <div className="space-y-4">
           {formError && <ErrorMessage message={formError} />}
@@ -321,25 +321,25 @@ export default function AdminCategories() {
               className="input"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder={es ? 'ej. Plomeria' : 'e.g. Plumbing'}
+              placeholder={es ? 'ej. Plomería' : 'e.g. Plumbing'}
             />
           </div>
 
           <div className="form-group">
-            <label className="label">{es ? 'Categoria padre' : 'Parent Category'}</label>
+            <label className="label">{es ? 'Categoría padre' : 'Parent Category'}</label>
             <select
               className="input"
               value={form.parent_id}
               onChange={(e) => setForm({ ...form, parent_id: e.target.value })}
             >
-              <option value="">{es ? 'Ninguna (categoria raiz)' : 'None (root category)'}</option>
+              <option value="">{es ? 'Ninguna (categoría raíz)' : 'None (root category)'}</option>
               {parentOptions.map((c) => (
                 <option key={c.id} value={c.id}>{getCategoryPath(c.id)}</option>
               ))}
             </select>
             <p className="mt-1 text-xs text-slate-500">
               {es
-                ? 'Maximo 3 niveles: categoria > subcategoria > sub-subcategoria.'
+                ? 'Máximo 3 niveles: categoría > subcategoría > sub-subcategoría.'
                 : 'Max 3 levels: category > subcategory > sub-subcategory.'}
             </p>
           </div>
@@ -355,7 +355,7 @@ export default function AdminCategories() {
           </div>
 
           <div className="form-group">
-            <label className="label">{es ? 'Descripcion' : 'Description'}</label>
+            <label className="label">{es ? 'Descripción' : 'Description'}</label>
             <textarea
               className="input resize-none"
               rows={3}

@@ -84,7 +84,7 @@ export default function ProviderNearbyRequests() {
         longitude: request.longitude as number,
         label: request.client?.full_name || request.client?.email || (es ? 'Cliente' : 'Client'),
         serviceText: request.service?.name || (es ? 'Solicitud de servicio' : 'Service request'),
-        description: request.address || (es ? 'Ubicacion del cliente' : 'Client location'),
+        description: request.address || (es ? 'Ubicación del cliente' : 'Client location'),
         imageUrl: resolveAvatarUrl(request.client?.avatar_url),
         actionLabel: request.provider_id === user?.id
           ? (es ? 'Confirmar solicitud' : 'Confirm request')
@@ -99,7 +99,7 @@ export default function ProviderNearbyRequests() {
         id: 'provider-location',
         latitude: coords.latitude,
         longitude: coords.longitude,
-        label: es ? 'Tu ubicacion' : 'Your location',
+        label: es ? 'Tu ubicación' : 'Your location',
         description: `${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`,
         color: '#2563eb',
         radius: 10,
@@ -124,7 +124,7 @@ export default function ProviderNearbyRequests() {
       <div className="page-header flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="page-title">{es ? 'Solicitudes cercanas' : 'Nearby Requests'}</h1>
-          <p className="page-subtitle">{es ? 'Las solicitudes se ordenan por distancia a tu ubicacion actual.' : 'Requests are ordered by distance from your current position.'}</p>
+          <p className="page-subtitle">{es ? 'Las solicitudes se ordenan por distancia a tu ubicación actual.' : 'Requests are ordered by distance from your current position.'}</p>
         </div>
         <div className="flex flex-col gap-3 sm:items-end">
           <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white/90 px-4 py-3 shadow-sm">
@@ -168,7 +168,7 @@ export default function ProviderNearbyRequests() {
 
       {!coords && (
         <div className="mb-4 rounded-xl border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-700">
-          {es ? 'Activa el GPS y marca tu perfil como en linea para recibir solicitudes cercanas.' : 'Enable GPS and mark yourself online from your profile to receive nearby requests.'}
+          {es ? 'Activa el GPS y marca tu perfil como en línea para recibir solicitudes cercanas.' : 'Enable GPS and mark yourself online from your profile to receive nearby requests.'}
         </div>
       )}
 

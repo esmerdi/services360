@@ -309,7 +309,7 @@ const translations: Record<Language, TranslationMap> = {
       badge: 'Verified home services near you',
       headline: 'Book trusted home services from verified local providers near you.',
       description:
-        'ZippyGo connects you with verified local service providers for home services, beauty, and everyday tasks. Post a request, see pros near you on a live map, and get it done fast.',
+        'ZippyGo connects you with verified local service providers for home services, beauty, and everyday tasks. Post a request, view providers by area, and coordinate your service with clarity.',
       launchNotice: 'Launch stage: we are activating verified providers by zone.',
       launchSecondary: 'Join early access to receive priority coverage in your area.',
       findService: 'Find a Pro Near Me',
@@ -318,7 +318,7 @@ const translations: Record<Language, TranslationMap> = {
         noCard: 'No card required',
         verifiedCommunity: 'Background-checked providers',
         securePlatform: 'Secure, role-based access',
-        liveUpdates: 'Live map & real-time updates',
+        liveUpdates: 'Map by area and status updates',
       },
       stats: {
         happyClients: 'Happy Clients',
@@ -337,7 +337,7 @@ const translations: Record<Language, TranslationMap> = {
       features: {
         proximity: {
           title: 'Pros Near You',
-          description: 'Browse verified home service providers near you on a live map and book instantly.',
+          description: 'Browse verified home service providers near you on a map by area and connect based on availability.',
         },
         verified: {
           title: 'Vetted Providers Only',
@@ -345,11 +345,11 @@ const translations: Record<Language, TranslationMap> = {
         },
         ratings: {
           title: 'Real, Honest Reviews',
-          description: 'Ratings from verified clients help you hire the best local pro every time.',
+          description: 'Ratings from verified clients help you compare providers with more confidence.',
         },
         fastResponse: {
-          title: 'Replies in Minutes',
-          description: 'Post a home service request and get responses from nearby providers within minutes.',
+          title: 'Quick Replies',
+          description: 'Post a home service request and receive responses according to provider availability.',
         },
       },
       howWorksTitle: 'How ZippyGo works',
@@ -365,13 +365,13 @@ const translations: Record<Language, TranslationMap> = {
         },
         matched: {
           title: 'Meet Your Pro',
-          desc: 'Nearby verified providers accept your request and start the job fast.',
+          desc: 'Nearby verified providers can accept your request and coordinate the job with you.',
         },
       },
       startToday: 'Start for free',
-      ctaTitle: 'Post your first home service request in under 2 minutes',
+      ctaTitle: 'Post your first home service request today',
       ctaDescription:
-        'Thousands of verified local providers are ready right now. Transparent ratings, a live map, and zero fees to get started.',
+        'Verified providers are being activated by zone. Transparent ratings, area-based map visibility, and zero fees to get started.',
       footer: 'All rights reserved.',
     },
     login: {
@@ -713,7 +713,7 @@ const translations: Record<Language, TranslationMap> = {
       badge: 'Profesionales verificados cerca de ti',
       headline: 'Contrata servicios a domicilio con proveedores verificados cerca de ti.',
       description:
-        'ZippyGo conecta clientes con proveedores verificados de servicios a domicilio, belleza y tareas diarias. Publica una solicitud, ve profesionales cerca de ti en el mapa y resuelve rápido.',
+        'ZippyGo conecta clientes con proveedores verificados de servicios a domicilio, belleza y tareas diarias. Publica una solicitud, visualiza profesionales por zona y coordina tu servicio con claridad.',
       launchNotice: 'Etapa de lanzamiento: activamos proveedores verificados por zona.',
       launchSecondary: 'Únete al acceso anticipado para recibir cobertura prioritaria en tu área.',
       findService: 'Encontrar proveedor ahora',
@@ -722,7 +722,7 @@ const translations: Record<Language, TranslationMap> = {
         noCard: 'Sin tarjeta requerida',
         verifiedCommunity: 'Proveedores revisados y verificados',
         securePlatform: 'Plataforma segura con roles',
-        liveUpdates: 'Mapa en vivo y actualizaciones',
+        liveUpdates: 'Mapa por zona y actualizaciones de estado',
       },
       stats: {
         happyClients: 'Clientes felices',
@@ -741,19 +741,19 @@ const translations: Record<Language, TranslationMap> = {
       features: {
         proximity: {
           title: 'Profesionales cerca de ti',
-          description: 'Encuentra proveedores verificados de servicios a domicilio en tu zona, en el mapa en vivo.',
+          description: 'Encuentra proveedores verificados de servicios a domicilio en tu zona con mapa por zona y disponibilidad visible.',
         },
         verified: {
           title: 'Solo proveedores verificados',
           description: 'Cada proveedor pasa una revisión antes de unirse. Tu seguridad es la prioridad.',
         },
         ratings: {
-          title: 'Reseñas 100% reales',
-          description: 'Calificaciones de clientes reales para que elijas al mejor profesional cercano.',
+          title: 'Reseñas de clientes reales',
+          description: 'Calificaciones de clientes reales para comparar proveedores y elegir con más confianza.',
         },
         fastResponse: {
-          title: 'Respuesta en minutos',
-          description: 'Publica tu solicitud y recibe propuestas de proveedores disponibles en minutos.',
+          title: 'Respuestas ágiles',
+          description: 'Publica tu solicitud y recibe propuestas según la disponibilidad de proveedores.',
         },
       },
       howWorksTitle: '¿Cómo funciona ZippyGo?',
@@ -769,13 +769,13 @@ const translations: Record<Language, TranslationMap> = {
         },
         matched: {
           title: 'Encuentra tu pro',
-          desc: 'Proveedores verificados cercanos aceptan y comienzan el trabajo rápido.',
+          desc: 'Proveedores verificados cercanos pueden aceptar y coordinar el trabajo contigo.',
         },
       },
       startToday: 'Comienza gratis',
-      ctaTitle: 'Tu primera solicitud de servicio a domicilio está a 2 minutos',
+      ctaTitle: 'Publica hoy tu primera solicitud de servicio a domicilio',
       ctaDescription:
-        'Miles de proveedores verificados listos ahora. Calificaciones reales, mapa en vivo y cero costo para explorar.',
+        'Estamos activando proveedores verificados por zona. Calificaciones transparentes, visibilidad por zona y cero costo para explorar.',
       footer: 'Todos los derechos reservados.',
     },
     login: {
@@ -812,8 +812,8 @@ const translations: Record<Language, TranslationMap> = {
       signIn: 'Iniciar sesión',
       successTitle: 'Revisa tu correo',
       successDescription:
-        'Enviamos un enlace de confirmacion a {{email}}. Abre el enlace para activar tu cuenta y luego inicia sesion.',
-      goToSignIn: 'Ir a iniciar sesion',
+        'Enviamos un enlace de confirmación a {{email}}. Abre el enlace para activar tu cuenta y luego inicia sesión.',
+      goToSignIn: 'Ir a iniciar sesión',
       registrationFailed: 'No se pudo completar el registro',
     },
     verifyEmail: {
