@@ -31,6 +31,12 @@ const OPEN_REQUEST_FALLBACK_MINUTES = Number.isFinite(openRequestFallbackMinutes
   ? Math.min(Math.max(Math.trunc(openRequestFallbackMinutesEnv), 1), 120)
   : 5;
 
+type DetailTab = 'overview' | 'timeline' | 'location';
+
+function isDetailTab(value: string | null): value is DetailTab {
+  return value === 'overview' || value === 'timeline' || value === 'location';
+}
+
 export default function ClientRequestDetail() {
   const { id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -53,6 +59,7 @@ export default function ClientRequestDetail() {
   const [score, setScore] = useState(5);
   const [comment, setComment] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
+  const [activeDetailTab, setActiveDetailTab] = useState<DetailTab>('overview');
 
   const categoryMap = useMemo(
     () => new Map(categories.map((category) => [category.id, category] as const)),
@@ -149,6 +156,22 @@ export default function ClientRequestDetail() {
     }
   }, [request, searchParams, setSearchParams]);
 
+  useEffect(() => {
+    const requestedTab = searchParams.get('tab');
+    setActiveDetailTab(isDetailTab(requestedTab) ? requestedTab : 'overview');
+  }, [request?.id, searchParams]);
+
+  useEffect(() => {
+    if (!request) return;
+
+    const currentTab = searchParams.get('tab');
+    if (currentTab === activeDetailTab) return;
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('tab', activeDetailTab);
+    setSearchParams(nextParams, { replace: true });
+  }, [activeDetailTab, request, searchParams, setSearchParams]);
+
   const { submitRating, switchToOpenRequest } = useRequestDetailActions({
     request,
     userId: user?.id,
@@ -177,140 +200,171 @@ export default function ClientRequestDetail() {
           <LoadingSpinner size="lg" />
         </div>
       ) : request ? (
-        <div className="grid w-full gap-6 xl:grid-cols-[1.15fr,0.85fr]">
-          <div className="min-w-0 space-y-6">
-            <div className="card">
-              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div className="min-w-0">
-                  <p className="text-sm text-slate-500">{request.service?.name || t('clientRequestDetail.serviceRequest')}</p>
-                  <div className="mt-2">
-                    <span className="inline-flex max-w-full rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
-                      <span className="truncate">{getCategoryPath(request.service?.category_id)}</span>
-                    </span>
-                  </div>
-                  <h1 className="mt-1 text-2xl font-bold text-slate-900">{t('clientRequestDetail.requestPrefix')} #{request.id.slice(0, 8)}</h1>
-                  <p className="mt-3 break-words text-sm text-slate-500">{request.description || t('clientRequestDetail.noDescription')}</p>
-                </div>
-                <StatusBadge status={request.status} />
+        <div className="card p-4 sm:p-5">
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div className="min-w-0">
+              <p className="text-xs font-medium uppercase tracking-[0.08em] text-slate-500">{request.service?.name || t('clientRequestDetail.serviceRequest')}</p>
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                <span className="inline-flex max-w-full rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+                  <span className="truncate">{getCategoryPath(request.service?.category_id)}</span>
+                </span>
               </div>
-
-              <div className="mt-6 grid gap-4 md:grid-cols-2">
-                <div className="rounded-xl bg-slate-50 p-4">
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{t('clientRequestDetail.provider')}</p>
-                  {request.provider ? (
-                    <div className="mt-2 flex items-center gap-3">
-                      <UserAvatar
-                        avatarUrl={request.provider.avatar_url}
-                        name={request.provider.full_name || request.provider.email}
-                        alt={request.provider.full_name || request.provider.email}
-                        className="h-10 w-10 overflow-hidden rounded-full bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center flex-shrink-0"
-                        fallbackClassName="text-xs font-semibold text-white"
-                      />
-                      <div className="min-w-0">
-                        <p className="font-medium text-slate-900 truncate">{request.provider.full_name || t('clientRequestDetail.awaitingProvider')}</p>
-                        <p className="mt-1 break-all text-sm text-slate-500">{request.provider.email || t('clientRequestDetail.providerFallback')}</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <p className="mt-2 font-medium text-slate-900">{t('clientRequestDetail.awaitingProvider')}</p>
-                      <p className="mt-1 text-sm text-slate-500">{t('clientRequestDetail.providerFallback')}</p>
-                    </>
-                  )}
-                </div>
-                <div className="rounded-xl bg-slate-50 p-4">
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{t('clientRequestDetail.created')}</p>
-                  <p className="mt-2 font-medium text-slate-900">{formatDateTime(request.created_at, language)}</p>
-                  <p className="mt-4 text-xs font-medium uppercase tracking-wide text-slate-500">{t('clientRequestDetail.address')}</p>
-                  <p className="mt-1 break-words text-sm text-slate-500">{request.address || t('clientRequestDetail.notProvided')}</p>
-                </div>
-              </div>
-
-              {request.provider && (
-                <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
-                  <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
-                    <StarRating value={request.provider.avg_rating ?? 0} readonly size="sm" />
-                    <span>
-                      {request.provider.ratings_count && request.provider.ratings_count > 0
-                        ? `${(request.provider.avg_rating ?? 0).toFixed(1)} (${request.provider.ratings_count})`
-                        : t('clientRequestDetail.noRatingsYet')}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {shouldShowOpenRequestHint && (
-                <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700">
-                  {t('clientRequestDetail.switchOpenWaitHint').replace('{{minutes}}', String(OPEN_REQUEST_FALLBACK_MINUTES))}
-                </div>
-              )}
-
-              {canSwitchToOpenRequest && (
-                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
-                  <p className="text-sm font-semibold text-amber-900">{t('clientRequestDetail.switchOpenTitle')}</p>
-                  <p className="mt-1 text-sm text-amber-800">{t('clientRequestDetail.switchOpenDescription')}</p>
-                  <button
-                    type="button"
-                    className="btn-secondary mt-3"
-                    onClick={switchToOpenRequest}
-                    disabled={openingRequest}
-                  >
-                    {openingRequest ? t('clientRequestDetail.switchOpening') : t('clientRequestDetail.switchOpenButton')}
-                  </button>
-                </div>
-              )}
-
-              {rating && (
-                <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                  <p className="text-sm text-slate-600">{rating.comment || t('clientRequestDetail.noComment')}</p>
-                </div>
-              )}
+              <h1 className="mt-1 text-xl font-bold text-slate-900 sm:text-2xl">{t('clientRequestDetail.requestPrefix')} #{request.id.slice(0, 8)}</h1>
             </div>
-
-            <div className="card">
-              <h2 className="text-lg font-semibold text-slate-900">{t('clientRequestDetail.statusTimeline')}</h2>
-              <div className="mt-4 space-y-4">
-                {history.length === 0 && (
-                  <p className="text-sm text-slate-400">{t('clientRequestDetail.noStatusChanges')}</p>
-                )}
-                {history.map((item) => (
-                  <div key={item.id} className="flex gap-3">
-                    <div className="mt-1 h-3 w-3 rounded-full bg-blue-600" />
-                    <div>
-                      <p className="font-medium capitalize text-slate-900">{item.status.replace('_', ' ')}</p>
-                      <p className="text-sm text-slate-500">{formatDateTime(item.created_at, language)}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <StatusBadge status={request.status} />
           </div>
 
-          <div className="min-w-0 space-y-6">
-            <div className="card">
-              <h2 className="text-lg font-semibold text-slate-900">{t('clientRequestDetail.requestInfo')}</h2>
-              <dl className="mt-4 space-y-3 text-sm">
-                <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">
-                  <dt className="text-slate-500">{t('clientRequestDetail.address')}</dt>
-                  <dd className="break-words text-slate-800 sm:text-right">{request.address || t('clientRequestDetail.notProvided')}</dd>
-                </div>
-                <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">
-                  <dt className="text-slate-500">{t('clientRequestDetail.coordinates')}</dt>
-                  <dd className="break-all text-slate-800 sm:text-right">
-                    {request.latitude !== null && request.latitude !== undefined && request.longitude !== null && request.longitude !== undefined
-                      ? `${request.latitude.toFixed(5)}, ${request.longitude.toFixed(5)}`
-                      : t('clientRequestDetail.unavailable')}
-                  </dd>
-                </div>
-              </dl>
+          <div className="mt-4 flex flex-wrap gap-2 border-b border-slate-200 pb-3">
+            <button
+              type="button"
+              className={activeDetailTab === 'overview' ? 'btn-primary !px-3 !py-1.5 !text-xs' : 'btn-secondary !px-3 !py-1.5 !text-xs'}
+              onClick={() => setActiveDetailTab('overview')}
+            >
+              {t('clientRequestDetail.tabOverview')}
+            </button>
+            <button
+              type="button"
+              className={activeDetailTab === 'timeline' ? 'btn-primary !px-3 !py-1.5 !text-xs' : 'btn-secondary !px-3 !py-1.5 !text-xs'}
+              onClick={() => setActiveDetailTab('timeline')}
+            >
+              {t('clientRequestDetail.tabTimeline')}
+            </button>
+            <button
+              type="button"
+              className={activeDetailTab === 'location' ? 'btn-primary !px-3 !py-1.5 !text-xs' : 'btn-secondary !px-3 !py-1.5 !text-xs'}
+              onClick={() => setActiveDetailTab('location')}
+            >
+              {t('clientRequestDetail.tabLocation')}
+            </button>
+          </div>
 
-              {requestMarkers.length > 0 && (
-                <div className="mt-5 space-y-3">
-                  <p className="text-sm font-medium text-slate-800">{t('clientRequestDetail.locationMap')}</p>
-                  <LazyLocationMap markers={requestMarkers} heightClassName="h-72" />
+          <div className="mt-4 space-y-3">
+            {activeDetailTab === 'overview' && (
+              <>
+                <p className="text-sm text-slate-600">{request.description || t('clientRequestDetail.noDescription')}</p>
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="rounded-xl bg-slate-50 p-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{t('clientRequestDetail.provider')}</p>
+                    {request.provider ? (
+                      <div className="mt-2 flex items-center gap-2.5">
+                        <UserAvatar
+                          avatarUrl={request.provider.avatar_url}
+                          name={request.provider.full_name || request.provider.email}
+                          alt={request.provider.full_name || request.provider.email}
+                          className="h-9 w-9 overflow-hidden rounded-full bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center flex-shrink-0"
+                          fallbackClassName="text-xs font-semibold text-white"
+                        />
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-slate-900">{request.provider.full_name || t('clientRequestDetail.awaitingProvider')}</p>
+                          <p className="truncate text-xs text-slate-500">{request.provider.email || t('clientRequestDetail.providerFallback')}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="mt-1.5 text-sm font-medium text-slate-900">{t('clientRequestDetail.awaitingProvider')}</p>
+                        <p className="mt-0.5 text-xs text-slate-500">{t('clientRequestDetail.providerFallback')}</p>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="rounded-xl bg-slate-50 p-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{t('clientRequestDetail.created')}</p>
+                    <p className="mt-1 text-sm font-medium text-slate-900">{formatDateTime(request.created_at, language)}</p>
+                    <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{t('clientRequestDetail.address')}</p>
+                    <p className="mt-0.5 break-words text-xs text-slate-600">{request.address || t('clientRequestDetail.notProvided')}</p>
+                  </div>
                 </div>
-              )}
-            </div>
+
+                {request.provider && (
+                  <div className="rounded-xl border border-slate-200 bg-white p-3">
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{t('clientRequestDetail.providerRatingTitle')}</p>
+                    <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
+                      <StarRating value={request.provider.avg_rating ?? 0} readonly size="sm" />
+                      <span>
+                        {request.provider.ratings_count && request.provider.ratings_count > 0
+                          ? `${(request.provider.avg_rating ?? 0).toFixed(1)} (${request.provider.ratings_count})`
+                          : t('clientRequestDetail.noRatingsYet')}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {shouldShowOpenRequestHint && (
+                  <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-700">
+                    {t('clientRequestDetail.switchOpenWaitHint').replace('{{minutes}}', String(OPEN_REQUEST_FALLBACK_MINUTES))}
+                  </div>
+                )}
+
+                {canSwitchToOpenRequest && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+                    <p className="text-sm font-semibold text-amber-900">{t('clientRequestDetail.switchOpenTitle')}</p>
+                    <p className="mt-1 text-xs text-amber-800">{t('clientRequestDetail.switchOpenDescription')}</p>
+                    <button
+                      type="button"
+                      className="btn-secondary mt-2"
+                      onClick={switchToOpenRequest}
+                      disabled={openingRequest}
+                    >
+                      {openingRequest ? t('clientRequestDetail.switchOpening') : t('clientRequestDetail.switchOpenButton')}
+                    </button>
+                  </div>
+                )}
+
+                {rating && (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                    <p className="text-xs text-slate-600">{rating.comment || t('clientRequestDetail.noComment')}</p>
+                  </div>
+                )}
+              </>
+            )}
+
+            {activeDetailTab === 'timeline' && (
+              <div>
+                <h2 className="text-base font-semibold text-slate-900">{t('clientRequestDetail.statusTimeline')}</h2>
+                <div className="mt-3 space-y-3">
+                  {history.length === 0 && (
+                    <p className="text-sm text-slate-400">{t('clientRequestDetail.noStatusChanges')}</p>
+                  )}
+                  {history.map((item) => (
+                    <div key={item.id} className="flex gap-2.5">
+                      <div className="mt-1 h-2.5 w-2.5 rounded-full bg-blue-600" />
+                      <div>
+                        <p className="text-sm font-medium capitalize text-slate-900">{item.status.replace('_', ' ')}</p>
+                        <p className="text-xs text-slate-500">{formatDateTime(item.created_at, language)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeDetailTab === 'location' && (
+              <div>
+                <h2 className="text-base font-semibold text-slate-900">{t('clientRequestDetail.requestInfo')}</h2>
+                <dl className="mt-3 space-y-2.5 text-sm">
+                  <div className="flex flex-col gap-0.5 sm:flex-row sm:justify-between sm:gap-3">
+                    <dt className="text-slate-500">{t('clientRequestDetail.address')}</dt>
+                    <dd className="break-words text-slate-800 sm:text-right">{request.address || t('clientRequestDetail.notProvided')}</dd>
+                  </div>
+                  <div className="flex flex-col gap-0.5 sm:flex-row sm:justify-between sm:gap-3">
+                    <dt className="text-slate-500">{t('clientRequestDetail.coordinates')}</dt>
+                    <dd className="break-all text-slate-800 sm:text-right">
+                      {request.latitude !== null && request.latitude !== undefined && request.longitude !== null && request.longitude !== undefined
+                        ? `${request.latitude.toFixed(5)}, ${request.longitude.toFixed(5)}`
+                        : t('clientRequestDetail.unavailable')}
+                    </dd>
+                  </div>
+                </dl>
+
+                {requestMarkers.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-sm font-medium text-slate-800">{t('clientRequestDetail.locationMap')}</p>
+                    <LazyLocationMap markers={requestMarkers} heightClassName="h-64" />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       ) : null}

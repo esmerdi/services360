@@ -101,6 +101,17 @@ function getNavTranslationKey(label: string): string | null {
   return map[label] ?? null;
 }
 
+function isClientStatusNotification(id: string): boolean {
+  return id.startsWith('request-status-');
+}
+
+function getNotificationPriority(item: NavbarNotification): number {
+  if (item.id.endsWith('-completed')) return 3;
+  if (item.id.endsWith('-in_progress')) return 2;
+  if (item.id.endsWith('-accepted')) return 1;
+  return 0;
+}
+
 export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }: NavbarProps) {
   const { user, signOut } = useAuth();
   const { t } = useI18n();
@@ -112,6 +123,7 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<NavbarNotification[]>([]);
   const promptedCompletedRequestsRef = useRef<Set<string>>(new Set());
+  const promptedStatusNotificationsRef = useRef<Set<string>>(new Set());
 
   const quickLinks = useMemo(() => navItems.slice(0, 2), [navItems]);
 
@@ -125,6 +137,8 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
   useEffect(() => {
     if (!user) {
       setNotifications([]);
+      promptedCompletedRequestsRef.current.clear();
+      promptedStatusNotificationsRef.current.clear();
       return;
     }
 
@@ -147,6 +161,72 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
       if (location.pathname === `/client/requests/${requestId}`) return;
 
       navigate(`/client/requests/${requestId}?openRating=1`);
+    }
+
+    async function maybeQueueClientStatusNotification(requestId: string, status: string) {
+      if (currentUser.role !== 'client') return;
+      if (!requestId || !['accepted', 'in_progress', 'completed'].includes(status)) return;
+
+      const notificationKey = `${requestId}:${status}`;
+      if (promptedStatusNotificationsRef.current.has(notificationKey)) return;
+      promptedStatusNotificationsRef.current.add(notificationKey);
+
+      const { data: requestData, error: requestError } = await supabase
+        .from('service_requests')
+        .select(`
+          id,
+          service:services(name),
+          provider:users!service_requests_provider_id_fkey(full_name, email)
+        `)
+        .eq('id', requestId)
+        .eq('client_id', currentUser.id)
+        .maybeSingle();
+
+      if (requestError || !requestData) return;
+
+      const serviceRaw = requestData.service;
+      const providerRaw = requestData.provider;
+      const serviceData = (Array.isArray(serviceRaw) ? serviceRaw[0] : serviceRaw) as { name?: string | null } | undefined;
+      const providerData = (Array.isArray(providerRaw) ? providerRaw[0] : providerRaw) as { full_name?: string | null; email?: string | null } | undefined;
+
+      const serviceName = serviceData?.name || t('clientRequestDetail.serviceRequest');
+      const providerName = providerData?.full_name || providerData?.email || t('roles.provider');
+
+      let title = t('common.requestAcceptedTitle');
+      let description = t('common.requestAcceptedDescription')
+        .replace('{{provider}}', providerName)
+        .replace('{{service}}', serviceName);
+
+      if (status === 'in_progress') {
+        title = t('common.requestInProgressTitle');
+        description = t('common.requestInProgressDescription').replace('{{service}}', serviceName);
+      }
+
+      if (status === 'completed') {
+        title = t('common.rateServiceTitle');
+        description = t('common.rateServiceDescription')
+          .replace('{{service}}', serviceName)
+          .replace('{{provider}}', providerName);
+      }
+
+      const statusNotificationId = `request-status-${requestId}-${status}`;
+      const destination = status === 'completed'
+        ? `/client/requests/${requestId}?tab=timeline&openRating=1`
+        : `/client/requests/${requestId}?tab=timeline`;
+
+      const notificationItem: NavbarNotification = {
+        id: statusNotificationId,
+        requestId,
+        title,
+        description,
+        to: destination,
+        createdAt: new Date().toISOString(),
+      };
+
+      setNotifications((current) => {
+        if (current.some((item) => item.id === statusNotificationId)) return current;
+        return [notificationItem, ...current].slice(0, 20);
+      });
     }
 
     async function loadNotifications() {
@@ -269,8 +349,24 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
         }
       }
 
-      nextNotifications.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
-      setNotifications(nextNotifications.slice(0, 20));
+      setNotifications((current) => {
+        const preservedStatusNotifications = current.filter((item) => isClientStatusNotification(item.id));
+        const mergedNotifications = [...nextNotifications];
+
+        for (const statusItem of preservedStatusNotifications) {
+          if (!mergedNotifications.some((item) => item.id === statusItem.id)) {
+            mergedNotifications.push(statusItem);
+          }
+        }
+
+        mergedNotifications.sort((a, b) => {
+          const priorityDelta = getNotificationPriority(b) - getNotificationPriority(a);
+          if (priorityDelta !== 0) return priorityDelta;
+          return Date.parse(b.createdAt) - Date.parse(a.createdAt);
+        });
+
+        return mergedNotifications.slice(0, 20);
+      });
     }
 
     void loadNotifications();
@@ -283,8 +379,12 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
       .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, (payload) => {
         if (currentUser.role === 'client' && payload.eventType === 'UPDATE') {
           const updated = payload.new as Partial<{ id: string; client_id: string; status: string }>;
-          if (updated?.id && updated.client_id === currentUser.id && updated.status === 'completed') {
-            void maybePromptClientRating(updated.id);
+          if (updated?.id && updated.client_id === currentUser.id && updated.status) {
+            void maybeQueueClientStatusNotification(updated.id, updated.status);
+
+            if (updated.status === 'completed') {
+              void maybePromptClientRating(updated.id);
+            }
           }
         }
 
