@@ -313,7 +313,7 @@ const translations: Record<Language, TranslationMap> = {
       findService: 'Find a Pro Near Me',
       becomeProvider: 'Start Earning Today',
       checklist: {
-        noCard: 'No credit card needed',
+        noCard: 'No card required',
         verifiedCommunity: 'Background-checked providers',
         securePlatform: 'Secure, role-based access',
         liveUpdates: 'Live map & real-time updates',
@@ -710,7 +710,7 @@ const translations: Record<Language, TranslationMap> = {
       findService: 'Encontrar proveedor ahora',
       becomeProvider: 'Empezar a ganar hoy',
       checklist: {
-        noCard: 'Sin tarjeta de crédito',
+        noCard: 'Sin tarjeta requerida',
         verifiedCommunity: 'Proveedores revisados y verificados',
         securePlatform: 'Plataforma segura con roles',
         liveUpdates: 'Mapa en vivo y actualizaciones',
