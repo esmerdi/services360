@@ -12,6 +12,7 @@ import StatusBadge from '../../components/common/StatusBadge';
 import StarRating from '../../components/common/StarRating';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
+import { supabase } from '../../lib/supabase';
 import { formatDateTime } from '../../utils/helpers';
 import { getCategoryMarkerColor, getCategoryMarkerGlyph } from '../../utils/mapMarkers';
 import type { Category, Rating, RequestStatusHistory, ServiceRequest } from '../../types';
@@ -60,6 +61,7 @@ export default function ClientRequestDetail() {
   const [comment, setComment] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
   const [activeDetailTab, setActiveDetailTab] = useState<DetailTab>('overview');
+  const [providerServiceTags, setProviderServiceTags] = useState<string[]>([]);
 
   const categoryMap = useMemo(
     () => new Map(categories.map((category) => [category.id, category] as const)),
@@ -121,8 +123,24 @@ export default function ClientRequestDetail() {
         id: request.id,
         latitude: request.latitude,
         longitude: request.longitude,
-        label: request.service?.name || t('clientRequestDetail.serviceRequest'),
+        label: request.provider?.full_name || request.provider?.email || request.service?.name || t('clientRequestDetail.serviceRequest'),
+        badgeText: !request.provider?.ratings_count || request.provider.ratings_count <= 0
+          ? t('clientRequestDetail.newProviderBadge')
+          : Number(request.provider.avg_rating ?? 0) >= 4.8
+            ? t('clientRequestDetail.featuredProviderBadge')
+            : undefined,
+        badgeTone: !request.provider?.ratings_count || request.provider.ratings_count <= 0
+          ? 'new'
+          : Number(request.provider.avg_rating ?? 0) >= 4.8
+            ? 'featured'
+            : undefined,
+        imageUrl: request.provider?.avatar_url || undefined,
+        ratingText: request.provider?.ratings_count && request.provider.ratings_count > 0
+          ? `${t('clientRequestDetail.providerRatingTitle')}: ${Number(request.provider.avg_rating ?? 0).toFixed(1)} (${request.provider.ratings_count})`
+          : t('clientRequestDetail.noRatingsYet'),
+        hasRating: Boolean(request.provider?.ratings_count && request.provider.ratings_count > 0),
         description: `${getCategoryPath(request.service?.category_id)} • ${request.address || t('clientRequestDetail.notProvided')}`,
+        serviceTags: providerServiceTags.length > 0 ? providerServiceTags : undefined,
         color: getCategoryMarkerColor(request.service?.category_id),
         radius: 10,
         glyph: getCategoryMarkerGlyph(request.service?.category?.icon, request.service?.category?.name),
@@ -130,7 +148,45 @@ export default function ClientRequestDetail() {
     ];
 
     return markers;
-  }, [getCategoryPath, request, t]);
+  }, [getCategoryPath, providerServiceTags, request, t]);
+
+  useEffect(() => {
+    const providerId = request?.provider_id;
+
+    if (!providerId) {
+      setProviderServiceTags([]);
+      return;
+    }
+
+    async function loadProviderServiceTags() {
+      const { data, error } = await supabase
+        .from('provider_services')
+        .select('service:services(name)')
+        .eq('provider_id', providerId)
+        .limit(6);
+
+      if (error || !data) {
+        setProviderServiceTags([]);
+        return;
+      }
+
+      const uniqueNames = new Set<string>();
+      for (const row of data as Array<{ service?: unknown }>) {
+        const serviceRaw = row.service;
+        const serviceData = (Array.isArray(serviceRaw) ? serviceRaw[0] : serviceRaw) as { name?: string | null } | undefined;
+        const name = serviceData?.name?.trim();
+        if (name) uniqueNames.add(name);
+      }
+
+      const allNames = Array.from(uniqueNames);
+      const visibleNames = allNames.slice(0, 3);
+      const remaining = allNames.length - visibleNames.length;
+
+      setProviderServiceTags(remaining > 0 ? [...visibleNames, `+${remaining}`] : visibleNames);
+    }
+
+    void loadProviderServiceTags();
+  }, [request?.provider_id]);
 
   // Lock body scroll while the mandatory rating popup is visible
   useEffect(() => {

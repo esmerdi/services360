@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
-import { FilePlus2 } from 'lucide-react';
+import { FilePlus2, Star } from 'lucide-react';
 import { divIcon, latLngBounds, point } from 'leaflet';
 
 export interface LocationMapMarker {
@@ -9,6 +9,8 @@ export interface LocationMapMarker {
   latitude: number;
   longitude: number;
   label: string;
+  badgeText?: string;
+  badgeTone?: 'new' | 'featured';
   description?: string;
   ratingText?: string;
   hasRating?: boolean;
@@ -153,41 +155,71 @@ export default function LocationMap({
               icon={markerIcon(marker)}
             >
               <Popup>
-                <div className="w-full min-w-[160px] leading-tight">
-                  {marker.imageUrl ? (
-                    <img
-                      src={marker.imageUrl}
-                      alt={marker.label}
-                      className="mx-auto mb-2 h-16 w-16 rounded-full border-2 border-slate-200 object-cover"
-                    />
-                  ) : null}
-                  <p className="font-semibold text-slate-900 leading-tight">{marker.label}</p>
+                <div className="w-[200px] max-w-[200px] leading-tight sm:w-[220px] sm:max-w-[220px]">
+                  <div className="flex items-start gap-2 sm:gap-2.5">
+                    {marker.imageUrl ? (
+                      <img
+                        src={marker.imageUrl}
+                        alt={marker.label}
+                        className="h-9 w-9 flex-shrink-0 rounded-full border border-slate-200 object-cover sm:h-10 sm:w-10"
+                      />
+                    ) : null}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1">
+                        <p className="truncate text-sm font-semibold text-slate-900">{marker.label}</p>
+                        {marker.badgeText ? (
+                          <span
+                            className={marker.badgeTone === 'featured'
+                              ? 'inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700'
+                              : 'inline-flex flex-shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600'}
+                          >
+                            {marker.badgeTone === 'featured' ? <Star className="h-2.5 w-2.5 fill-current" /> : null}
+                            {marker.badgeText}
+                          </span>
+                        ) : null}
+                      </div>
+                      {marker.categoryText ? <p className="mt-0.5 truncate text-xs text-slate-500">{marker.categoryText}</p> : null}
+                    </div>
+                  </div>
                   {marker.ratingText ? (
-                    <p className={`mt-0.5 text-sm font-medium leading-tight ${marker.hasRating ? 'text-amber-600' : 'text-slate-400'}`}>
+                    <p className={`mt-1 text-xs font-medium ${marker.hasRating ? 'text-amber-600' : 'text-slate-400'}`}>
                       {marker.ratingText}
                     </p>
                   ) : null}
-                  {marker.categoryText ? <p className="mt-0.5 text-sm leading-tight text-slate-600">{marker.categoryText}</p> : null}
                   {marker.serviceText ? (
-                    <span className="mt-1 inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium leading-tight text-blue-700">
+                    <span className="mt-1 inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">
                       {marker.serviceText}
                     </span>
                   ) : null}
                   {marker.serviceTags && marker.serviceTags.length > 0 ? (
-                    <div className="mt-2 flex flex-wrap gap-1.5">
+                    <div className="mt-1.5 flex flex-wrap gap-1">
                       {marker.serviceTags.map((serviceTag) => (
                         <span
                           key={`${marker.id}-${serviceTag}`}
                           className={serviceTag.startsWith('+')
-                            ? 'inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600'
-                            : 'inline-flex rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-medium text-sky-700'}
+                            ? 'inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600'
+                            : 'inline-flex rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-medium text-sky-700'}
                         >
                           {serviceTag}
                         </span>
                       ))}
                     </div>
                   ) : null}
-                  {marker.description ? <p className="mt-1 text-sm leading-tight text-slate-600">{marker.description}</p> : null}
+                  {marker.description ? (
+                    <p
+                      className="mt-1 text-xs text-slate-600 sm:mt-1.5"
+                      title={marker.description}
+                      style={{
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {marker.description}
+                    </p>
+                  ) : null}
                   {marker.actionLabel ? (
                     onMarkerActionClick && (Boolean(marker.actionRequestId) || (Boolean(marker.actionServiceId) && Boolean(marker.actionProviderId))) ? (
                       <button
@@ -198,7 +230,7 @@ export default function LocationMap({
                           void onMarkerActionClick(marker);
                         }}
                         disabled={actionLoadingMarkerId === marker.id}
-                        className="btn-primary mt-2 flex w-full items-center justify-center gap-2 text-sm !text-white visited:!text-white hover:!text-white focus:!text-white no-underline disabled:opacity-70"
+                        className="btn-primary mt-2 flex w-full items-center justify-center gap-2 text-xs !text-white visited:!text-white hover:!text-white focus:!text-white no-underline disabled:opacity-70"
                         style={{ color: '#ffffff' }}
                       >
                         <FilePlus2 className="h-4 w-4" />
@@ -207,7 +239,7 @@ export default function LocationMap({
                     ) : marker.actionUrl ? (
                       <a
                         href={marker.actionUrl}
-                        className="btn-primary mt-2 flex w-full items-center justify-center gap-2 text-sm !text-white visited:!text-white hover:!text-white focus:!text-white no-underline"
+                        className="btn-primary mt-2 flex w-full items-center justify-center gap-2 text-xs !text-white visited:!text-white hover:!text-white focus:!text-white no-underline"
                         style={{ color: '#ffffff' }}
                       >
                         <FilePlus2 className="h-4 w-4" />
