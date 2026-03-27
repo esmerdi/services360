@@ -22,38 +22,39 @@ export default function NearbyRequestCard({
   const clientLabel = request.client?.full_name || request.client?.email || (es ? 'Cliente' : 'Client');
 
   return (
-    <div className="card">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex min-w-0 items-start gap-3">
+    <div className="card p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-2.5">
           <UserAvatar
             avatarUrl={request.client?.avatar_url}
             name={clientLabel}
             alt={clientLabel}
-            className="h-11 w-11 overflow-hidden rounded-full border border-slate-200 bg-slate-100"
+            className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full border border-slate-200 bg-slate-100"
+            imageClassName="h-full w-full rounded-full object-cover"
             fallbackClassName="text-xs font-semibold text-slate-600"
           />
           <div className="min-w-0">
-            <p className="text-sm text-slate-500">{request.service?.name || (es ? 'Solicitud de servicio' : 'Service Request')}</p>
-            <h2 className="mt-1 truncate text-lg font-semibold text-slate-900">{request.client?.full_name || (es ? 'Solicitud de cliente' : 'Client request')}</h2>
+            <p className="text-xs font-medium text-slate-500">{request.service?.name || (es ? 'Solicitud de servicio' : 'Service Request')}</p>
+            <h2 className="mt-0.5 truncate text-base font-semibold text-slate-900">{request.client?.full_name || (es ? 'Solicitud de cliente' : 'Client request')}</h2>
           </div>
         </div>
         <StatusBadge status={request.status} />
       </div>
 
-      <p className="mt-3 text-sm text-slate-500">{request.description || (es ? 'No hay detalles adicionales.' : 'No extra details provided.')}</p>
+      <p className="mt-2 text-sm leading-5 text-slate-500">{request.description || (es ? 'No hay detalles adicionales.' : 'No extra details provided.')}</p>
 
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <div className="surface-muted text-sm text-slate-600">
-          <p className="font-medium text-slate-800">{es ? 'Distancia' : 'Distance'}</p>
-          <p className="mt-1">{request.distance_km !== undefined ? formatDistance(request.distance_km) : (es ? 'No disponible' : 'Unavailable')}</p>
+      <div className="mt-3 grid gap-2.5 md:grid-cols-2">
+        <div className="surface-muted p-3 text-sm text-slate-600">
+          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{es ? 'Distancia' : 'Distance'}</p>
+          <p className="mt-0.5 font-medium text-slate-800">{request.distance_km !== undefined ? formatDistance(request.distance_km) : (es ? 'No disponible' : 'Unavailable')}</p>
         </div>
       </div>
 
-      <p className="mt-4 text-sm text-slate-500">{request.address || (es ? 'Sin referencia de direccion.' : 'No address reference supplied.')}</p>
+      <p className="mt-3 text-xs text-slate-500">{request.address || (es ? 'Sin referencia de direccion.' : 'No address reference supplied.')}</p>
 
       <button
         onClick={() => onAccept(request.id)}
-        className="btn-primary mt-5 w-full justify-center"
+        className="btn-primary mt-3 w-full justify-center py-2"
         disabled={actingId === request.id}
       >
         {actingId === request.id ? <LoadingSpinner size="sm" /> : (
