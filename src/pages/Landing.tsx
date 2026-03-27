@@ -12,17 +12,63 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
 import LanguageSwitcher from '../components/common/LanguageSwitcher';
+import { supabase } from '../lib/supabase';
+
+type LandingStats = {
+  total_clients: number;
+  total_providers: number;
+  total_categories: number;
+  total_cities: number;
+};
 
 export default function Landing() {
   const { user } = useAuth();
   const { t } = useI18n();
   const navigate = useNavigate();
+  const [landingStats, setLandingStats] = React.useState<LandingStats | null>(null);
 
   React.useEffect(() => {
     if (user) {
       navigate(`/${user.role}`, { replace: true });
     }
   }, [navigate, user]);
+
+  React.useEffect(() => {
+    let mounted = true;
+
+    const loadLandingStats = async () => {
+      const { data, error } = await supabase.rpc('public_landing_stats').single();
+      if (error || !data || !mounted) return;
+
+      const parsed = data as Partial<LandingStats>;
+      if (
+        typeof parsed.total_clients !== 'number' ||
+        typeof parsed.total_providers !== 'number' ||
+        typeof parsed.total_categories !== 'number' ||
+        typeof parsed.total_cities !== 'number'
+      ) {
+        return;
+      }
+
+      setLandingStats(parsed as LandingStats);
+    };
+
+    void loadLandingStats();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const formatCount = React.useCallback((value: number) => new Intl.NumberFormat().format(value), []);
+  const getStatValue = React.useCallback(
+    (value: number, fallbackKey: string) => {
+      if (!landingStats) return t(fallbackKey);
+      if (value <= 0) return t('landing.stats.notAvailable');
+      return formatCount(value);
+    },
+    [formatCount, landingStats, t]
+  );
 
   const features = React.useMemo(
     () => [
@@ -52,12 +98,24 @@ export default function Landing() {
 
   const stats = React.useMemo(
     () => [
-      { label: t('landing.stats.happyClients'), value: '10,000+' },
-      { label: t('landing.stats.verifiedProviders'), value: '2,500+' },
-      { label: t('landing.stats.serviceCategories'), value: '50+' },
-      { label: t('landing.stats.citiesCovered'), value: '30+' },
+      {
+        label: t('landing.stats.happyClients'),
+        value: getStatValue(landingStats?.total_clients ?? 0, 'landing.stats.happyClientsValue'),
+      },
+      {
+        label: t('landing.stats.verifiedProviders'),
+        value: getStatValue(landingStats?.total_providers ?? 0, 'landing.stats.verifiedProvidersValue'),
+      },
+      {
+        label: t('landing.stats.serviceCategories'),
+        value: getStatValue(landingStats?.total_categories ?? 0, 'landing.stats.serviceCategoriesValue'),
+      },
+      {
+        label: t('landing.stats.citiesCovered'),
+        value: getStatValue(landingStats?.total_cities ?? 0, 'landing.stats.citiesCoveredValue'),
+      },
     ],
-    [t]
+    [getStatValue, landingStats, t]
   );
 
   const checklistItems = React.useMemo(
@@ -134,6 +192,10 @@ export default function Landing() {
             <p className="reveal-up mt-5 max-w-xl text-base leading-relaxed text-slate-600 md:text-lg">
               {t('landing.description')}
             </p>
+            <div className="reveal-up mt-4 inline-flex max-w-xl items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50/80 px-3 py-2 text-sm text-amber-800">
+              <Zap className="h-4 w-4" />
+              <span>{t('landing.launchNotice')}</span>
+            </div>
             <div className="reveal-up mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
               <Link
                 to="/register"
@@ -158,6 +220,7 @@ export default function Landing() {
                 </li>
               ))}
             </ul>
+            <p className="reveal-up mt-3 text-sm text-slate-500">{t('landing.launchSecondary')}</p>
           </div>
 
           <div className="relative reveal-up">

@@ -310,6 +310,8 @@ const translations: Record<Language, TranslationMap> = {
       headline: 'Book trusted home services from verified local providers near you.',
       description:
         'ZippyGo connects you with verified local service providers for home services, beauty, and everyday tasks. Post a request, see pros near you on a live map, and get it done fast.',
+      launchNotice: 'Launch stage: we are activating verified providers by zone.',
+      launchSecondary: 'Join early access to receive priority coverage in your area.',
       findService: 'Find a Pro Near Me',
       becomeProvider: 'Start Earning Today',
       checklist: {
@@ -320,13 +322,18 @@ const translations: Record<Language, TranslationMap> = {
       },
       stats: {
         happyClients: 'Happy Clients',
+        happyClientsValue: 'Early access',
         verifiedProviders: 'Verified Providers',
+        verifiedProvidersValue: 'Growing weekly',
         serviceCategories: 'Service Categories',
+        serviceCategoriesValue: 'Core categories',
         citiesCovered: 'Cities Covered',
+        citiesCoveredValue: 'Launching by zone',
+        notAvailable: 'N/A',
       },
-      liveDemandPulse: 'Live service demand',
-      quickResponseTitle: 'First response time',
-      quickResponseValue: 'Under 10 min. avg.',
+      liveDemandPulse: 'Availability by area',
+      quickResponseTitle: 'Response expectation',
+      quickResponseValue: 'Varies by provider availability',
       features: {
         proximity: {
           title: 'Pros Near You',
@@ -707,6 +714,8 @@ const translations: Record<Language, TranslationMap> = {
       headline: 'Contrata servicios a domicilio con proveedores verificados cerca de ti.',
       description:
         'ZippyGo conecta clientes con proveedores verificados de servicios a domicilio, belleza y tareas diarias. Publica una solicitud, ve profesionales cerca de ti en el mapa y resuelve rápido.',
+      launchNotice: 'Etapa de lanzamiento: activamos proveedores verificados por zona.',
+      launchSecondary: 'Únete al acceso anticipado para recibir cobertura prioritaria en tu área.',
       findService: 'Encontrar proveedor ahora',
       becomeProvider: 'Empezar a ganar hoy',
       checklist: {
@@ -717,13 +726,18 @@ const translations: Record<Language, TranslationMap> = {
       },
       stats: {
         happyClients: 'Clientes felices',
+        happyClientsValue: 'Acceso anticipado',
         verifiedProviders: 'Proveedores verificados',
+        verifiedProvidersValue: 'Creciendo cada semana',
         serviceCategories: 'Categorías de servicio',
+        serviceCategoriesValue: 'Categorías principales',
         citiesCovered: 'Ciudades cubiertas',
+        citiesCoveredValue: 'Lanzamiento por zonas',
+        notAvailable: 'No disponible',
       },
-      liveDemandPulse: 'Demanda de servicios en vivo',
-      quickResponseTitle: 'Tiempo de primera respuesta',
-      quickResponseValue: 'Menos de 10 min. en promedio',
+      liveDemandPulse: 'Disponibilidad por zona',
+      quickResponseTitle: 'Tiempo estimado de respuesta',
+      quickResponseValue: 'Depende de la disponibilidad de proveedores',
       features: {
         proximity: {
           title: 'Profesionales cerca de ti',
