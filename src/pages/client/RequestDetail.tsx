@@ -442,7 +442,7 @@ export default function ClientRequestDetail() {
                         <LoadingSpinner size="md" />
                       </div>
                     ) : (
-                      <LazyLocationMap markers={requestMarkers} heightClassName="h-64" />
+                      <LazyLocationMap markers={requestMarkers} heightClassName="h-64" showPopups={false} />
                     )}
                   </div>
                 )}

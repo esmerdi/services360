@@ -25,6 +25,8 @@ export default function ClientMyRequests() {
   const { t, language } = useI18n();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<'all' | RequestStatus>('all');
+  const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
   const [score, setScore] = useState(5);
   const [comment, setComment] = useState('');
   const [savingRating, setSavingRating] = useState(false);
@@ -65,6 +67,16 @@ export default function ClientMyRequests() {
     });
   }, [categoryMap, requests, search, status, t]);
 
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(filteredRequests.length / pageSize)),
+    [filteredRequests.length, pageSize]
+  );
+
+  const paginatedRequests = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredRequests.slice(startIndex, startIndex + pageSize);
+  }, [currentPage, filteredRequests, pageSize]);
+
   const pendingRequestsToRate = useMemo(() => {
     return requests.filter((request) => (
       request.status === 'completed'
@@ -80,6 +92,16 @@ export default function ClientMyRequests() {
     () => pendingRequestsToRate.length,
     [pendingRequestsToRate]
   );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, status, pageSize]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   useEffect(() => {
     if (ratingTarget) {
@@ -179,7 +201,13 @@ export default function ClientMyRequests() {
         <MyRequestsTable
           t={t}
           language={language}
-          requests={filteredRequests}
+          requests={paginatedRequests}
+          totalRequests={filteredRequests.length}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
           ratedRequestIds={ratedRequestIds}
           categoryMap={categoryMap}
         />

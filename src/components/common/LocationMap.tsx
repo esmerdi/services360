@@ -32,6 +32,7 @@ interface LocationMapProps {
   markers: LocationMapMarker[];
   heightClassName?: string;
   enableClustering?: boolean;
+  showPopups?: boolean;
   onMarkerActionClick?: (marker: LocationMapMarker) => void | Promise<void>;
   actionLoadingMarkerId?: string | null;
   onVisibleMarkerIdsChange?: (markerIds: string[]) => void;
@@ -129,6 +130,7 @@ export default function LocationMap({
   markers,
   heightClassName = 'h-80',
   enableClustering = true,
+  showPopups = true,
   onMarkerActionClick,
   actionLoadingMarkerId = null,
   onVisibleMarkerIdsChange,
@@ -162,7 +164,8 @@ export default function LocationMap({
               position={[marker.latitude, marker.longitude]}
               icon={markerIcon(marker)}
             >
-              <Popup>
+              {showPopups ? (
+                <Popup>
                 <div className="w-[200px] max-w-[200px] leading-tight sm:w-[220px] sm:max-w-[220px]">
                   <div className="flex items-start gap-2 sm:gap-2.5">
                     {marker.imageUrl ? (
@@ -256,7 +259,8 @@ export default function LocationMap({
                     ) : null
                   ) : null}
                 </div>
-              </Popup>
+                </Popup>
+              ) : null}
             </Marker>
           ))}
         </MarkerContainer>
