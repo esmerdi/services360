@@ -61,6 +61,7 @@ export function formatTimeAgo(dateStr: string, language: AppLanguage = 'en'): st
 }
 
 const PLAN_FEATURE_LABELS: Record<string, { en: string; es: string }> = {
+  trial_days: { en: 'Trial period (days)', es: 'Periodo de prueba (días)' },
   featured_in_search: { en: 'Featured in search', es: 'Destacado en búsqueda' },
   max_requests_per_month: { en: 'Max requests per month', es: 'Máximo de solicitudes por mes' },
   profile_boost: { en: 'Profile boost', es: 'Impulso de perfil' },

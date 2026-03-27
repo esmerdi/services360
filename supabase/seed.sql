@@ -8,19 +8,19 @@
 -- =============================================
 INSERT INTO public.plans (name, price, features) VALUES
   ('FREE', 0.00, '{
+    "trial_days": 15,
     "max_requests_per_month": 10,
-    "visibility": "standard",
-    "support": "community",
-    "analytics": false,
-    "featured_listing": false
+    "featured_in_search": false,
+    "profile_boost": false,
+    "priority_support": false,
+    "instant_notifications": true
   }'),
-  ('PRO', 29.99, '{
+  ('PRO', 7.99, '{
     "max_requests_per_month": -1,
-    "visibility": "priority",
-    "support": "24/7 priority",
-    "analytics": true,
-    "featured_listing": true,
-    "badge": "PRO"
+    "featured_in_search": true,
+    "profile_boost": true,
+    "priority_support": true,
+    "instant_notifications": true
   }')
 ON CONFLICT DO NOTHING;
 

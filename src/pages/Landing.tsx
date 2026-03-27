@@ -26,6 +26,7 @@ export default function Landing() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const [landingStats, setLandingStats] = React.useState<LandingStats | null>(null);
+  const [planTab, setPlanTab] = React.useState<'providers' | 'clients'>('providers');
 
   React.useEffect(() => {
     if (user) {
@@ -262,6 +263,63 @@ export default function Landing() {
               </article>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section id="plans" className="border-y border-slate-200/80 bg-white/80 px-4 py-16 md:px-6">
+        <div className="mx-auto max-w-6xl">
+          <div className="text-center">
+            <h2 className="reveal-up font-display text-3xl text-slate-900 md:text-4xl">{t('landing.plansTitle')}</h2>
+            <p className="reveal-up mx-auto mt-3 max-w-3xl text-slate-600">{t('landing.plansSubtitle')}</p>
+          </div>
+
+          <div className="reveal-up mt-8 flex items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPlanTab('providers')}
+              className={planTab === 'providers' ? 'btn-primary !px-5 !py-2.5 text-sm' : 'btn-secondary !px-5 !py-2.5 text-sm'}
+            >
+              {t('landing.plansProvidersTab')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setPlanTab('clients')}
+              className={planTab === 'clients' ? 'btn-primary !px-5 !py-2.5 text-sm' : 'btn-secondary !px-5 !py-2.5 text-sm'}
+            >
+              {t('landing.plansClientsTab')}
+            </button>
+          </div>
+
+          {planTab === 'providers' ? (
+            <div className="mt-8 grid gap-5 md:grid-cols-2">
+              <article className="reveal-up rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('landing.planTrialLabel')}</p>
+                <h3 className="mt-2 font-display text-2xl text-slate-900">{t('landing.planTrialPrice')}</h3>
+                <p className="mt-2 text-sm text-slate-600">{t('landing.planTrialDescription')}</p>
+                <ul className="mt-4 space-y-2 text-sm text-slate-600">
+                  <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-emerald-500" />{t('landing.planTrialFeatureDays')}</li>
+                  <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-emerald-500" />{t('landing.planTrialFeatureRequests')}</li>
+                  <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-emerald-500" />{t('landing.planTrialFeatureMap')}</li>
+                </ul>
+              </article>
+
+              <article className="reveal-up rounded-3xl border border-blue-300 bg-blue-50/60 p-6 shadow-sm">
+                <p className="text-xs uppercase tracking-[0.16em] text-blue-700">{t('landing.planProLabel')}</p>
+                <h3 className="mt-2 font-display text-2xl text-slate-900">{t('landing.planProPrice')}</h3>
+                <p className="mt-2 text-sm text-slate-600">{t('landing.planProDescription')}</p>
+                <ul className="mt-4 space-y-2 text-sm text-slate-600">
+                  <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-emerald-500" />{t('landing.planProFeatureRequests')}</li>
+                  <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-emerald-500" />{t('landing.planProFeatureSearch')}</li>
+                  <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-emerald-500" />{t('landing.planProFeaturePriority')}</li>
+                </ul>
+              </article>
+            </div>
+          ) : (
+            <div className="reveal-up mt-8 rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+              <h3 className="font-display text-2xl text-slate-900">{t('landing.planClientTitle')}</h3>
+              <p className="mx-auto mt-3 max-w-2xl text-slate-600">{t('landing.planClientDescription')}</p>
+            </div>
+          )}
         </div>
       </section>
 

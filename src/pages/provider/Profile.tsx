@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ChevronDown, CheckCircle2 } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -215,6 +216,35 @@ export default function ProviderProfile() {
         <div className="grid gap-6 xl:grid-cols-[1.1fr,0.9fr]">
           <div className="space-y-6">
             <ProfileEditor />
+
+            <div className="card">
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900">{es ? 'Suscripción del proveedor' : 'Provider subscription'}</h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {es
+                      ? 'Inicia con Trial de 15 días y 10 solicitudes al mes, o activa PRO por USD 7.99/mes.'
+                      : 'Start with a 15-day trial and 10 requests per month, or upgrade to PRO for USD 7.99/mo.'}
+                  </p>
+                </div>
+                <Link to="/provider/subscription" className="btn-primary">
+                  {es ? 'Ver suscripción' : 'See subscription'}
+                </Link>
+              </div>
+
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                <div className="surface-muted text-sm text-slate-600">
+                  <p className="font-medium text-slate-800">{es ? 'TRIAL' : 'TRIAL'}</p>
+                  <p className="mt-1">{es ? '15 días' : '15 days'}</p>
+                  <p>{es ? '10 solicitudes por mes' : '10 requests per month'}</p>
+                </div>
+                <div className="surface-muted text-sm text-slate-600">
+                  <p className="font-medium text-slate-800">PRO</p>
+                  <p className="mt-1">USD 7.99/{es ? 'mes' : 'mo'}</p>
+                  <p>{es ? 'Mayor visibilidad y prioridad' : 'More visibility and priority'}</p>
+                </div>
+              </div>
+            </div>
 
             <div className="card">
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">

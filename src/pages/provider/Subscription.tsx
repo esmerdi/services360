@@ -65,7 +65,11 @@ export default function ProviderSubscription() {
 
     const now = new Date();
     const endDate = new Date(now);
-    endDate.setMonth(endDate.getMonth() + 1);
+    if (plan.name === 'FREE') {
+      endDate.setDate(endDate.getDate() + 15);
+    } else {
+      endDate.setMonth(endDate.getMonth() + 1);
+    }
 
     const payload = {
       user_id: user.id,
@@ -103,8 +107,8 @@ export default function ProviderSubscription() {
   return (
     <Layout navItems={PROVIDER_NAV} title="Subscription">
       <div className="page-header">
-        <h1 className="page-title">{es ? 'Suscripcion' : 'Subscription'}</h1>
-        <p className="page-subtitle">{es ? 'Compara planes y gestiona tu visibilidad como proveedor.' : 'Compare plans and manage your provider visibility.'}</p>
+        <h1 className="page-title">{es ? 'Suscripción' : 'Subscription'}</h1>
+        <p className="page-subtitle">{es ? 'Trial de 15 días con 10 solicitudes al mes y plan PRO desde USD 7.99/mes.' : '15-day trial with 10 requests per month and PRO plan from USD 7.99/mo.'}</p>
       </div>
 
       {error && <ErrorMessage message={error} className="mb-4" />}
@@ -153,7 +157,7 @@ export default function ProviderSubscription() {
                     <div>
                       <h2 className="text-xl font-semibold text-slate-900">{plan.name}</h2>
                       <p className="mt-2 text-3xl font-bold text-blue-600">
-                        {plan.price === 0 ? (es ? 'Gratis' : 'Free') : `${formatCurrency(plan.price, language)}/${es ? 'mes' : 'mo'}`}
+                          {plan.price === 0 ? (es ? 'Trial' : 'Trial') : `${formatCurrency(plan.price, language)}/${es ? 'mes' : 'mo'}`}
                       </p>
                     </div>
                   </div>
