@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import { FilePlus2, Star } from 'lucide-react';
@@ -40,18 +40,26 @@ interface LocationMapProps {
 
 function FitMapBounds({ markers, fitBoundsTrigger = 0 }: { markers: LocationMapMarker[]; fitBoundsTrigger?: number }) {
   const map = useMap();
+  const lastAppliedBoundsKeyRef = useRef<string | null>(null);
+  const markerBoundsKey = useMemo(
+    () => markers.map((marker) => `${marker.id}:${marker.latitude}:${marker.longitude}`).join('|'),
+    [markers]
+  );
 
   useEffect(() => {
     if (markers.length === 0) return;
+    if (lastAppliedBoundsKeyRef.current === `${fitBoundsTrigger}:${markerBoundsKey}`) return;
 
     if (markers.length === 1) {
       map.setView([markers[0].latitude, markers[0].longitude], 13, { animate: false });
+      lastAppliedBoundsKeyRef.current = `${fitBoundsTrigger}:${markerBoundsKey}`;
       return;
     }
 
     const bounds = latLngBounds(markers.map((marker) => [marker.latitude, marker.longitude] as [number, number]));
     map.fitBounds(bounds, { padding: [36, 36] });
-  }, [fitBoundsTrigger, map, markers]);
+    lastAppliedBoundsKeyRef.current = `${fitBoundsTrigger}:${markerBoundsKey}`;
+  }, [fitBoundsTrigger, map, markerBoundsKey, markers]);
 
   return null;
 }
