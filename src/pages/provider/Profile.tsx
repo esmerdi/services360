@@ -36,6 +36,7 @@ export default function ProviderProfile() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [visibleRatingsCount, setVisibleRatingsCount] = useState(10);
   const initializedRef = React.useRef(false);
   const es = language === 'es';
 
@@ -89,6 +90,13 @@ export default function ProviderProfile() {
     return ratings.reduce((sum, rating) => sum + rating.rating, 0) / ratings.length;
   }, [ratings]);
 
+  const visibleRatings = useMemo(
+    () => ratings.slice(0, visibleRatingsCount),
+    [ratings, visibleRatingsCount]
+  );
+
+  const hasMoreRatings = ratings.length > visibleRatingsCount;
+
   const categoryMap = useMemo(
     () => new Map(categories.map((category) => [category.id, category] as const)),
     [categories]
@@ -135,6 +143,10 @@ export default function ProviderProfile() {
     const timer = setTimeout(() => setSuccessMessage(null), 3500);
     return () => clearTimeout(timer);
   }, [successMessage]);
+
+  useEffect(() => {
+    setVisibleRatingsCount(10);
+  }, [ratings]);
 
   async function toggleAvailability() {
     if (!user) return;
@@ -303,7 +315,7 @@ export default function ProviderProfile() {
               {ratings.length === 0 && (
                 <p className="text-sm text-slate-400">{es ? 'Aun no hay calificaciones.' : 'No ratings yet.'}</p>
               )}
-              {ratings.map((rating) => (
+              {visibleRatings.map((rating) => (
                 <div key={rating.id} className="surface-stroke">
                   <div className="flex items-start justify-between gap-4">
                     <div>
@@ -315,6 +327,20 @@ export default function ProviderProfile() {
                   <p className="mt-3 text-sm text-slate-500">{rating.comment || (es ? 'Sin comentario.' : 'No comment provided.')}</p>
                 </div>
               ))}
+
+              {hasMoreRatings && (
+                <div className="sticky bottom-0 -mx-1 border-t border-slate-200 bg-white/95 px-1 pt-2 backdrop-blur">
+                  <div className="flex justify-center">
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => setVisibleRatingsCount((current) => current + 10)}
+                  >
+                    {es ? 'Ver más calificaciones antiguas' : 'View older ratings'}
+                  </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
