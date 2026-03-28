@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Activity, Briefcase, CheckCircle2, Clock, MapPin } from 'lucide-react';
+import { Activity, Briefcase, CheckCircle2, Clock, MapPin, ShieldCheck, Sparkles } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
@@ -67,23 +67,40 @@ export default function ProviderDashboard() {
   const completed = jobs.filter((job) => job.status === 'completed').length;
   const es = language === 'es';
 
+  const statusLabel = (status: string) => {
+    if (es) {
+      if (status === 'accepted') return 'Aceptado';
+      if (status === 'in_progress') return 'En progreso';
+      if (status === 'completed') return 'Completado';
+      if (status === 'cancelled') return 'Cancelado';
+      return 'Pendiente';
+    }
+
+    if (status === 'in_progress') return 'In progress';
+    return status.replace('_', ' ');
+  };
+
   return (
     <Layout navItems={PROVIDER_NAV} title="Provider Dashboard">
-      <div className="mb-8 flex flex-col gap-4 rounded-3xl border border-slate-200 bg-gradient-to-r from-sky-50 to-blue-50 p-6 lg:flex-row lg:items-end lg:justify-between">
+      <div className="mb-5 flex flex-col gap-4 rounded-2xl border border-slate-200 bg-gradient-to-r from-sky-50 to-cyan-50 p-5 md:mb-6 md:p-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="font-display text-3xl text-slate-900">{es ? 'Panel de proveedor' : 'Provider Dashboard'}</h1>
-          <p className="mt-2 text-slate-600">{es ? 'Monitorea la demanda cercana y gestiona trabajos activos.' : 'Track demand nearby and manage active jobs.'}</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{es ? 'Panel de proveedor' : 'Provider dashboard'}</h1>
+          <p className="mt-1 text-sm text-slate-600 md:text-base">{es ? 'Monitorea demanda cercana y gestiona tus trabajos activos.' : 'Track nearby demand and manage active jobs.'}</p>
         </div>
-        <div className="rounded-xl border border-sky-200 bg-white px-4 py-3 text-sm text-sky-700">
-          {es ? 'Plan' : 'Plan'}: <span className="font-semibold">{subscription?.plan?.name || 'FREE'}</span>
+        <div className="inline-flex items-center gap-2 rounded-xl border border-sky-200 bg-white px-3 py-2 text-sm text-sky-700">
+          <Sparkles className="h-4 w-4" aria-hidden="true" />
+          <span>{es ? 'Plan' : 'Plan'}: <span className="font-semibold">{subscription?.plan?.name || 'FREE'}</span></span>
         </div>
       </div>
 
       {error && <ErrorMessage message={error} className="mb-4" />}
 
-      <div className="mb-8 card">
-        <h2 className="font-display text-xl text-slate-900">{es ? 'Estado de cobertura' : 'Coverage Status'}</h2>
-        <div className="mt-4 surface-muted">
+      <div className="mb-5 card p-4 md:mb-6 md:p-5">
+        <div className="mb-3 flex items-center gap-2 text-slate-900">
+          <ShieldCheck className="h-4 w-4 text-sky-600" aria-hidden="true" />
+          <h2 className="text-base font-semibold md:text-lg">{es ? 'Estado de cobertura' : 'Coverage status'}</h2>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
           <div className="flex items-start gap-3">
             <MapPin className="mt-0.5 h-5 w-5 text-blue-600" />
             <div>
@@ -98,38 +115,38 @@ export default function ProviderDashboard() {
             </div>
           </div>
         </div>
-        <Link to="/provider/nearby" className="btn-primary mt-4 w-full justify-center">
+          <Link to="/provider/nearby" className="btn-primary mt-3 w-full justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2">
           {es ? 'Ver solicitudes cercanas' : 'See nearby requests'}
         </Link>
       </div>
 
-      <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
-          <Activity className="mb-2 h-6 w-6 text-emerald-700" />
-          <p className="font-display text-xl text-slate-900">{user?.is_available ? (es ? 'En línea' : 'Online') : (es ? 'Desconectado' : 'Offline')}</p>
+        <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4 md:mb-6 md:gap-4">
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
+            <Activity className="mb-2 h-5 w-5 text-emerald-700" />
+            <p className="text-xl font-semibold text-slate-900">{user?.is_available ? (es ? 'En línea' : 'Online') : (es ? 'Desconectado' : 'Offline')}</p>
           <p className="text-sm text-slate-500">{es ? 'Estado de disponibilidad' : 'Availability status'}</p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <Briefcase className="mb-2 h-6 w-6 text-sky-700" />
-          <p className="font-display text-3xl text-slate-900">{jobs.length}</p>
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <Briefcase className="mb-2 h-5 w-5 text-sky-700" />
+            <p className="text-2xl font-semibold text-slate-900">{jobs.length}</p>
           <p className="text-sm text-slate-500">{es ? 'Trabajos recientes' : 'Recent jobs'}</p>
         </div>
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
-          <Clock className="mb-2 h-6 w-6 text-amber-700" />
-          <p className="font-display text-3xl text-slate-900">{inProgress}</p>
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
+            <Clock className="mb-2 h-5 w-5 text-amber-700" />
+            <p className="text-2xl font-semibold text-slate-900">{inProgress}</p>
           <p className="text-sm text-slate-500">{es ? 'En progreso' : 'In progress'}</p>
         </div>
-        <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-5 shadow-sm">
-          <CheckCircle2 className="mb-2 h-6 w-6 text-cyan-700" />
-          <p className="font-display text-3xl text-slate-900">{completed}</p>
+          <div className="rounded-xl border border-cyan-200 bg-cyan-50 p-4 shadow-sm">
+            <CheckCircle2 className="mb-2 h-5 w-5 text-cyan-700" />
+            <p className="text-2xl font-semibold text-slate-900">{completed}</p>
           <p className="text-sm text-slate-500">{es ? 'Completados' : 'Completed'}</p>
         </div>
       </div>
 
       <div className="grid gap-6">
-        <div className="card">
+          <div className="card p-4 md:p-5">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-display text-xl text-slate-900">{es ? 'Trabajos recientes' : 'Recent Jobs'}</h2>
+              <h2 className="text-base font-semibold text-slate-900 md:text-lg">{es ? 'Trabajos recientes' : 'Recent jobs'}</h2>
             <Link to="/provider/jobs" className="text-sm text-blue-600 hover:underline">{es ? 'Ver todos' : 'View all'}</Link>
           </div>
           {loading ? (
@@ -137,17 +154,19 @@ export default function ProviderDashboard() {
               <LoadingSpinner size="lg" />
             </div>
           ) : jobs.length === 0 ? (
-            <p className="text-sm text-slate-400">{es ? 'Aún no tienes trabajos asignados.' : 'No jobs assigned yet.'}</p>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-4 text-center text-sm text-slate-500">
+                {es ? 'Aún no tienes trabajos asignados.' : 'No jobs assigned yet.'}
+              </div>
           ) : (
-            <div className="space-y-3">
+              <div className="space-y-2.5">
               {jobs.map((job) => (
-                <div key={job.id} className="surface-stroke">
+                  <div key={job.id} className="rounded-xl border border-slate-200 bg-white p-3">
                   <div className="flex items-center justify-between gap-4">
                     <div>
-                      <p className="font-medium text-slate-900">{job.service?.name || (es ? 'Solicitud de servicio' : 'Service Request')}</p>
-                      <p className="mt-1 text-sm text-slate-500">{job.address || (es ? 'Direccion pendiente' : 'Address pending')}</p>
+                        <p className="text-sm font-medium text-slate-900">{job.service?.name || (es ? 'Solicitud de servicio' : 'Service request')}</p>
+                        <p className="mt-1 text-sm text-slate-500">{job.address || (es ? 'Dirección pendiente' : 'Address pending')}</p>
                     </div>
-                    <span className="badge bg-slate-100 text-slate-700">{job.status.replace('_', ' ')}</span>
+                      <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700">{statusLabel(job.status)}</span>
                   </div>
                 </div>
               ))}
