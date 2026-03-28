@@ -1,6 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
 
-import { ChevronDown, CheckCircle2 } from 'lucide-react';
+import {
+  CalendarClock,
+  CheckCircle2,
+  ChevronDown,
+  MapPin,
+  ShieldCheck,
+  Sparkles,
+  Star,
+  Wrench,
+} from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
@@ -194,9 +203,9 @@ export default function ProviderProfile() {
 
   return (
     <Layout navItems={PROVIDER_NAV} title="Provider Profile">
-      <div className="page-header">
-        <h1 className="page-title">{es ? 'Perfil y disponibilidad' : 'Profile & Availability'}</h1>
-        <p className="page-subtitle">{es ? 'Controla los servicios que ofreces y como te ven los clientes.' : 'Control the services you offer and how clients see you.'}</p>
+      <div className="mb-5 space-y-1.5 md:mb-6">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{es ? 'Perfil y disponibilidad' : 'Profile & availability'}</h1>
+        <p className="text-sm text-slate-600 md:text-base">{es ? 'Gestiona tus servicios, estado y reputación en un solo lugar.' : 'Manage your services, availability, and reputation in one place.'}</p>
       </div>
 
       {error && <ErrorMessage message={error} className="mb-4" />}
@@ -213,43 +222,59 @@ export default function ProviderProfile() {
           <LoadingSpinner size="lg" />
         </div>
       ) : (
-        <div className="grid gap-6 xl:grid-cols-[1.1fr,0.9fr]">
-          <div className="space-y-6">
+        <div className="grid gap-5 xl:grid-cols-[1.1fr,0.9fr]">
+          <div className="space-y-5">
             <ProfileEditor />
 
-            <div className="card">
-              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div className="card p-4 md:p-5">
+              <div className="mb-3 flex items-center gap-2 text-slate-900">
+                <ShieldCheck className="h-4 w-4 text-sky-600" aria-hidden="true" />
+                <h2 className="text-base font-semibold md:text-lg">{es ? 'Disponibilidad' : 'Availability'}</h2>
+              </div>
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-900">{es ? 'Disponibilidad' : 'Availability'}</h2>
                   <p className="mt-1 text-sm text-slate-500">{es ? 'Los proveedores en línea pueden recibir solicitudes cercanas según disponibilidad.' : 'Online providers can receive nearby requests based on availability.'}</p>
+                  <div className="mt-2 inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
+                    {user?.is_available ? (es ? 'En línea' : 'Online') : (es ? 'Desconectado' : 'Offline')}
+                  </div>
                 </div>
-                <button onClick={toggleAvailability} className={user?.is_available ? 'btn-secondary' : 'btn-primary'} disabled={savingAvailability}>
+                <button onClick={toggleAvailability} className={`${user?.is_available ? 'btn-secondary' : 'btn-primary'} shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2`} disabled={savingAvailability}>
                   {savingAvailability ? <LoadingSpinner size="sm" /> : user?.is_available ? (es ? 'Desconectarme' : 'Go offline') : (es ? 'Conectarme' : 'Go online')}
                 </button>
               </div>
-              <div className="mt-4 surface-muted text-sm text-slate-600">
-                <p className="font-medium text-slate-800">{es ? 'Ubicación actual' : 'Current location'}</p>
-                <p className="mt-1">
-                  {coords ? `${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}` : (es ? 'GPS aún no disponible' : 'GPS not available yet')}
-                </p>
+
+              <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-sm text-slate-600">
+                <div className="flex items-start gap-2">
+                  <MapPin className="mt-0.5 h-4 w-4 text-sky-600" aria-hidden="true" />
+                  <div>
+                    <p className="font-medium text-slate-800">{es ? 'Ubicación actual' : 'Current location'}</p>
+                    <p className="mt-1">
+                      {coords ? `${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}` : (es ? 'GPS aún no disponible' : 'GPS not available yet')}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="card">
+            <div className="card p-4 md:p-5">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-900">{es ? 'Servicios ofrecidos' : 'Offered Services'}</h2>
+                  <div className="mb-1 flex items-center gap-2 text-slate-900">
+                    <Wrench className="h-4 w-4 text-indigo-600" aria-hidden="true" />
+                    <h2 className="text-base font-semibold md:text-lg">{es ? 'Servicios ofrecidos' : 'Offered services'}</h2>
+                  </div>
                   <p className="mt-1 text-sm text-slate-500">{es ? 'Selecciona todos los servicios que puedes realizar.' : 'Select every service you can fulfill.'}</p>
+                  <p className="mt-1 text-xs text-slate-500">{es ? `Seleccionados: ${selectedServiceIds.length}` : `Selected: ${selectedServiceIds.length}`}</p>
                 </div>
-                <button onClick={saveServices} className="btn-primary" disabled={savingServices}>
+                <button onClick={saveServices} className="btn-primary shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2" disabled={savingServices}>
                   {savingServices ? <LoadingSpinner size="sm" /> : (es ? 'Guardar servicios' : 'Save services')}
                 </button>
               </div>
-              <div className="mt-4 space-y-2">
+              <div className="mt-3 space-y-2">
                 {servicesByRootCategory.map(([rootCategory, rootServices]) => {
                   const isExpanded = expandedCategories.has(rootCategory);
                   return (
-                    <section key={rootCategory} className="rounded-2xl border border-slate-200">
+                    <section key={rootCategory} className="overflow-hidden rounded-xl border border-slate-200 bg-white">
                       <button
                         type="button"
                         onClick={() => {
@@ -261,14 +286,14 @@ export default function ProviderProfile() {
                           }
                           setExpandedCategories(newExpanded);
                         }}
-                        className="w-full p-3 flex items-center justify-between gap-2 hover:bg-slate-50 transition-colors"
+                        className="flex w-full items-center justify-between gap-2 p-3 transition-colors hover:bg-slate-50"
                       >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full bg-slate-400" />
+                        <div className="flex min-w-0 items-center gap-2">
+                          <Sparkles className="h-3.5 w-3.5 flex-shrink-0 text-slate-400" aria-hidden="true" />
                           <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-700">
                             {rootCategory}
                           </h3>
-                          <span className="text-xs text-slate-500 ml-auto flex-shrink-0">
+                          <span className="ml-auto flex-shrink-0 text-xs text-slate-500">
                             ({rootServices.length})
                           </span>
                         </div>
@@ -277,7 +302,7 @@ export default function ProviderProfile() {
                         />
                       </button>
                       {isExpanded && (
-                        <div className="px-3 pb-3 grid gap-3 md:grid-cols-2 border-t border-inherit">
+                        <div className="grid gap-2 border-t border-inherit px-3 pb-3 md:grid-cols-2">
                           {rootServices.map((service) => {
                             const selected = selectedServiceIds.includes(service.id);
                             return (
@@ -285,10 +310,13 @@ export default function ProviderProfile() {
                                 key={service.id}
                                 type="button"
                                 onClick={() => setSelectedServiceIds((current) => selected ? current.filter((id) => id !== service.id) : [...current, service.id])}
-                                className={selected ? 'rounded-xl border-2 border-blue-500 bg-blue-50 p-4 text-left mt-3' : 'rounded-xl border border-slate-200 p-4 text-left hover:border-slate-300 mt-3'}
+                                className={selected
+                                  ? 'mt-2 rounded-xl border border-indigo-300 bg-indigo-50 p-3 text-left ring-1 ring-indigo-200'
+                                  : 'mt-2 rounded-xl border border-slate-200 p-3 text-left hover:border-slate-300'
+                                }
                               >
-                                <p className="font-medium text-slate-900">{service.name}</p>
-                                <p className="mt-2 text-sm text-slate-500">{selected ? (es ? 'Seleccionado' : 'Selected') : (es ? 'Toca para ofrecer este servicio' : 'Tap to offer this service')}</p>
+                                <p className="text-sm font-medium text-slate-900">{service.name}</p>
+                                <p className="mt-1 text-xs text-slate-500">{selected ? (es ? 'Seleccionado' : 'Selected') : (es ? 'Toca para ofrecer este servicio' : 'Tap to offer this service')}</p>
                               </button>
                             );
                           })}
@@ -301,31 +329,39 @@ export default function ProviderProfile() {
             </div>
           </div>
 
-          <div className="card flex flex-col xl:max-h-[600px]">
+          <div className="card flex flex-col p-4 md:p-5 xl:max-h-[600px]">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">{es ? 'Calificaciones' : 'Ratings'}</h2>
+                <div className="mb-1 flex items-center gap-2 text-slate-900">
+                  <Star className="h-4 w-4 text-amber-500" aria-hidden="true" />
+                  <h2 className="text-base font-semibold md:text-lg">{es ? 'Calificaciones' : 'Ratings'}</h2>
+                </div>
                 <p className="mt-1 text-sm text-slate-500">{es ? 'Tu reputación basada en trabajos completados.' : 'Your reputation from completed jobs.'}</p>
               </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-slate-900">{averageRating.toFixed(1)}</p>
-                <p className="text-xs text-slate-500">{es ? 'Promedio' : 'Average rating'}</p>
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-right">
+                <p className="text-xl font-bold text-amber-700">{averageRating.toFixed(1)}</p>
+                <p className="text-[11px] uppercase tracking-wide text-amber-700/80">{es ? 'Promedio' : 'Average'}</p>
               </div>
             </div>
-            <div className="mt-4 space-y-3 overflow-y-auto pr-1 xl:max-h-[500px]">
+            <div className="mt-3 space-y-2.5 overflow-y-auto pr-1 xl:max-h-[500px]">
               {ratings.length === 0 && (
-                <p className="text-sm text-slate-400">{es ? 'Aún no hay calificaciones.' : 'No ratings yet.'}</p>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-4 text-center text-sm text-slate-500">
+                  {es ? 'Aún no hay calificaciones.' : 'No ratings yet.'}
+                </div>
               )}
               {visibleRatings.map((rating) => (
-                <div key={rating.id} className="surface-stroke">
+                <div key={rating.id} className="rounded-xl border border-slate-200 bg-white p-3">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="font-medium text-slate-900">{rating.from_user?.full_name || (es ? 'Cliente' : 'Client')}</p>
-                      <p className="mt-1 text-xs text-slate-400">{formatDateTime(rating.created_at, language)}</p>
+                      <p className="text-sm font-medium text-slate-900">{rating.from_user?.full_name || (es ? 'Cliente' : 'Client')}</p>
+                      <p className="mt-1 inline-flex items-center gap-1 text-xs text-slate-400">
+                        <CalendarClock className="h-3.5 w-3.5" aria-hidden="true" />
+                        {formatDateTime(rating.created_at, language)}
+                      </p>
                     </div>
                     <StarRating value={rating.rating} readonly size="sm" />
                   </div>
-                  <p className="mt-3 text-sm text-slate-500">{rating.comment || (es ? 'Sin comentario.' : 'No comment provided.')}</p>
+                  <p className="mt-2 text-sm text-slate-500">{rating.comment || (es ? 'Sin comentario.' : 'No comment provided.')}</p>
                 </div>
               ))}
 
