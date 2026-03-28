@@ -8,6 +8,10 @@ import {
   Users,
   ArrowRight,
   CheckCircle,
+  Sparkles,
+  ShieldCheck,
+  Navigation,
+  Clock,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
@@ -23,7 +27,8 @@ type LandingStats = {
 
 export default function Landing() {
   const { user } = useAuth();
-  const { t } = useI18n();
+  const { t, language } = useI18n();
+  const es = language === 'es';
   const navigate = useNavigate();
   const [landingStats, setLandingStats] = React.useState<LandingStats | null>(null);
   const [planTab, setPlanTab] = React.useState<'providers' | 'clients'>('providers');
@@ -153,70 +158,79 @@ export default function Landing() {
   if (user) return null;
 
   return (
-    <div className="relative isolate min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top_right,_#e0f2fe_0%,_#f8fafc_35%,_#fefefe_100%)]">
-      <div className="pointer-events-none fixed inset-0 -z-10 opacity-40">
-        <div className="absolute -left-28 top-24 h-64 w-64 rounded-full bg-cyan-200 blur-3xl" />
-        <div className="absolute right-0 top-0 h-72 w-72 rounded-full bg-amber-100 blur-3xl" />
-        <div className="absolute bottom-0 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-sky-100 blur-3xl" />
+    <div className="relative isolate min-h-screen overflow-x-hidden bg-[radial-gradient(ellipse_at_top,_#e0f2fe_0%,_#f8fafc_40%,_#ffffff_100%)]">
+      {/* Ambient blobs */}
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden opacity-50">
+        <div className="absolute -left-20 top-20 h-72 w-72 rounded-full bg-cyan-200 blur-3xl" />
+        <div className="absolute -top-10 right-0 h-80 w-80 rounded-full bg-sky-100 blur-3xl" />
+        <div className="absolute bottom-0 left-1/2 h-64 w-96 -translate-x-1/2 rounded-full bg-amber-100 blur-3xl" />
       </div>
 
-      <header className="sticky top-0 z-[80] border-b border-slate-200/70 bg-white/75 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 md:px-6">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="h-9 w-9 flex items-center justify-center">
-              <img src="/zippy-logo.png?v=2" alt="ZippyGo logo" className="h-7 w-7 object-contain" />
+      {/* ── NAVBAR ─────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-[80] border-b border-slate-200/60 bg-white/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-6">
+          <Link to="/" className="flex items-center gap-2" aria-label="ZippyGo inicio">
+            <div className="flex h-8 w-8 items-center justify-center">
+              <img src="/zippy-logo.png?v=2" alt="" aria-hidden="true" className="h-7 w-7 object-contain" />
             </div>
-            <span className="font-display text-xl tracking-tight text-slate-900">Zippy<span className="font-bold">Go</span></span>
+            <span className="font-display text-lg font-semibold tracking-tight text-slate-900">
+              Zippy<span className="text-sky-600">Go</span>
+            </span>
           </Link>
-          <div className="relative z-[90] flex flex-col md:flex-row items-stretch md:items-center gap-2 md:gap-3">
+
+          <nav className="relative z-[90] flex items-center gap-2 md:gap-3">
             <LanguageSwitcher compact />
-            <Link to="/login" className="btn-secondary text-sm px-4 py-2 text-center">
+            <Link to="/login" className="btn-secondary px-4 py-1.5 text-sm">
               {t('common.signIn')}
             </Link>
-            <Link to="/register" className="btn-primary text-sm px-4 py-2 text-center">
+            <Link to="/register" className="btn-primary px-4 py-1.5 text-sm">
               {t('landing.startToday')}
             </Link>
-          </div>
+          </nav>
         </div>
       </header>
 
-      <section className="px-4 pb-12 pt-16 md:px-6 md:pt-20">
-        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
+      {/* ── HERO ───────────────────────────────────────────────── */}
+      <section className="px-4 pb-16 pt-14 md:px-6 md:pt-20">
+        <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[1.15fr_0.85fr]">
+          {/* Left copy */}
           <div>
-            <div className="reveal-up mb-5 inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-4 py-1.5 text-sm text-sky-700 shadow-sm">
-              <Zap className="h-3.5 w-3.5" />
+            {/* Pill badge */}
+            <div className="reveal-up mb-5 inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-3.5 py-1.5 text-sm font-medium text-sky-700 shadow-sm">
+              <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
               {t('landing.badge')}
             </div>
-            <h1 className="reveal-up font-display text-4xl font-semibold leading-[1.03] tracking-tight text-slate-900 md:text-6xl">
+
+            <h1 className="reveal-up font-display text-4xl font-semibold leading-[1.05] tracking-tight text-slate-900 md:text-5xl xl:text-6xl">
               {t('landing.headline')}
             </h1>
             <p className="reveal-up mt-5 max-w-xl text-base leading-relaxed text-slate-600 md:text-lg">
               {t('landing.description')}
             </p>
-            <div className="reveal-up mt-4 inline-flex max-w-xl items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50/80 px-3 py-2 text-sm text-amber-800">
-              <Zap className="h-4 w-4" />
-              <span>{t('landing.launchNotice')}</span>
+
+            {/* Launch notice */}
+            <div className="reveal-up mt-4 inline-flex max-w-xl items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              <Zap className="h-4 w-4 shrink-0" aria-hidden="true" />
+              {t('landing.launchNotice')}
             </div>
-            <div className="reveal-up mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-              <Link
-                to="/register"
-                className="btn-primary px-8 py-3 text-base shadow-lg shadow-sky-200/60"
-              >
+
+            {/* CTA row */}
+            <div className="reveal-up mt-8 flex flex-wrap items-center gap-3">
+              <Link to="/register" className="btn-primary px-7 py-2.5 text-base shadow-md shadow-sky-200/60">
                 {t('landing.findService')}
-                <ArrowRight className="h-5 w-5" />
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
-              <Link
-                to="/register"
-                className="btn-secondary border-slate-300 bg-white/90 px-8 py-3 text-base"
-              >
-                <Users className="h-4 w-4" />
+              <Link to="/register" className="btn-secondary px-7 py-2.5 text-base">
+                <Users className="h-4 w-4" aria-hidden="true" />
                 {t('landing.becomeProvider')}
               </Link>
             </div>
-            <ul className="reveal-up mt-8 grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
+
+            {/* Checklist */}
+            <ul className="reveal-up mt-7 grid gap-y-2 text-sm text-slate-600 sm:grid-cols-2">
               {checklistItems.map((item) => (
                 <li key={item} className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-emerald-500" />
+                  <CheckCircle className="h-4 w-4 shrink-0 text-emerald-500" aria-hidden="true" />
                   {item}
                 </li>
               ))}
@@ -224,21 +238,39 @@ export default function Landing() {
             <p className="reveal-up mt-3 text-sm text-slate-500">{t('landing.launchSecondary')}</p>
           </div>
 
-          <div className="relative reveal-up">
-            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-3xl border border-slate-200 bg-white/80" />
-            <div className="absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-amber-100" />
-            <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_20px_80px_-30px_rgba(2,132,199,0.45)]">
-              <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('landing.liveDemandPulse')}</p>
-              <div className="mt-4 grid grid-cols-2 gap-4">
+          {/* Right stats card */}
+          <div className="reveal-up relative">
+            {/* Decorative accents */}
+            <div className="absolute -right-4 -top-4 h-20 w-20 rounded-2xl border border-slate-200 bg-white/70 backdrop-blur-sm" />
+            <div className="absolute -bottom-4 -left-4 h-16 w-16 rounded-full bg-amber-100" />
+
+            <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_16px_60px_-20px_rgba(2,132,199,0.35)]">
+              {/* Header strip */}
+              <div className="border-b border-slate-100 bg-gradient-to-r from-sky-50 to-cyan-50 px-5 py-3">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  {t('landing.liveDemandPulse')}
+                </p>
+              </div>
+
+              {/* Stat grid */}
+              <div className="grid grid-cols-2 gap-3 p-4">
                 {stats.map((stat) => (
-                  <div key={stat.label} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                    <p className="font-display text-2xl text-slate-900">{stat.value}</p>
-                    <p className="mt-1 text-xs text-slate-500">{stat.label}</p>
+                  <div
+                    key={stat.label}
+                    className="rounded-xl border border-slate-100 bg-slate-50 p-3"
+                  >
+                    <p className="text-xl font-semibold tracking-tight text-slate-900">{stat.value}</p>
+                    <p className="mt-0.5 text-xs text-slate-500">{stat.label}</p>
                   </div>
                 ))}
               </div>
-              <div className="mt-5 rounded-2xl bg-gradient-to-r from-sky-600 to-blue-700 p-4 text-white">
-                <p className="text-sm font-medium">{t('landing.quickResponseTitle')}</p>
+
+              {/* Quick response banner */}
+              <div className="mx-4 mb-4 rounded-xl bg-gradient-to-r from-sky-600 to-blue-700 p-4 text-white">
+                <div className="flex items-center gap-2 text-sky-100">
+                  <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+                  <p className="text-xs font-medium">{t('landing.quickResponseTitle')}</p>
+                </div>
                 <p className="mt-1 text-2xl font-semibold">{t('landing.quickResponseValue')}</p>
               </div>
             </div>
@@ -246,131 +278,236 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="border-y border-slate-200/80 bg-white/80">
+      {/* ── FEATURES ───────────────────────────────────────────── */}
+      <section className="border-y border-slate-200/70 bg-white/90">
         <div className="mx-auto max-w-7xl px-4 py-12 md:px-6">
-          <div className="grid gap-5 md:grid-cols-4">
+          {/* Section label */}
+          <div className="mb-8 flex items-center gap-3">
+            <span className="h-px flex-1 bg-slate-200" />
+            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+              {es ? 'Por qué elegir ZippyGo' : 'Why choose ZippyGo'}
+            </span>
+            <span className="h-px flex-1 bg-slate-200" />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
             {features.map((f, i) => (
               <article
                 key={f.title}
-                className="reveal-up rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-transform duration-300 hover:-translate-y-1"
-                style={{ animationDelay: `${i * 80}ms` }}
+                className="reveal-up rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                style={{ animationDelay: `${i * 70}ms` }}
               >
-                <div className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
-                  <f.icon className="h-5 w-5" />
+                <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
+                  <f.icon className="h-5 w-5" aria-hidden="true" />
                 </div>
-                <h3 className="font-display text-lg text-slate-900">{f.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-slate-600">{f.description}</p>
+                <h3 className="text-sm font-semibold text-slate-900">{f.title}</h3>
+                <p className="mt-1.5 text-xs leading-relaxed text-slate-600">{f.description}</p>
               </article>
             ))}
           </div>
         </div>
       </section>
 
-      <section id="plans" className="border-y border-slate-200/80 bg-white/80 px-4 py-16 md:px-6">
-        <div className="mx-auto max-w-6xl">
-          <div className="text-center">
-            <h2 className="reveal-up font-display text-3xl text-slate-900 md:text-4xl">{t('landing.plansTitle')}</h2>
-            <p className="reveal-up mx-auto mt-3 max-w-3xl text-slate-600">{t('landing.plansSubtitle')}</p>
-          </div>
-
-          <div className="reveal-up mt-8 flex items-center justify-center gap-2">
-            <button
-              type="button"
-              onClick={() => setPlanTab('providers')}
-              className={planTab === 'providers' ? 'btn-primary !px-5 !py-2.5 text-sm' : 'btn-secondary !px-5 !py-2.5 text-sm'}
-            >
-              {t('landing.plansProvidersTab')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setPlanTab('clients')}
-              className={planTab === 'clients' ? 'btn-primary !px-5 !py-2.5 text-sm' : 'btn-secondary !px-5 !py-2.5 text-sm'}
-            >
-              {t('landing.plansClientsTab')}
-            </button>
-          </div>
-
-          {planTab === 'providers' ? (
-            <div className="mt-8 grid gap-5 md:grid-cols-2">
-              <article className="reveal-up rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('landing.planTrialLabel')}</p>
-                <h3 className="mt-2 font-display text-2xl text-slate-900">{t('landing.planTrialPrice')}</h3>
-                <p className="mt-2 text-sm text-slate-600">{t('landing.planTrialDescription')}</p>
-                <ul className="mt-4 space-y-2 text-sm text-slate-600">
-                  <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-emerald-500" />{t('landing.planTrialFeatureDays')}</li>
-                  <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-emerald-500" />{t('landing.planTrialFeatureRequests')}</li>
-                  <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-emerald-500" />{t('landing.planTrialFeatureMap')}</li>
-                </ul>
-              </article>
-
-              <article className="reveal-up rounded-3xl border border-blue-300 bg-blue-50/60 p-6 shadow-sm">
-                <p className="text-xs uppercase tracking-[0.16em] text-blue-700">{t('landing.planProLabel')}</p>
-                <h3 className="mt-2 font-display text-2xl text-slate-900">{t('landing.planProPrice')}</h3>
-                <p className="mt-2 text-sm text-slate-600">{t('landing.planProDescription')}</p>
-                <ul className="mt-4 space-y-2 text-sm text-slate-600">
-                  <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-emerald-500" />{t('landing.planProFeatureRequests')}</li>
-                  <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-emerald-500" />{t('landing.planProFeatureSearch')}</li>
-                  <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-emerald-500" />{t('landing.planProFeaturePriority')}</li>
-                </ul>
-              </article>
-            </div>
-          ) : (
-            <div className="reveal-up mt-8 rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-              <h3 className="font-display text-2xl text-slate-900">{t('landing.planClientTitle')}</h3>
-              <p className="mx-auto mt-3 max-w-2xl text-slate-600">{t('landing.planClientDescription')}</p>
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="px-4 py-20 md:px-6">
+      {/* ── HOW IT WORKS ───────────────────────────────────────── */}
+      <section className="px-4 py-16 md:px-6">
         <div className="mx-auto max-w-5xl">
-          <h2 className="reveal-up text-center font-display text-3xl text-slate-900 md:text-4xl">
-            {t('landing.howWorksTitle')}
-          </h2>
-          <p className="reveal-up mx-auto mt-3 max-w-2xl text-center text-slate-600">
-            {t('landing.howWorksSubtitle')}
-          </p>
-          <div className="mt-10 grid gap-6 md:grid-cols-3">
+          {/* Header */}
+          <div className="text-center">
+            <h2 className="reveal-up text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">
+              {t('landing.howWorksTitle')}
+            </h2>
+            <p className="reveal-up mx-auto mt-2 max-w-xl text-sm text-slate-600 md:text-base">
+              {t('landing.howWorksSubtitle')}
+            </p>
+          </div>
+
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
             {steps.map((item, i) => (
               <div
                 key={item.step}
-                className="reveal-up rounded-3xl border border-slate-200 bg-white p-6"
-                style={{ animationDelay: `${i * 90}ms` }}
+                className="reveal-up rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+                style={{ animationDelay: `${i * 80}ms` }}
               >
-                <p className="font-display text-sm tracking-[0.18em] text-sky-600">{item.step}</p>
-                <h3 className="mt-2 font-display text-xl text-slate-900">{item.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-slate-600">{item.desc}</p>
+                {/* Step number chip */}
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-sky-50 text-xs font-bold text-sky-600">
+                  {item.step}
+                </span>
+                <h3 className="mt-3 text-sm font-semibold text-slate-900">{item.title}</h3>
+                <p className="mt-1.5 text-xs leading-relaxed text-slate-600">{item.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="px-4 pb-20 md:px-6">
-        <div className="mx-auto max-w-5xl rounded-[2rem] border border-slate-200 bg-white p-10 text-center shadow-[0_20px_70px_-35px_rgba(15,23,42,0.4)] md:p-14">
-          <p className="text-sm uppercase tracking-[0.18em] text-slate-500">{t('landing.startToday')}</p>
-          <h2 className="mt-3 font-display text-3xl text-slate-900 md:text-4xl">
-            {t('landing.ctaTitle')}
-          </h2>
-          <p className="mx-auto mt-3 max-w-2xl text-slate-600">
-            {t('landing.ctaDescription')}
-          </p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link
-              to="/register"
-              className="btn-primary px-8 py-3 text-base"
-            >
-              {t('common.createAccount')}
-              <ArrowRight className="h-5 w-5" />
-            </Link>
-            <Link to="/login" className="btn-secondary px-8 py-3 text-base">{t('common.signIn')}</Link>
+      {/* ── PLANS ──────────────────────────────────────────────── */}
+      <section id="plans" className="border-y border-slate-200/70 bg-white/90 px-4 py-16 md:px-6">
+        <div className="mx-auto max-w-5xl">
+          {/* Header */}
+          <div className="text-center">
+            <h2 className="reveal-up text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">
+              {t('landing.plansTitle')}
+            </h2>
+            <p className="reveal-up mx-auto mt-2 max-w-2xl text-sm text-slate-600 md:text-base">
+              {t('landing.plansSubtitle')}
+            </p>
+          </div>
+
+          {/* Tab toggle */}
+          <div className="reveal-up mt-6 flex items-center justify-center">
+            <div className="inline-flex rounded-xl border border-slate-200 bg-slate-100 p-1 gap-1">
+              <button
+                type="button"
+                onClick={() => setPlanTab('providers')}
+                className={
+                  planTab === 'providers'
+                    ? 'rounded-lg bg-white px-5 py-2 text-sm font-medium text-slate-900 shadow-sm'
+                    : 'rounded-lg px-5 py-2 text-sm font-medium text-slate-500 hover:text-slate-700'
+                }
+              >
+                {t('landing.plansProvidersTab')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPlanTab('clients')}
+                className={
+                  planTab === 'clients'
+                    ? 'rounded-lg bg-white px-5 py-2 text-sm font-medium text-slate-900 shadow-sm'
+                    : 'rounded-lg px-5 py-2 text-sm font-medium text-slate-500 hover:text-slate-700'
+                }
+              >
+                {t('landing.plansClientsTab')}
+              </button>
+            </div>
+          </div>
+
+          {planTab === 'providers' ? (
+            <div className="mt-6 grid gap-4 md:grid-cols-2">
+              {/* Trial */}
+              <article className="reveal-up rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                  {t('landing.planTrialLabel')}
+                </p>
+                <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
+                  {t('landing.planTrialPrice')}
+                </p>
+                <p className="mt-1.5 text-sm text-slate-600">{t('landing.planTrialDescription')}</p>
+                <ul className="mt-5 space-y-2">
+                  {[
+                    t('landing.planTrialFeatureDays'),
+                    t('landing.planTrialFeatureRequests'),
+                    t('landing.planTrialFeatureMap'),
+                  ].map((feat) => (
+                    <li key={feat} className="flex items-center gap-2 text-sm text-slate-600">
+                      <CheckCircle className="h-4 w-4 shrink-0 text-emerald-500" aria-hidden="true" />
+                      {feat}
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-6">
+                  <Link to="/register" className="btn-secondary w-full py-2 text-center text-sm">
+                    {t('landing.startToday')}
+                  </Link>
+                </div>
+              </article>
+
+              {/* Pro */}
+              <article className="reveal-up relative overflow-hidden rounded-xl border border-sky-300 bg-gradient-to-br from-sky-50 to-cyan-50/60 p-6 shadow-sm">
+                <span className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full border border-sky-200 bg-white px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-sky-700">
+                  <Sparkles className="h-3 w-3" aria-hidden="true" />
+                  Pro
+                </span>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-600">
+                  {t('landing.planProLabel')}
+                </p>
+                <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
+                  {t('landing.planProPrice')}
+                </p>
+                <p className="mt-1.5 text-sm text-slate-600">{t('landing.planProDescription')}</p>
+                <ul className="mt-5 space-y-2">
+                  {[
+                    t('landing.planProFeatureRequests'),
+                    t('landing.planProFeatureSearch'),
+                    t('landing.planProFeaturePriority'),
+                  ].map((feat) => (
+                    <li key={feat} className="flex items-center gap-2 text-sm text-slate-700">
+                      <CheckCircle className="h-4 w-4 shrink-0 text-sky-500" aria-hidden="true" />
+                      {feat}
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-6">
+                  <Link to="/register" className="btn-primary w-full py-2 text-center text-sm">
+                    {t('landing.startToday')}
+                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  </Link>
+                </div>
+              </article>
+            </div>
+          ) : (
+            <div className="reveal-up mt-6 rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                <ShieldCheck className="h-6 w-6" aria-hidden="true" />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-900">{t('landing.planClientTitle')}</h3>
+              <p className="mx-auto mt-2 max-w-xl text-sm text-slate-600">{t('landing.planClientDescription')}</p>
+              <div className="mt-6">
+                <Link to="/register" className="btn-primary inline-flex px-8 py-2.5 text-sm">
+                  {t('landing.findService')}
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ── BOTTOM CTA ─────────────────────────────────────────── */}
+      <section className="px-4 py-16 md:px-6">
+        <div className="mx-auto max-w-4xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_16px_60px_-20px_rgba(15,23,42,0.25)]">
+          {/* Top gradient strip */}
+          <div className="h-1.5 w-full bg-gradient-to-r from-sky-500 via-cyan-400 to-blue-600" />
+
+          <div className="px-8 py-10 text-center md:px-14 md:py-12">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
+              <Navigation className="h-6 w-6" aria-hidden="true" />
+            </div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+              {t('landing.startToday')}
+            </p>
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">
+              {t('landing.ctaTitle')}
+            </h2>
+            <p className="mx-auto mt-2 max-w-xl text-sm text-slate-600 md:text-base">
+              {t('landing.ctaDescription')}
+            </p>
+
+            <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+              <Link to="/register" className="btn-primary px-8 py-2.5 text-base">
+                {t('common.createAccount')}
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+              <Link to="/login" className="btn-secondary px-8 py-2.5 text-base">
+                {t('common.signIn')}
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      <footer className="border-t border-slate-200 bg-slate-950 px-4 py-8 text-center text-sm text-slate-300">
-        <p>© {new Date().getFullYear()} ZippyGo. {t('landing.footer')}</p>
+      {/* ── FOOTER ─────────────────────────────────────────────── */}
+      <footer className="border-t border-slate-800 bg-slate-950 px-4 py-6">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 text-sm text-slate-400 sm:flex-row">
+          <div className="flex items-center gap-2">
+            <img src="/zippy-logo.png?v=2" alt="" aria-hidden="true" className="h-5 w-5 object-contain opacity-60" />
+            <span className="font-medium text-slate-300">ZippyGo</span>
+          </div>
+          <p>© {new Date().getFullYear()} ZippyGo. {t('landing.footer')}</p>
+          <div className="flex items-center gap-4 text-xs">
+            <Link to="/login" className="hover:text-slate-200 transition-colors">{t('common.signIn')}</Link>
+            <Link to="/register" className="hover:text-slate-200 transition-colors">{t('common.createAccount')}</Link>
+          </div>
+        </div>
       </footer>
     </div>
   );
