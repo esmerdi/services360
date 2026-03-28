@@ -27,12 +27,23 @@ const PROVIDER_NAV = [
 ];
 
 type SubscriptionRecord = Subscription & { plan?: Plan };
+type ProviderQuota = {
+  plan_name: string;
+  max_requests: number;
+  request_window_days: number;
+  window_start: string | null;
+  window_end: string | null;
+  used_requests: number;
+  remaining_requests: number;
+  is_limited: boolean;
+};
 
 export default function ProviderSubscription() {
   const { user } = useAuth();
   const { language } = useI18n();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [subscription, setSubscription] = useState<SubscriptionRecord | null>(null);
+  const [quota, setQuota] = useState<ProviderQuota | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingPlan, setSavingPlan] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -43,13 +54,16 @@ export default function ProviderSubscription() {
 
     async function fetchData() {
       setLoading(true);
-      const [planRes, subscriptionRes] = await Promise.all([
+      const [planRes, subscriptionRes, quotaRes] = await Promise.all([
         supabase.from('plans').select('*').order('price'),
         supabase
           .from('subscriptions')
           .select('*, plan:plans(*)')
           .eq('user_id', currentUser.id)
           .order('created_at', { ascending: false })
+          .maybeSingle(),
+        supabase
+          .rpc('get_provider_request_quota', { p_provider_id: currentUser.id })
           .maybeSingle(),
       ]);
 
@@ -61,6 +75,12 @@ export default function ProviderSubscription() {
 
       if (!subscriptionRes.error) {
         setSubscription((subscriptionRes.data as SubscriptionRecord | null) ?? null);
+      }
+
+      if (!quotaRes.error) {
+        setQuota((quotaRes.data as ProviderQuota | null) ?? null);
+      } else {
+        setQuota(null);
       }
       setLoading(false);
     }
@@ -109,6 +129,11 @@ export default function ProviderSubscription() {
     }
 
     setSubscription(response.data as SubscriptionRecord);
+
+    const { data: quotaData } = await supabase
+      .rpc('get_provider_request_quota', { p_provider_id: user.id })
+      .maybeSingle();
+    setQuota((quotaData as ProviderQuota | null) ?? null);
   }
 
   const es = language === 'es';
@@ -156,6 +181,11 @@ export default function ProviderSubscription() {
         trial: 'Trial',
       };
 
+  const quotaUsagePercent = useMemo(() => {
+    if (!quota || quota.max_requests <= 0 || quota.max_requests === -1) return 0;
+    return Math.min(100, Math.round((quota.used_requests / quota.max_requests) * 100));
+  }, [quota]);
+
   return (
     <Layout navItems={PROVIDER_NAV} title="Subscription">
       <div className="mb-5 space-y-1.5 md:mb-6">
@@ -172,7 +202,7 @@ export default function ProviderSubscription() {
       ) : (
         <>
           {subscription && (
-            <div className="card mb-5 p-4 md:mb-6 md:p-5">
+            <div className="card mb-4 p-4 md:mb-5 md:p-5">
               <div className="mb-3 flex items-center gap-2 text-slate-900">
                 <ShieldCheck className="h-4 w-4 text-blue-600" aria-hidden="true" />
                 <h2 className="text-base font-semibold md:text-lg">{es ? 'Plan actual' : 'Current plan'}</h2>
@@ -202,6 +232,53 @@ export default function ProviderSubscription() {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {quota && (
+            <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:mb-6 md:p-5">
+              <div className="mb-3 flex items-center gap-2">
+                <CircleDollarSign className="h-4 w-4 text-sky-600" aria-hidden="true" />
+                <h3 className="text-sm font-semibold text-slate-900 md:text-base">{es ? 'Consumo del período' : 'Current period usage'}</h3>
+              </div>
+
+              {quota.max_requests === -1 ? (
+                <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-medium text-sky-700">
+                  {es ? 'Tu plan actual tiene solicitudes ilimitadas.' : 'Your current plan has unlimited requests.'}
+                </div>
+              ) : (
+                <>
+                  <div className="grid gap-2.5 md:grid-cols-3 md:gap-3">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+                      <p className="text-[11px] uppercase tracking-wide text-slate-500">{es ? 'Usadas' : 'Used'}</p>
+                      <p className="mt-1 text-base font-semibold text-slate-900">{quota.used_requests}</p>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+                      <p className="text-[11px] uppercase tracking-wide text-slate-500">{es ? 'Restantes' : 'Remaining'}</p>
+                      <p className="mt-1 text-base font-semibold text-emerald-700">{quota.remaining_requests}</p>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+                      <p className="text-[11px] uppercase tracking-wide text-slate-500">{es ? 'Próximo reinicio' : 'Next reset'}</p>
+                      <p className="mt-1 text-sm font-semibold text-slate-900">
+                        {quota.window_end ? formatDate(quota.window_end, language) : (es ? 'Sin fecha' : 'No date')}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3">
+                    <div className="mb-1 flex items-center justify-between text-xs text-slate-500">
+                      <span>{es ? `Límite ${quota.max_requests} por ${quota.request_window_days} días` : `Limit ${quota.max_requests} per ${quota.request_window_days} days`}</span>
+                      <span>{quotaUsagePercent}%</span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        className="h-full rounded-full bg-emerald-500 transition-all"
+                        style={{ width: `${quotaUsagePercent}%` }}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
