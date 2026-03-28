@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, Info, MapPin } from 'lucide-react';
+import { CheckCircle2, Compass, Filter, Info, MapPin, ShieldCheck } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
@@ -121,48 +121,65 @@ export default function ProviderNearbyRequests() {
 
   return (
     <Layout navItems={PROVIDER_NAV} title="Nearby Requests">
-      <div className="page-header flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mb-5 flex flex-col gap-4 md:mb-6">
         <div>
-          <h1 className="page-title">{es ? 'Solicitudes cercanas' : 'Nearby Requests'}</h1>
-          <p className="page-subtitle">{es ? 'Las solicitudes se ordenan por distancia a tu ubicación actual.' : 'Requests are ordered by distance from your current position.'}</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{es ? 'Solicitudes cercanas' : 'Nearby requests'}</h1>
+          <p className="mt-1 text-sm text-slate-600 md:text-base">{es ? 'Se ordenan por distancia respecto a tu ubicación actual.' : 'Sorted by distance from your current location.'}</p>
         </div>
-        <div className="flex flex-col gap-3 sm:items-end">
-          <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white/90 px-4 py-3 shadow-sm">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-100 text-sky-700">
-              <MapPin className="h-5 w-5" />
+
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="rounded-xl border border-sky-200 bg-sky-50 p-3">
+              <div className="flex items-center gap-2 text-sky-700">
+                <MapPin className="h-4 w-4" aria-hidden="true" />
+                <p className="text-[11px] uppercase tracking-wide">{es ? 'Disponibles' : 'Available'}</p>
+              </div>
+              <p className="mt-1 text-xl font-semibold text-slate-900">
+                {requests.length}
+              </p>
             </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                {es ? 'Disponibles ahora' : 'Available now'}
-              </p>
-              <p className="text-sm font-semibold text-slate-900">
-                {requests.length === 1
-                  ? (es ? '1 solicitud cercana' : '1 nearby request')
-                  : es
-                    ? `${requests.length} solicitudes cercanas`
-                    : `${requests.length} nearby requests`}
-              </p>
-              <p className="mt-1 text-xs text-slate-500">
-                {es
-                  ? `${visibleNearbyCount} visibles en el mapa`
-                  : `${visibleNearbyCount} currently visible on the map`}
-              </p>
-              {requests.length > 0 && visibleNearbyCount < requests.length ? (
-                <button
-                  type="button"
-                  onClick={() => setFitBoundsTrigger((current) => current + 1)}
-                  className="mt-2 text-xs font-semibold text-sky-700 transition hover:text-sky-800"
-                >
-                  {es ? 'Ver todas' : 'See all'}
-                </button>
-              ) : null}
+
+            <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-3">
+              <div className="flex items-center gap-2 text-indigo-700">
+                <Compass className="h-4 w-4" aria-hidden="true" />
+                <p className="text-[11px] uppercase tracking-wide">{es ? 'Visibles en mapa' : 'Visible on map'}</p>
+              </div>
+              <p className="mt-1 text-xl font-semibold text-slate-900">{visibleNearbyCount}</p>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-3 sm:col-span-2 lg:col-span-1">
+              <div className="flex items-center gap-2 text-slate-500">
+                <Filter className="h-4 w-4" aria-hidden="true" />
+                <p className="text-[11px] uppercase tracking-wide">{es ? 'Criterio' : 'Criteria'}</p>
+              </div>
+              <p className="mt-1 text-sm font-medium text-slate-700">{es ? 'Prioridad por cercanía' : 'Closest first'}</p>
             </div>
           </div>
 
-          <button onClick={refresh} className="btn-secondary">
-            <MapPin className="h-4 w-4" />
-            {es ? 'Actualizar GPS' : 'Refresh GPS'}
-          </button>
+          <div className="flex flex-col gap-2 sm:flex-row lg:flex-col lg:items-end">
+            {requests.length > 0 && visibleNearbyCount < requests.length ? (
+              <button
+                type="button"
+                onClick={() => setFitBoundsTrigger((current) => current + 1)}
+                className="btn-secondary"
+              >
+                <Compass className="h-4 w-4" />
+                {es ? 'Ver todas en mapa' : 'See all on map'}
+              </button>
+            ) : null}
+
+            <button onClick={refresh} className="btn-secondary">
+              <MapPin className="h-4 w-4" />
+              {es ? 'Actualizar GPS' : 'Refresh GPS'}
+            </button>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
+          <ShieldCheck className="h-3.5 w-3.5 text-sky-600" aria-hidden="true" />
+          {es
+            ? 'Acepta solicitudes que coincidan con tus servicios y zona.'
+            : 'Accept requests that match your services and area.'}
         </div>
       </div>
 
@@ -194,11 +211,14 @@ export default function ProviderNearbyRequests() {
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="card space-y-4">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-900">{es ? 'Mapa de solicitudes' : 'Requests map'}</h2>
-              <p className="mt-1 text-sm text-slate-500">{es ? 'Visualiza tu posicion y las solicitudes cercanas sobre OpenStreetMap.' : 'See your position and nearby requests on OpenStreetMap.'}</p>
+          <div className="card p-4 md:p-5">
+            <div className="mb-3 flex items-center gap-2 text-slate-900">
+              <MapPin className="h-4 w-4 text-sky-600" aria-hidden="true" />
+              <h2 className="text-base font-semibold md:text-lg">{es ? 'Mapa de solicitudes' : 'Requests map'}</h2>
             </div>
+            <p className="mb-3 text-sm text-slate-500">
+              {es ? 'Visualiza tu posición y solicitudes cercanas sobre OpenStreetMap.' : 'See your position and nearby requests on OpenStreetMap.'}
+            </p>
             <LazyLocationMap
               markers={requestMarkers}
               enableClustering={requestMarkers.length > 8}
@@ -211,8 +231,8 @@ export default function ProviderNearbyRequests() {
 
           <div className="grid gap-4 xl:grid-cols-2">
             {requests.length === 0 && (
-              <div className="card xl:col-span-2">
-                <p className="text-center text-slate-400">{es ? 'No hay solicitudes cercanas disponibles ahora.' : 'No matching nearby requests right now.'}</p>
+              <div className="card p-5 xl:col-span-2">
+                <p className="text-center text-slate-500">{es ? 'No hay solicitudes cercanas disponibles ahora.' : 'No nearby requests available right now.'}</p>
               </div>
             )}
             {requests.map((request) => (
