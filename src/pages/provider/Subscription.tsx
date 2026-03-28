@@ -1,5 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2 } from 'lucide-react';
+import {
+  BadgeCheck,
+  CalendarClock,
+  Check,
+  CheckCircle2,
+  CircleDollarSign,
+  Leaf,
+  ShieldCheck,
+  Sparkles,
+} from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
@@ -7,7 +16,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
 import { formatCurrency, formatDate, formatPlanFeature } from '../../utils/helpers';
-import type { Plan, Subscription } from '../../types';
+import type { Plan, Subscription, SubscriptionStatus } from '../../types';
 
 const PROVIDER_NAV = [
   { label: 'Dashboard', to: '/provider' },
@@ -135,11 +144,23 @@ export default function ProviderSubscription() {
     return nextCycleDate.toISOString();
   }, [subscription]);
 
+  const statusLabelMap: Record<SubscriptionStatus, string> = es
+    ? {
+        active: 'Activo',
+        cancelled: 'Cancelado',
+        trial: 'Prueba',
+      }
+    : {
+        active: 'Active',
+        cancelled: 'Cancelled',
+        trial: 'Trial',
+      };
+
   return (
     <Layout navItems={PROVIDER_NAV} title="Subscription">
-      <div className="page-header">
-        <h1 className="page-title">{es ? 'Suscripción' : 'Subscription'}</h1>
-        <p className="page-subtitle">{es ? 'Plan FREE sin caducación con 10 solicitudes por período de 30 días, y plan PRO desde USD 7.99/mes.' : 'FREE plan with no expiration and 10 requests per 30-day period, plus PRO from USD 7.99/mo.'}</p>
+      <div className="mb-5 space-y-1.5 md:mb-6">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{es ? 'Suscripción' : 'Subscription'}</h1>
+        <p className="text-sm text-slate-600 md:text-base">{es ? 'Elige el plan ideal para tus solicitudes mensuales.' : 'Pick the plan that fits your monthly requests.'}</p>
       </div>
 
       {error && <ErrorMessage message={error} className="mb-4" />}
@@ -151,60 +172,129 @@ export default function ProviderSubscription() {
       ) : (
         <>
           {subscription && (
-            <div className="card mb-6">
-              <h2 className="text-lg font-semibold text-slate-900">{es ? 'Plan actual' : 'Current Plan'}</h2>
-              <div className="mt-4 grid gap-4 md:grid-cols-3">
-                <div className="surface-muted">
-                  <p className="text-xs uppercase tracking-wide text-slate-500">{es ? 'Plan' : 'Plan'}</p>
-                  <p className="mt-2 font-medium text-slate-900">{subscription.plan?.name || (es ? 'Desconocido' : 'Unknown')}</p>
+            <div className="card mb-5 p-4 md:mb-6 md:p-5">
+              <div className="mb-3 flex items-center gap-2 text-slate-900">
+                <ShieldCheck className="h-4 w-4 text-blue-600" aria-hidden="true" />
+                <h2 className="text-base font-semibold md:text-lg">{es ? 'Plan actual' : 'Current plan'}</h2>
+              </div>
+              <div className="grid gap-2.5 md:grid-cols-3 md:gap-3">
+                <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+                  <p className="text-[11px] uppercase tracking-wide text-slate-500">{es ? 'Plan' : 'Plan'}</p>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <CircleDollarSign className="h-4 w-4 text-slate-500" aria-hidden="true" />
+                    <p className="text-sm font-semibold text-slate-900">{subscription.plan?.name || (es ? 'Desconocido' : 'Unknown')}</p>
+                  </div>
                 </div>
-                <div className="surface-muted">
-                  <p className="text-xs uppercase tracking-wide text-slate-500">{es ? 'Estado' : 'Status'}</p>
-                  <p className="mt-2 font-medium capitalize text-slate-900">{subscription.status}</p>
+                <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+                  <p className="text-[11px] uppercase tracking-wide text-slate-500">{es ? 'Estado' : 'Status'}</p>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <BadgeCheck className="h-4 w-4 text-emerald-600" aria-hidden="true" />
+                    <p className="text-sm font-semibold text-slate-900">
+                      {statusLabelMap[subscription.status] ?? subscription.status}
+                    </p>
+                  </div>
                 </div>
-                <div className="surface-muted">
-                  <p className="text-xs uppercase tracking-wide text-slate-500">{subscription.plan?.name === 'FREE' ? (es ? 'Renovación del cupo' : 'Quota reset') : (es ? 'Finaliza' : 'Ends')}</p>
-                  <p className="mt-2 font-medium text-slate-900">{quotaResetDate ? formatDate(quotaResetDate, language) : (es ? 'Sin fecha de fin' : 'No end date')}</p>
+                <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+                  <p className="text-[11px] uppercase tracking-wide text-slate-500">{subscription.plan?.name === 'FREE' ? (es ? 'Renovación del cupo' : 'Quota reset') : (es ? 'Finaliza' : 'Ends')}</p>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <CalendarClock className="h-4 w-4 text-sky-600" aria-hidden="true" />
+                    <p className="text-sm font-semibold text-slate-900">{quotaResetDate ? formatDate(quotaResetDate, language) : (es ? 'Sin fecha de fin' : 'No end date')}</p>
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
-          <div className="grid gap-6 md:grid-cols-2 max-w-4xl">
+          <div className="grid max-w-4xl gap-4 md:grid-cols-2 md:gap-5">
             {plans.map((plan) => {
               const active = subscription ? subscription.plan_id === plan.id : plan.price === 0;
               const features = Object.entries(plan.features || {}).filter(([, value]) => value !== false);
+              const isFree = plan.name === 'FREE';
+              const isPro = plan.name === 'PRO';
+
+              const palette = isFree
+                ? {
+                    card: 'border-emerald-200 bg-gradient-to-b from-emerald-50 to-white',
+                    badge: 'border-emerald-200 bg-emerald-100 text-emerald-700',
+                    accent: 'text-emerald-700',
+                    icon: 'text-emerald-600',
+                    button: active ? 'btn-secondary' : 'btn-primary',
+                  }
+                : isPro
+                  ? {
+                      card: 'border-sky-200 bg-gradient-to-b from-cyan-50 to-white',
+                      badge: 'border-sky-200 bg-sky-100 text-sky-700',
+                      accent: 'text-sky-700',
+                      icon: 'text-sky-600',
+                      button: active ? 'btn-secondary' : 'btn-primary',
+                    }
+                  : {
+                      card: 'border-slate-200 bg-white',
+                      badge: 'border-slate-200 bg-slate-100 text-slate-700',
+                      accent: 'text-slate-700',
+                      icon: 'text-slate-600',
+                      button: active ? 'btn-secondary' : 'btn-primary',
+                    };
+
               return (
-                <div key={plan.id} className={`relative ${active ? 'card border-emerald-400 ring-2 ring-emerald-100' : 'card'}`}>
-                  {active && (
-                    <div className="absolute top-3 right-3">
-                      <span className="flex items-center gap-1 rounded-full bg-emerald-500 px-2.5 py-0.5 text-xs font-semibold text-white shadow">
-                        <CheckCircle2 className="h-3.5 w-3.5" />
+                <div
+                  key={plan.id}
+                  className={`relative rounded-2xl border p-4 shadow-sm transition-colors md:p-5 ${palette.card} ${
+                    active ? 'ring-2 ring-offset-0 ' + (isFree ? 'ring-emerald-200' : isPro ? 'ring-sky-200' : 'ring-slate-200') : ''
+                  }`}
+                >
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${palette.badge}`}>
+                      {isFree ? <Leaf className="h-3.5 w-3.5" aria-hidden="true" /> : <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />}
+                      {plan.name}
+                    </span>
+                    {active && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" />
                         {es ? 'Actual' : 'Current'}
                       </span>
-                    </div>
-                  )}
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h2 className="text-xl font-semibold text-slate-900">{plan.name}</h2>
-                      <p className="mt-2 text-3xl font-bold text-blue-600">
-                          {plan.price === 0 ? (es ? 'FREE sin caducación' : 'FREE no expiration') : `${formatCurrency(plan.price, language)}/${es ? 'mes' : 'mo'}`}
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <h2 className="text-lg font-semibold text-slate-900">{plan.name}</h2>
+                    <div className="flex items-end gap-1.5">
+                      <p className={`text-2xl font-bold leading-none md:text-[2rem] ${palette.accent}`}>
+                        {plan.price === 0 ? (es ? 'Gratis' : 'Free') : formatCurrency(plan.price, language)}
                       </p>
+                      <span className="pb-0.5 text-sm text-slate-500">
+                        {plan.price === 0 ? (es ? 'sin caducidad' : 'no expiration') : `/${es ? 'mes' : 'mo'}`}
+                      </span>
                     </div>
                   </div>
-                  <ul className="mt-5 space-y-2 text-sm text-slate-600">
+
+                  <ul className="mt-4 space-y-1.5 text-sm text-slate-700">
                     {features.map(([key, value]) => (
-                      <li key={key} className="capitalize">
-                        {formatPlanFeature(key, value, language)}
+                      <li key={key} className="flex items-start gap-2">
+                        <Check className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${palette.icon}`} aria-hidden="true" />
+                        <span className="leading-5 text-slate-600">{formatPlanFeature(key, value, language)}</span>
                       </li>
                     ))}
                   </ul>
+
                   <button
                     onClick={() => choosePlan(plan)}
-                    className={active ? 'btn-secondary mt-6 w-full justify-center' : 'btn-primary mt-6 w-full justify-center'}
+                    className={`${palette.button} mt-4 w-full justify-center py-2.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2`}
                     disabled={savingPlan === plan.id}
                   >
-                    {savingPlan === plan.id ? <LoadingSpinner size="sm" /> : active ? (es ? 'Seleccionado' : 'Selected') : (es ? `Elegir ${plan.name}` : `Choose ${plan.name}`)}
+                    {savingPlan === plan.id
+                      ? <LoadingSpinner size="sm" />
+                      : active
+                        ? es
+                          ? 'Seleccionado'
+                          : 'Selected'
+                        : isFree
+                          ? es
+                            ? 'Elegir plan gratis'
+                            : 'Choose free plan'
+                          : es
+                            ? 'Elegir plan pro'
+                            : 'Choose pro plan'}
                   </button>
                 </div>
               );
