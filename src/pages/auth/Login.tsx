@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Eye, EyeOff, LogIn, MailWarning, ShieldCheck, Sparkles } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
-import type { UserRole } from '../../types';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import LanguageSwitcher from '../../components/common/LanguageSwitcher';
@@ -17,26 +16,9 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [role, setRole] = useState<UserRole>('client');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
-
-  const roles: { value: UserRole; label: string; description: string }[] = React.useMemo(
-    () => [
-      {
-        value: 'client',
-        label: t('register.roleClientLabel'),
-        description: t('register.roleClientDescription'),
-      },
-      {
-        value: 'provider',
-        label: t('register.roleProviderLabel'),
-        description: t('register.roleProviderDescription'),
-      },
-    ],
-    [t]
-  );
 
   const trustPoints = React.useMemo(
     () => [
@@ -58,7 +40,7 @@ export default function Login() {
     setLoading(true);
     setUnverifiedEmail(null);
     try {
-      await signIn(email, password, role);
+      await signIn(email, password);
       // Navigation is handled by the useEffect above after user is set
     } catch (err) {
       const msg = err instanceof Error ? err.message : t('login.signInFailed');
@@ -161,27 +143,6 @@ export default function Login() {
                   </div>
                 </div>
               )}
-
-              <div className="form-group">
-                <label className="label">{t('register.iam')}</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {roles.map((r) => (
-                    <button
-                      key={r.value}
-                      type="button"
-                      onClick={() => setRole(r.value)}
-                      className={`rounded-xl border p-3 text-left transition-colors ${
-                        role === r.value
-                          ? 'border-sky-300 bg-sky-50/90 ring-2 ring-sky-100'
-                          : 'border-slate-200 hover:border-slate-300'
-                      }`}
-                    >
-                      <p className="text-sm font-semibold text-slate-800">{r.label}</p>
-                      <p className="mt-0.5 text-xs text-slate-500">{r.description}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
 
               <div className="form-group">
                 <label htmlFor="email" className="label">{t('login.emailLabel')}</label>
