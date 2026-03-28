@@ -219,29 +219,38 @@ export default function ProviderProfile() {
 
             <div className="card">
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold text-slate-900">{es ? 'Suscripción del proveedor' : 'Provider subscription'}</h2>
-                  <p className="mt-1 text-sm text-slate-500">
-                    {es
-                      ? 'Inicia con Trial de 15 días y 10 solicitudes al mes, o activa PRO por USD 7.99/mes.'
-                      : 'Start with a 15-day trial and 10 requests per month, or upgrade to PRO for USD 7.99/mo.'}
-                  </p>
-                </div>
-                <Link to="/provider/subscription" className="btn-primary">
+                <h2 className="text-lg font-semibold text-slate-900">{es ? 'Suscripción del proveedor' : 'Provider subscription'}</h2>
+                <Link to="/provider/subscription" className="btn-primary shrink-0">
                   {es ? 'Ver suscripción' : 'See subscription'}
                 </Link>
               </div>
 
               <div className="mt-4 grid gap-3 md:grid-cols-2">
-                <div className="surface-muted text-sm text-slate-600">
-                  <p className="font-medium text-slate-800">{es ? 'TRIAL' : 'TRIAL'}</p>
-                  <p className="mt-1">{es ? '15 días' : '15 days'}</p>
-                  <p>{es ? '10 solicitudes por mes' : '10 requests per month'}</p>
+                {/* FREE */}
+                <div className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <span className="inline-flex w-fit items-center rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-slate-700">
+                    Free
+                  </span>
+                  <p className="text-2xl font-bold text-slate-900">{es ? 'Gratis' : 'Free'}</p>
+                  <ul className="mt-1 space-y-1 text-sm text-slate-600">
+                    <li>✓ {es ? 'Sin caducación' : 'No expiration'}</li>
+                    <li>✓ {es ? '10 solicitudes por período de 30 días' : '10 requests per 30-day period'}</li>
+                    <li>✓ {es ? 'Visibilidad básica en el mapa' : 'Basic map visibility'}</li>
+                  </ul>
                 </div>
-                <div className="surface-muted text-sm text-slate-600">
-                  <p className="font-medium text-slate-800">PRO</p>
-                  <p className="mt-1">USD 7.99/{es ? 'mes' : 'mo'}</p>
-                  <p>{es ? 'Mayor visibilidad y prioridad' : 'More visibility and priority'}</p>
+                {/* PRO */}
+                <div className="flex flex-col gap-2 rounded-2xl border border-indigo-200 bg-indigo-50 p-4">
+                  <span className="inline-flex w-fit items-center rounded-full bg-indigo-600 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-white">
+                    Pro
+                  </span>
+                  <p className="text-2xl font-bold text-indigo-900">
+                    USD 7.99<span className="text-sm font-medium text-indigo-600">/{es ? 'mes' : 'mo'}</span>
+                  </p>
+                  <ul className="mt-1 space-y-1 text-sm text-indigo-800">
+                    <li>✓ {es ? 'Solicitudes ilimitadas' : 'Unlimited requests'}</li>
+                    <li>✓ {es ? 'Prioridad en búsquedas' : 'Priority in search'}</li>
+                    <li>✓ {es ? 'Mayor visibilidad por zona' : 'Higher visibility by area'}</li>
+                  </ul>
                 </div>
               </div>
             </div>

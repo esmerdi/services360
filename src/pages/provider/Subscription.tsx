@@ -66,7 +66,7 @@ export default function ProviderSubscription() {
     const now = new Date();
     const endDate = new Date(now);
     if (plan.name === 'FREE') {
-      endDate.setDate(endDate.getDate() + 15);
+      endDate.setDate(endDate.getDate() + 30);
     } else {
       endDate.setMonth(endDate.getMonth() + 1);
     }
@@ -74,7 +74,7 @@ export default function ProviderSubscription() {
     const payload = {
       user_id: user.id,
       plan_id: plan.id,
-      status: plan.name === 'FREE' ? 'trial' : 'active',
+      status: 'active',
       start_date: now.toISOString(),
       end_date: endDate.toISOString(),
     };
@@ -108,7 +108,7 @@ export default function ProviderSubscription() {
     <Layout navItems={PROVIDER_NAV} title="Subscription">
       <div className="page-header">
         <h1 className="page-title">{es ? 'Suscripción' : 'Subscription'}</h1>
-        <p className="page-subtitle">{es ? 'Trial de 15 días con 10 solicitudes al mes y plan PRO desde USD 7.99/mes.' : '15-day trial with 10 requests per month and PRO plan from USD 7.99/mo.'}</p>
+        <p className="page-subtitle">{es ? 'Plan FREE sin caducación con 10 solicitudes por período de 30 días, y plan PRO desde USD 7.99/mes.' : 'FREE plan with no expiration and 10 requests per 30-day period, plus PRO from USD 7.99/mo.'}</p>
       </div>
 
       {error && <ErrorMessage message={error} className="mb-4" />}
@@ -132,7 +132,7 @@ export default function ProviderSubscription() {
                   <p className="mt-2 font-medium capitalize text-slate-900">{subscription.status}</p>
                 </div>
                 <div className="surface-muted">
-                  <p className="text-xs uppercase tracking-wide text-slate-500">{es ? 'Finaliza' : 'Ends'}</p>
+                  <p className="text-xs uppercase tracking-wide text-slate-500">{subscription.plan?.name === 'FREE' ? (es ? 'Renovación del cupo' : 'Quota reset') : (es ? 'Finaliza' : 'Ends')}</p>
                   <p className="mt-2 font-medium text-slate-900">{subscription.end_date ? formatDate(subscription.end_date, language) : (es ? 'Sin fecha de fin' : 'No end date')}</p>
                 </div>
               </div>
@@ -157,7 +157,7 @@ export default function ProviderSubscription() {
                     <div>
                       <h2 className="text-xl font-semibold text-slate-900">{plan.name}</h2>
                       <p className="mt-2 text-3xl font-bold text-blue-600">
-                          {plan.price === 0 ? (es ? 'Trial' : 'Trial') : `${formatCurrency(plan.price, language)}/${es ? 'mes' : 'mo'}`}
+                          {plan.price === 0 ? (es ? 'FREE sin caducación' : 'FREE no expiration') : `${formatCurrency(plan.price, language)}/${es ? 'mes' : 'mo'}`}
                       </p>
                     </div>
                   </div>
