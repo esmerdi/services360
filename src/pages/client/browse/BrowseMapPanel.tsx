@@ -1,3 +1,4 @@
+import { Compass, MapPin, ShieldCheck } from 'lucide-react';
 import LazyLocationMap from '../../../components/common/LazyLocationMap';
 import type { LocationMapMarker } from '../../../components/common/LazyLocationMap';
 
@@ -34,10 +35,13 @@ export default function BrowseMapPanel({
   onViewAll,
 }: BrowseMapPanelProps) {
   return (
-    <div className="overflow-hidden rounded-lg bg-slate-50 min-h-96 lg:min-h-[600px]">
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 min-h-96 lg:min-h-[600px]">
       <div className="flex flex-col gap-3 border-b border-slate-200 bg-white/95 px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">{t('clientBrowse.nearbyProvidersMapTitle')}</h2>
+          <h2 className="inline-flex items-center gap-2 text-base font-semibold text-slate-900 md:text-lg">
+            <MapPin className="h-4 w-4 text-sky-600" aria-hidden="true" />
+            {t('clientBrowse.nearbyProvidersMapTitle')}
+          </h2>
           <p className="mt-1 text-sm text-slate-500">{t('clientBrowse.nearbyProvidersMapDesc')}</p>
         </div>
 
@@ -57,12 +61,20 @@ export default function BrowseMapPanel({
             <button
               type="button"
               onClick={onViewAll}
-              className="mt-2 text-xs font-semibold text-sky-700 transition hover:text-sky-800"
+              className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-sky-700 transition hover:text-sky-800"
             >
+              <Compass className="h-3.5 w-3.5" aria-hidden="true" />
               {t('clientBrowse.viewAllOnMap')}
             </button>
           ) : null}
         </div>
+      </div>
+
+      <div className="border-b border-slate-200 bg-white px-4 py-2 text-xs text-slate-600">
+        <span className="inline-flex items-center gap-1.5">
+          <ShieldCheck className="h-3.5 w-3.5 text-sky-600" aria-hidden="true" />
+          {t('clientBrowse.nearbyProvidersMapDesc')}
+        </span>
       </div>
 
       {!coords ? (

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { MapPin } from 'lucide-react';
+import { MapPin, ShieldCheck } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
@@ -116,13 +116,13 @@ export default function ClientRequestService() {
 
   return (
     <Layout navItems={CLIENT_NAV} title="Request Service">
-      <div className="page-header">
-        <h1 className="page-title">{t('clientRequestService.title')}</h1>
-        <p className="page-subtitle">{t('clientRequestService.subtitle')}</p>
+      <div className="mb-5 space-y-1.5 md:mb-6">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{t('clientRequestService.title')}</h1>
+        <p className="text-sm text-slate-600 md:text-base">{t('clientRequestService.subtitle')}</p>
       </div>
 
       {!coords && !locationLoading && (
-        <div className="mb-6 rounded-xl border border-yellow-200 bg-yellow-50 p-4">
+        <div className="mb-5 rounded-xl border border-yellow-200 bg-yellow-50 p-4 md:mb-6">
           <p className="text-sm font-medium text-yellow-800">{t('clientRequestService.locationRequiredTitle')}</p>
           <p className="mt-1 text-sm text-yellow-700">{t('clientRequestService.locationRequiredDesc')}</p>
           <button onClick={refresh} className="btn-secondary mt-3">
@@ -140,10 +140,10 @@ export default function ClientRequestService() {
         </div>
       ) : (
         <div className="grid gap-6 xl:grid-cols-[1.1fr,0.9fr]">
-          <form onSubmit={handleSubmit} className="card space-y-4">
+          <form onSubmit={handleSubmit} className="card space-y-4 p-4 md:p-5">
             <div>
               <span className="badge bg-blue-50 text-blue-700">{getCategoryPath(categoryMap, service?.category_id, t('clientRequestService.serviceBadge'))}</span>
-              <h2 className="mt-3 text-xl font-semibold text-slate-900">{service?.name}</h2>
+              <h2 className="mt-2 text-lg font-semibold text-slate-900 md:text-xl">{service?.name}</h2>
               <p className="mt-2 text-sm text-slate-500">{service?.description || t('clientRequestService.serviceFallback')}</p>
             </div>
 
@@ -185,8 +185,11 @@ export default function ClientRequestService() {
             </div>
 
             <div className="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
-              <p className="font-medium text-slate-800">{t('clientRequestService.currentLocation')}</p>
-              <p className="mt-1">
+              <p className="inline-flex items-center gap-2 font-medium text-slate-800">
+                <ShieldCheck className="h-4 w-4 text-sky-600" aria-hidden="true" />
+                {t('clientRequestService.currentLocation')}
+              </p>
+              <p className="mt-1.5">
                 {coords ? `${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}` : t('clientRequestService.waitingGps')}
               </p>
             </div>

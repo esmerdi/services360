@@ -144,10 +144,10 @@ export default function ClientBrowse() {
 
   return (
     <Layout navItems={CLIENT_NAV} title="Browse Services">
-      <div className="page-header">
+      <div className="mb-5 space-y-1.5 md:mb-6">
         <div>
-          <h1 className="page-title">{t('clientBrowse.title')}</h1>
-          <p className="page-subtitle">{t('clientBrowse.subtitle')}</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{t('clientBrowse.title')}</h1>
+          <p className="text-sm text-slate-600 md:text-base">{t('clientBrowse.subtitle')}</p>
         </div>
       </div>
 
@@ -158,7 +158,7 @@ export default function ClientBrowse() {
           <LoadingSpinner size="lg" />
         </div>
       ) : (
-        <div className="card grid gap-6 lg:grid-cols-[1fr_384px]">
+        <div className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm md:p-4 lg:grid-cols-[1fr_384px]">
           <BrowseMapPanel
             t={t}
             coords={coords}

@@ -72,7 +72,7 @@ export default function MyRequestsTable({
   }, [currentPage, totalPages]);
 
   return (
-    <div className="card p-0 overflow-hidden">
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-slate-500">
           {t('myRequests.table.showingResults')
@@ -102,12 +102,12 @@ export default function MyRequestsTable({
 
       <div className="overflow-x-auto">
         <table className="dashboard-table">
-          <thead className="border-b border-slate-200 bg-slate-50">
+          <thead className="border-b border-slate-200 bg-slate-50/80">
             <tr>
-              <th className="px-4 py-3 text-left font-medium text-slate-500">{t('myRequests.table.service')}</th>
-              <th className="px-4 py-3 text-left font-medium text-slate-500">{t('myRequests.table.provider')}</th>
-              <th className="px-4 py-3 text-left font-medium text-slate-500">{t('myRequests.table.status')}</th>
-              <th className="px-4 py-3 text-left font-medium text-slate-500 hidden lg:table-cell">{t('myRequests.table.created')}</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{t('myRequests.table.service')}</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{t('myRequests.table.provider')}</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{t('myRequests.table.status')}</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 hidden lg:table-cell">{t('myRequests.table.created')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -120,14 +120,14 @@ export default function MyRequestsTable({
             )}
             {requests.map((request) => (
               <React.Fragment key={request.id}>
-                <tr className="hover:bg-slate-50">
+                <tr className="transition-colors hover:bg-slate-50/80">
                   <td className="px-4 py-3">
                     {request.status === 'pending' && request.provider && (
                       <p className="mb-1 text-sm font-semibold text-slate-800">
                         {request.provider.full_name || request.provider.email}
                       </p>
                     )}
-                    <Link to={`/client/requests/${request.id}`} className="font-medium text-slate-900 hover:text-blue-600">
+                    <Link to={`/client/requests/${request.id}`} className="text-sm font-semibold text-slate-900 hover:text-blue-600">
                       {request.service?.name || t('myRequests.table.serviceRequest')}
                     </Link>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -137,7 +137,7 @@ export default function MyRequestsTable({
                     </div>
                     <p className="mt-2 text-xs text-slate-400">{request.address || t('myRequests.table.addressPending')}</p>
                   </td>
-                  <td className="px-4 py-3 text-slate-600">
+                  <td className="px-4 py-3 text-sm text-slate-600">
                     {request.provider ? (
                       <p className="font-medium text-slate-700">{request.provider.full_name || request.provider.email}</p>
                     ) : (
@@ -147,7 +147,7 @@ export default function MyRequestsTable({
                   <td className="px-4 py-3">
                     <StatusBadge status={request.status} />
                   </td>
-                  <td className="px-4 py-3 text-slate-500 hidden lg:table-cell">
+                  <td className="px-4 py-3 text-sm text-slate-500 hidden lg:table-cell">
                     {formatDateTime(request.created_at, language)}
                   </td>
                 </tr>

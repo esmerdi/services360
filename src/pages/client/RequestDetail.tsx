@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { MessageCircle } from 'lucide-react';
+import { CalendarClock, FileText, MapPin, MessageCircle, ShieldCheck } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
@@ -277,7 +277,7 @@ export default function ClientRequestDetail() {
           <LoadingSpinner size="lg" />
         </div>
       ) : request ? (
-        <div className="card p-4 sm:p-5">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div className="min-w-0">
               <p className="text-xs font-medium uppercase tracking-[0.08em] text-slate-500">{request.service?.name || t('clientRequestDetail.serviceRequest')}</p>
@@ -286,7 +286,7 @@ export default function ClientRequestDetail() {
                   <span className="truncate">{getCategoryPath(request.service?.category_id)}</span>
                 </span>
               </div>
-              <h1 className="mt-1 text-xl font-bold text-slate-900 sm:text-2xl">{t('clientRequestDetail.requestPrefix')} #{request.id.slice(0, 8)}</h1>
+              <h1 className="mt-1 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{t('clientRequestDetail.requestPrefix')} #{request.id.slice(0, 8)}</h1>
             </div>
             <StatusBadge status={request.status} />
           </div>
@@ -318,10 +318,13 @@ export default function ClientRequestDetail() {
           <div className="mt-4 space-y-3">
             {activeDetailTab === 'overview' && (
               <>
-                <p className="text-sm text-slate-600">{request.description || t('clientRequestDetail.noDescription')}</p>
+                <p className="inline-flex items-start gap-1.5 text-sm text-slate-600">
+                  <FileText className="mt-0.5 h-4 w-4 text-slate-400" aria-hidden="true" />
+                  <span>{request.description || t('clientRequestDetail.noDescription')}</span>
+                </p>
 
                 <div className="grid gap-3 md:grid-cols-2">
-                  <div className="rounded-xl bg-slate-50 p-3">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{t('clientRequestDetail.provider')}</p>
                     {request.provider ? (
                       <div className="mt-2 flex items-center gap-2.5">
@@ -345,11 +348,17 @@ export default function ClientRequestDetail() {
                     )}
                   </div>
 
-                  <div className="rounded-xl bg-slate-50 p-3">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{t('clientRequestDetail.created')}</p>
-                    <p className="mt-1 text-sm font-medium text-slate-900">{formatDateTime(request.created_at, language)}</p>
+                    <p className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-slate-900">
+                      <CalendarClock className="h-3.5 w-3.5 text-slate-500" aria-hidden="true" />
+                      {formatDateTime(request.created_at, language)}
+                    </p>
                     <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{t('clientRequestDetail.address')}</p>
-                    <p className="mt-0.5 break-words text-xs text-slate-600">{request.address || t('clientRequestDetail.notProvided')}</p>
+                    <p className="mt-0.5 inline-flex items-start gap-1.5 break-words text-xs text-slate-600">
+                      <MapPin className="mt-0.5 h-3.5 w-3.5 text-sky-600" aria-hidden="true" />
+                      <span>{request.address || t('clientRequestDetail.notProvided')}</span>
+                    </p>
                   </div>
                 </div>
 
@@ -398,15 +407,18 @@ export default function ClientRequestDetail() {
 
             {activeDetailTab === 'timeline' && (
               <div>
-                <h2 className="text-base font-semibold text-slate-900">{t('clientRequestDetail.statusTimeline')}</h2>
+                <h2 className="inline-flex items-center gap-2 text-base font-semibold text-slate-900">
+                  <ShieldCheck className="h-4 w-4 text-sky-600" aria-hidden="true" />
+                  {t('clientRequestDetail.statusTimeline')}
+                </h2>
                 <div className="mt-3 space-y-3">
                   {history.length === 0 && (
                     <p className="text-sm text-slate-400">{t('clientRequestDetail.noStatusChanges')}</p>
                   )}
                   {history.map((item) => (
-                    <div key={item.id} className="flex gap-2.5">
+                    <div key={item.id} className="flex gap-2.5 rounded-xl border border-slate-200 bg-slate-50/60 p-2.5">
                       <div className="mt-1 h-2.5 w-2.5 rounded-full bg-blue-600" />
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-sm font-medium capitalize text-slate-900">{item.status.replace('_', ' ')}</p>
                         <p className="text-xs text-slate-500">{formatDateTime(item.created_at, language)}</p>
                       </div>
@@ -418,7 +430,10 @@ export default function ClientRequestDetail() {
 
             {activeDetailTab === 'location' && (
               <div>
-                <h2 className="text-base font-semibold text-slate-900">{t('clientRequestDetail.requestInfo')}</h2>
+                <h2 className="inline-flex items-center gap-2 text-base font-semibold text-slate-900">
+                  <MapPin className="h-4 w-4 text-sky-600" aria-hidden="true" />
+                  {t('clientRequestDetail.requestInfo')}
+                </h2>
                 <dl className="mt-3 space-y-2.5 text-sm">
                   <div className="flex flex-col gap-0.5 sm:flex-row sm:justify-between sm:gap-3">
                     <dt className="text-slate-500">{t('clientRequestDetail.address')}</dt>

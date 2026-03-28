@@ -214,11 +214,11 @@ export default function BrowseRequestSidebar({
         : t('clientBrowse.selectProviderFirstButton');
 
   return (
-    <div className="bg-white rounded-lg p-4 h-fit lg:sticky lg:top-24">
-      <h2 className="text-lg font-semibold text-slate-900 mb-4">{t('clientBrowse.nearbyProvidersMapTitle')}</h2>
+    <div className="h-fit rounded-xl border border-slate-200 bg-white p-4 lg:sticky lg:top-24">
+      <h2 className="mb-3 text-base font-semibold text-slate-900 md:text-lg">{t('clientBrowse.nearbyProvidersMapTitle')}</h2>
 
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-slate-700 mb-2">
+      <div className="mb-3">
+        <label className="mb-1.5 block text-sm font-medium text-slate-700">
           {t('clientBrowse.selectParentCategory')}
         </label>
         <select
@@ -235,8 +235,8 @@ export default function BrowseRequestSidebar({
         </select>
       </div>
 
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-slate-700 mb-2">
+      <div className="mb-3">
+        <label className="mb-1.5 block text-sm font-medium text-slate-700">
           {t('clientBrowse.selectService')}
         </label>
         <select
@@ -259,13 +259,13 @@ export default function BrowseRequestSidebar({
       </div>
 
       {selectedServiceData ? (
-        <div className="mt-6 pt-6 border-t border-slate-200">
-          <div className="mb-4">
-            <h3 className="font-semibold text-slate-900">{selectedServiceData.name}</h3>
-            <p className="text-sm text-slate-600 mt-1">{selectedServiceData.description}</p>
+        <div className="mt-4 border-t border-slate-200 pt-4">
+          <div className="mb-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <h3 className="text-sm font-semibold text-slate-900">{selectedServiceData.name}</h3>
+            <p className="mt-1 text-xs text-slate-600">{selectedServiceData.description}</p>
 
             {selectedServiceData.avg_rating !== undefined && selectedServiceData.ratings_count !== undefined ? (
-              <div className="mt-3 flex items-center gap-2 text-sm">
+              <div className="mt-2.5 flex items-center gap-2 text-sm">
                 <StarRating value={selectedServiceData.avg_rating ?? 0} readonly size="sm" />
                 <span className="text-slate-600">
                   {selectedServiceData.ratings_count && selectedServiceData.ratings_count > 0
@@ -282,7 +282,7 @@ export default function BrowseRequestSidebar({
             ) : null}
           </div>
 
-          <div className="mb-4 space-y-2">
+          <div className="mb-3 space-y-2">
             <p className="text-sm font-semibold text-slate-800">{t('clientBrowse.requestModeLabel')}</p>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <RequestModeButton
@@ -314,7 +314,7 @@ export default function BrowseRequestSidebar({
           </div>
 
           {requestMode === 'direct' ? (
-            <div className="mb-4 space-y-2">
+            <div className="mb-3 space-y-2">
               <p className="text-sm font-semibold text-slate-800">{t('clientBrowse.selectNearbyProvider')}</p>
               <ProviderOptionList
                 t={t}

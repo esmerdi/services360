@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Star } from 'lucide-react';
+import { Filter, Search, Star } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
@@ -23,6 +23,7 @@ const CLIENT_NAV = [
 export default function ClientMyRequests() {
   const { user } = useAuth();
   const { t, language } = useI18n();
+  const es = language === 'es';
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<'all' | RequestStatus>('all');
   const [pageSize, setPageSize] = useState(10);
@@ -147,10 +148,10 @@ export default function ClientMyRequests() {
 
   return (
     <Layout navItems={CLIENT_NAV} title="My Requests">
-      <div className="page-header flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mb-5 flex flex-col gap-4 md:mb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="page-title">{t('myRequests.title')}</h1>
-          <p className="page-subtitle">{t('myRequests.subtitle')}</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{t('myRequests.title')}</h1>
+          <p className="mt-1 text-sm text-slate-600 md:text-base">{t('myRequests.subtitle')}</p>
         </div>
         <Link to="/client/browse" className="btn-primary">
           {t('common.newRequest')}
@@ -171,7 +172,12 @@ export default function ClientMyRequests() {
         </div>
       )}
 
-      <div className="mb-4 grid gap-4 lg:grid-cols-[1.2fr,0.8fr]">
+      <div className="mb-4 rounded-xl border border-slate-200 bg-white p-3 md:p-4">
+        <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
+          <Filter className="h-3.5 w-3.5" aria-hidden="true" />
+          {es ? 'Filtros' : 'Filters'}
+        </div>
+        <div className="grid gap-3 lg:grid-cols-[1.2fr,0.8fr]">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
@@ -189,6 +195,7 @@ export default function ClientMyRequests() {
             </option>
           ))}
         </select>
+        </div>
       </div>
 
       {error && <ErrorMessage message={error} className="mb-4" />}

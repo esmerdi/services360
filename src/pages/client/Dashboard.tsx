@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  MapPin, Search, ClipboardList, ArrowRight,
-  Clock, AlertCircle,
+  MapPin, ClipboardList, ArrowRight,
+  Clock, AlertCircle, ShieldCheck, Sparkles,
 } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -70,15 +70,15 @@ export default function ClientDashboard() {
 
   return (
     <Layout navItems={CLIENT_NAV} title="Dashboard">
-      <div className="mb-8 rounded-3xl border border-slate-200 bg-gradient-to-r from-sky-50 to-blue-50 p-6">
-        <h1 className="font-display text-3xl text-slate-900">
+      <div className="mb-5 rounded-2xl border border-slate-200 bg-gradient-to-r from-sky-50 to-cyan-50 p-5 md:mb-6 md:p-6">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">
           {t('clientDashboard.welcome')} {user?.full_name?.split(' ')[0] || t('clientDashboard.there')}
         </h1>
-        <p className="text-slate-600 mt-2">{t('clientDashboard.subtitle')}</p>
+        <p className="mt-1 text-sm text-slate-600 md:text-base">{t('clientDashboard.subtitle')}</p>
       </div>
 
       {!coords && !locLoading && (
-        <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+        <div className="mb-5 flex flex-col items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 sm:flex-row sm:items-center md:mb-6">
           <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0" />
           <div className="flex-1">
             <p className="text-sm font-medium text-amber-900">{t('clientDashboard.locationMissingTitle')}</p>
@@ -94,47 +94,47 @@ export default function ClientDashboard() {
       )}
 
       {coords && (
-        <div className="mb-6 flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-3.5 text-sm text-emerald-700">
-          <MapPin className="h-4 w-4 flex-shrink-0" />
+        <div className="mb-5 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700 md:mb-6">
+          <ShieldCheck className="h-4 w-4 flex-shrink-0" />
           {t('clientDashboard.locationDetected')}
         </div>
       )}
 
-      <div className="mb-8">
+      <div className="mb-5 md:mb-6">
         <Link
           to="/client/browse"
-          className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-3xl bg-gradient-to-r from-sky-600 to-blue-700 p-6 text-white shadow-lg transition-transform duration-300 hover:-translate-y-1"
+          className="flex flex-col items-start justify-between gap-4 rounded-2xl bg-gradient-to-r from-sky-600 to-blue-700 p-5 text-white shadow-lg transition-transform duration-300 hover:-translate-y-0.5 sm:flex-row sm:items-center"
         >
           <div>
-            <h2 className="font-display text-2xl">{t('clientDashboard.findServiceTitle')}</h2>
-            <p className="text-blue-100 mt-1">{t('clientDashboard.findServiceDesc')}</p>
+            <h2 className="text-xl font-semibold md:text-2xl">{t('clientDashboard.findServiceTitle')}</h2>
+            <p className="mt-1 text-sm text-blue-100 md:text-base">{t('clientDashboard.findServiceDesc')}</p>
           </div>
-          <div className="flex-shrink-0 flex items-center gap-2 font-semibold">
-            <Search className="h-5 w-5" />
+          <div className="flex flex-shrink-0 items-center gap-2 text-sm font-semibold md:text-base">
+            <Sparkles className="h-4 w-4 md:h-5 md:w-5" />
             {t('clientDashboard.browseNow')}
-            <ArrowRight className="h-5 w-5" />
+            <ArrowRight className="h-4 w-4 md:h-5 md:w-5" />
           </div>
         </Link>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mb-8">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 text-center shadow-sm">
-          <p className="font-display text-3xl text-slate-900">{stats.total}</p>
+      <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3 md:mb-6 md:gap-4">
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-2xl font-semibold text-slate-900">{stats.total}</p>
           <p className="text-xs text-slate-500 mt-1">{t('clientDashboard.stats.total')}</p>
         </div>
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-center shadow-sm">
-          <p className="font-display text-3xl text-amber-700">{stats.pending}</p>
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
+          <p className="text-2xl font-semibold text-amber-700">{stats.pending}</p>
           <p className="text-xs text-slate-500 mt-1">{t('clientDashboard.stats.pending')}</p>
         </div>
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-center shadow-sm">
-          <p className="font-display text-3xl text-emerald-700">{stats.completed}</p>
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
+          <p className="text-2xl font-semibold text-emerald-700">{stats.completed}</p>
           <p className="text-xs text-slate-500 mt-1">{t('clientDashboard.stats.completed')}</p>
         </div>
       </div>
 
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-display text-xl text-slate-900">{t('clientDashboard.recentRequests')}</h2>
+          <h2 className="text-base font-semibold text-slate-900 md:text-lg">{t('clientDashboard.recentRequests')}</h2>
           <Link to="/client/requests" className="text-sm text-blue-600 hover:underline flex items-center gap-1">
             {t('clientDashboard.viewAll')} <ArrowRight className="h-3.5 w-3.5" />
           </Link>
@@ -145,7 +145,7 @@ export default function ClientDashboard() {
             <LoadingSpinner />
           </div>
         ) : recentRequests.length === 0 ? (
-          <div className="card text-center py-10">
+          <div className="card py-10 text-center">
             <ClipboardList className="h-10 w-10 text-slate-300 mx-auto mb-3" />
             <p className="text-slate-400">{t('clientDashboard.noRequests')}</p>
             <Link to="/client/browse" className="btn-primary mt-4 inline-flex">
@@ -158,7 +158,7 @@ export default function ClientDashboard() {
               <Link
                 key={req.id}
                 to={`/client/requests/${req.id}`}
-                className="rounded-2xl border border-slate-200 bg-white p-5 flex items-center justify-between hover:border-blue-200 hover:shadow-md transition-all"
+                className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 transition-all hover:border-blue-200 hover:shadow-md"
               >
                 <div className="min-w-0">
                   <p className="font-medium text-slate-900 truncate">
