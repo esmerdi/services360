@@ -178,11 +178,11 @@ export default function Landing() {
             </span>
           </Link>
 
-          <nav className="relative z-[90] flex flex-col items-stretch gap-2">
-            <Link to="/login" className="btn-secondary px-4 text-sm text-center">
+          <nav className="relative z-[90] flex flex-col items-stretch gap-2 md:flex-row md:items-center md:gap-3">
+            <Link to="/login" className="btn-secondary px-4 text-sm text-center whitespace-nowrap">
               {t('common.signIn')}
             </Link>
-            <Link to="/register" className="btn-primary px-4 text-sm text-center">
+            <Link to="/register" className="btn-primary px-4 text-sm text-center whitespace-nowrap">
               {t('landing.startToday')}
             </Link>
           </nav>
