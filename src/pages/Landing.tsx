@@ -178,17 +178,20 @@ export default function Landing() {
             </span>
           </Link>
 
-          <nav className="relative z-[90] flex items-center gap-2 md:gap-3">
-            <LanguageSwitcher compact />
-            <Link to="/login" className="btn-secondary px-4 text-sm">
+          <nav className="relative z-[90] flex flex-col items-stretch gap-2">
+            <Link to="/login" className="btn-secondary px-4 text-sm text-center">
               {t('common.signIn')}
             </Link>
-            <Link to="/register" className="btn-primary px-4 text-sm">
+            <Link to="/register" className="btn-primary px-4 text-sm text-center">
               {t('landing.startToday')}
             </Link>
           </nav>
         </div>
       </header>
+
+      <div className="mx-auto flex w-full max-w-7xl justify-end px-4 pt-3 md:px-6">
+        <LanguageSwitcher mode="switch" />
+      </div>
 
       {/* ── HERO ───────────────────────────────────────────────── */}
       <section className="px-4 pb-16 pt-14 md:px-6 md:pt-20">
