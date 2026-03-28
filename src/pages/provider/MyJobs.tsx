@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { Briefcase, CheckCircle2, Clock3, Filter, XCircle } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
@@ -28,6 +29,7 @@ const NEXT_STATUS: Record<'accepted' | 'in_progress', RequestStatus> = {
 export default function ProviderMyJobs() {
   const { user } = useAuth();
   const { t, language } = useI18n();
+  const es = language === 'es';
   const [searchParams, setSearchParams] = useSearchParams();
   const [jobs, setJobs] = useState<ServiceRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,6 +72,21 @@ export default function ProviderMyJobs() {
     () => jobs.filter((job) => filter === 'all' || job.status === filter),
     [filter, jobs]
   );
+
+  const summary = useMemo(() => {
+    const accepted = jobs.filter((job) => job.status === 'accepted').length;
+    const inProgress = jobs.filter((job) => job.status === 'in_progress').length;
+    const completed = jobs.filter((job) => job.status === 'completed').length;
+    const cancelled = jobs.filter((job) => job.status === 'cancelled').length;
+
+    return {
+      total: jobs.length,
+      accepted,
+      inProgress,
+      completed,
+      cancelled,
+    };
+  }, [jobs]);
 
   const visibleJobs = useMemo(
     () => filteredJobs.slice(0, visibleCount),
@@ -154,23 +171,79 @@ export default function ProviderMyJobs() {
 
   return (
     <Layout navItems={PROVIDER_NAV} title="My Jobs">
-      <div className="page-header flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mb-5 flex flex-col gap-4 md:mb-6">
         <div>
-          <h1 className="page-title">{t('providerMyJobs.title')}</h1>
-          <p className="page-subtitle">{t('providerMyJobs.subtitle')}</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{t('providerMyJobs.title')}</h1>
+          <p className="mt-1 text-sm text-slate-600 md:text-base">{t('providerMyJobs.subtitle')}</p>
         </div>
-        <select className="input w-full sm:w-56" value={filter} onChange={(event) => setFilter(event.target.value as JobFilter)}>
-          <option value="all">{t('providerMyJobs.status.all')}</option>
-          <option value="accepted">{t('providerMyJobs.status.accepted')}</option>
-          <option value="in_progress">{t('providerMyJobs.status.in_progress')}</option>
-          <option value="completed">{t('providerMyJobs.status.completed')}</option>
-          <option value="cancelled">{t('providerMyJobs.status.cancelled')}</option>
-        </select>
+
+        <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-5">
+          <div className="rounded-xl border border-slate-200 bg-white p-3">
+            <div className="flex items-center gap-2 text-slate-500">
+              <Briefcase className="h-4 w-4" aria-hidden="true" />
+              <p className="text-[11px] uppercase tracking-wide">{es ? 'Total' : 'Total'}</p>
+            </div>
+            <p className="mt-1 text-xl font-semibold text-slate-900">{summary.total}</p>
+          </div>
+
+          <div className="rounded-xl border border-blue-200 bg-blue-50 p-3">
+            <div className="flex items-center gap-2 text-blue-700">
+              <Clock3 className="h-4 w-4" aria-hidden="true" />
+              <p className="text-[11px] uppercase tracking-wide">{t('providerMyJobs.status.accepted')}</p>
+            </div>
+            <p className="mt-1 text-xl font-semibold text-blue-900">{summary.accepted}</p>
+          </div>
+
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+            <div className="flex items-center gap-2 text-amber-700">
+              <Clock3 className="h-4 w-4" aria-hidden="true" />
+              <p className="text-[11px] uppercase tracking-wide">{t('providerMyJobs.status.in_progress')}</p>
+            </div>
+            <p className="mt-1 text-xl font-semibold text-amber-900">{summary.inProgress}</p>
+          </div>
+
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+            <div className="flex items-center gap-2 text-emerald-700">
+              <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+              <p className="text-[11px] uppercase tracking-wide">{t('providerMyJobs.status.completed')}</p>
+            </div>
+            <p className="mt-1 text-xl font-semibold text-emerald-900">{summary.completed}</p>
+          </div>
+
+          <div className="rounded-xl border border-rose-200 bg-rose-50 p-3">
+            <div className="flex items-center gap-2 text-rose-700">
+              <XCircle className="h-4 w-4" aria-hidden="true" />
+              <p className="text-[11px] uppercase tracking-wide">{t('providerMyJobs.status.cancelled')}</p>
+            </div>
+            <p className="mt-1 text-xl font-semibold text-rose-900">{summary.cancelled}</p>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600">
+            <Filter className="h-3.5 w-3.5" aria-hidden="true" />
+            {es
+              ? `Filtro activo: ${filter === 'all' ? 'Todos' : t(`providerMyJobs.status.${filter}`)}`
+              : `Active filter: ${filter === 'all' ? 'All' : t(`providerMyJobs.status.${filter}`)}`}
+          </div>
+
+          <select
+            className="input w-full sm:w-64"
+            value={filter}
+            onChange={(event) => setFilter(event.target.value as JobFilter)}
+          >
+            <option value="all">{t('providerMyJobs.status.all')}</option>
+            <option value="accepted">{t('providerMyJobs.status.accepted')}</option>
+            <option value="in_progress">{t('providerMyJobs.status.in_progress')}</option>
+            <option value="completed">{t('providerMyJobs.status.completed')}</option>
+            <option value="cancelled">{t('providerMyJobs.status.cancelled')}</option>
+          </select>
+        </div>
       </div>
 
       {error && <ErrorMessage message={error} className="mb-4" />}
       {successMessage && (
-        <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+        <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
           {successMessage}
         </div>
       )}
@@ -182,7 +255,7 @@ export default function ProviderMyJobs() {
       ) : (
         <div className="space-y-4">
           {filteredJobs.length === 0 && (
-            <div className="card">
+            <div className="card p-5">
               <p className="text-center text-slate-400">{t('providerMyJobs.noJobsForFilter')}</p>
             </div>
           )}

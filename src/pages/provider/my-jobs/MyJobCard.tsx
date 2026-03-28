@@ -1,4 +1,4 @@
-import { MessageCircle } from 'lucide-react';
+import { CalendarClock, FileText, MapPin, MessageCircle } from 'lucide-react';
 import StatusBadge from '../../../components/common/StatusBadge';
 import UserAvatar from '../../../components/common/UserAvatar';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
@@ -27,7 +27,7 @@ export default function MyJobCard({
   onOpenChat,
 }: MyJobCardProps) {
   return (
-    <div className="card p-4">
+    <div className="card p-4 md:p-5">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex items-start gap-3 min-w-0">
           <UserAvatar
@@ -38,40 +38,57 @@ export default function MyJobCard({
             fallbackClassName="text-xs font-semibold text-slate-600"
           />
           <div className="min-w-0">
-            <p className="text-xs text-slate-500">{job.service?.name || t('providerMyJobs.serviceRequest')}</p>
+            <p className="text-xs uppercase tracking-wide text-slate-500">{job.service?.name || t('providerMyJobs.serviceRequest')}</p>
             <h2 className="mt-0.5 truncate text-base font-semibold text-slate-900">{job.client?.full_name || t('roles.client')}</h2>
-            <p className="mt-1 text-sm text-slate-500 line-clamp-2">{job.description || t('providerMyJobs.noAdditionalDescription')}</p>
+            <p className="mt-1 inline-flex items-start gap-1.5 text-sm text-slate-500 line-clamp-2">
+              <FileText className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden="true" />
+              <span>{job.description || t('providerMyJobs.noAdditionalDescription')}</span>
+            </p>
           </div>
         </div>
         <StatusBadge status={job.status} />
       </div>
 
-      <div className="mt-3 grid gap-3 md:grid-cols-2">
-        <div className="surface-muted text-sm text-slate-600">
+      <div className="mt-3 grid gap-2.5 md:grid-cols-2">
+        <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-sm text-slate-600">
           <p className="font-medium text-slate-800">{t('providerMyJobs.address')}</p>
-          <p className="mt-1">{job.address || t('providerMyJobs.pendingDetails')}</p>
+          <p className="mt-1 inline-flex items-start gap-1.5">
+            <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-sky-600" aria-hidden="true" />
+            <span>{job.address || t('providerMyJobs.pendingDetails')}</span>
+          </p>
         </div>
-        <div className="surface-muted text-sm text-slate-600">
+        <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-sm text-slate-600">
           <p className="font-medium text-slate-800">{t('providerMyJobs.created')}</p>
-          <p className="mt-1">{formatDateTime(job.created_at, language)}</p>
+          <p className="mt-1 inline-flex items-center gap-1.5">
+            <CalendarClock className="h-3.5 w-3.5 text-slate-500" aria-hidden="true" />
+            <span>{formatDateTime(job.created_at, language)}</span>
+          </p>
         </div>
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2.5">
         {(job.status === 'accepted' || job.status === 'in_progress') && (
-          <button onClick={() => onUpdateStatus(job)} className="btn-primary !py-2 !px-3.5 text-sm" disabled={actingId === job.id}>
+          <button
+            onClick={() => onUpdateStatus(job)}
+            className="btn-primary !px-3.5 !py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
+            disabled={actingId === job.id}
+          >
             {actingId === job.id ? <LoadingSpinner size="sm" /> : job.status === 'accepted' ? t('providerMyJobs.startJob') : t('providerMyJobs.markCompleted')}
           </button>
         )}
         {job.status === 'accepted' && (
-          <button onClick={() => onRequestCancelReopen(job)} className="btn-secondary !py-2 !px-3.5 text-sm" disabled={actingId === job.id}>
+          <button
+            onClick={() => onRequestCancelReopen(job)}
+            className="btn-secondary !px-3.5 !py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
+            disabled={actingId === job.id}
+          >
             {actingId === job.id ? <LoadingSpinner size="sm" /> : t('providerMyJobs.cancelAndReopen')}
           </button>
         )}
         {(job.status === 'accepted' || job.status === 'in_progress') && job.client && (
           <button
             onClick={() => onOpenChat(job.id)}
-            className="btn-secondary !py-2 !px-3.5 text-sm flex items-center gap-2"
+            className="btn-secondary !px-3.5 !py-2 text-sm flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
           >
             <MessageCircle className="h-4 w-4" />
             {t('providerMyJobs.chatWithClient')}
