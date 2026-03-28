@@ -519,7 +519,7 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
                   setProfileMenuOpen((v) => !v);
                   setNotificationsOpen(false);
                 }}
-                className="flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-2.5 py-2.5 shadow-sm transition-all hover:shadow-md"
+                className="group flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-2 py-1.5 shadow-sm transition-all hover:border-sky-200 hover:shadow-md"
                 aria-haspopup="menu"
                 aria-expanded={profileMenuOpen}
                 aria-label={t('common.openProfileMenu')}
@@ -527,38 +527,41 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
                 <UserAvatar
                   avatarUrl={user?.avatar_url}
                   name={user?.full_name || user?.email}
-                  className="h-9 w-9 overflow-hidden rounded-full bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center flex-shrink-0"
+                  className="h-9 w-9 overflow-hidden rounded-xl border border-slate-200 bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center flex-shrink-0"
                   fallbackClassName="text-white text-xs font-semibold"
                 />
+                <div className="hidden min-w-0 text-left lg:block">
+                  <p className="max-w-[130px] truncate text-sm font-semibold text-slate-800">{user?.full_name || user?.email}</p>
+                  <p className="text-[11px] text-slate-500 capitalize">{translatedRole}</p>
+                </div>
                 <ChevronDown
                   className={clsx(
-                    'h-4 w-4 text-slate-500 transition-transform',
+                    'h-4 w-4 text-slate-500 transition-transform group-hover:text-slate-700',
                     profileMenuOpen && 'rotate-180'
                   )}
                 />
               </button>
 
               {profileMenuOpen && (
-                <div className="absolute right-0 top-12 z-[1300] mt-2 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ring-1 ring-slate-900/5">
-                <div className="border-b border-slate-200 px-4 py-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-medium text-slate-600">{t('common.welcomeBack')}</p>
-                  </div>
-                  <div className="mt-3 flex items-center gap-3">
+                <div className="absolute right-0 top-12 z-[1300] mt-2 w-[22rem] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl ring-1 ring-slate-900/5">
+                <div className="border-b border-slate-200 bg-gradient-to-r from-sky-50 to-cyan-50 px-4 py-4">
+                  <p className="text-xs font-medium uppercase tracking-[0.12em] text-slate-500">{t('common.welcomeBack')}</p>
+                  <div className="mt-2 flex items-center gap-3">
                     <UserAvatar
                       avatarUrl={user?.avatar_url}
                       name={user?.full_name || user?.email}
-                      className="h-11 w-11 overflow-hidden rounded-xl bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center shadow-sm"
+                      className="h-12 w-12 overflow-hidden rounded-xl border border-slate-200 bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center shadow-sm"
                       fallbackClassName="text-white text-sm font-semibold"
                     />
                     <div className="min-w-0">
-                      <p className="truncate text-lg font-semibold text-slate-900">{user?.full_name || user?.email}</p>
-                      <p className="mt-0.5 text-sm text-slate-500 capitalize">{translatedRole}</p>
+                      <p className="truncate text-base font-semibold text-slate-900">{user?.full_name || user?.email}</p>
+                      <p className="mt-0.5 text-xs text-slate-600 capitalize">{translatedRole}</p>
                     </div>
                   </div>
                 </div>
 
                 <div className="px-2 py-2">
+                  <p className="px-3 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">{t('common.currentView')}</p>
                   {quickLinks.map((item) => {
                     const Icon = getNavIcon(item.to, item.label);
 
@@ -567,25 +570,29 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
                         key={item.to}
                         to={item.to}
                         onClick={() => setProfileMenuOpen(false)}
-                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
+                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-sky-50 hover:text-sky-700"
                       >
-                        <Icon className="h-4 w-4 text-slate-500" />
+                        <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500">
+                          <Icon className="h-4 w-4" />
+                        </span>
                         <span className="truncate">{getTranslatedLabel(item.label)}</span>
                       </Link>
                     );
                   })}
-                                {user?.role !== 'admin' && (
-                                  <div className="border-t border-slate-100 px-2 py-2">
-                                    <Link
-                                      to={user?.role === 'client' ? '/client/profile' : '/provider/profile'}
-                                      onClick={() => setProfileMenuOpen(false)}
-                                      className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
-                                    >
-                                      <UserCircle className="h-4 w-4 text-slate-500" />
-                                      <span className="truncate">{getTranslatedLabel('Profile')}</span>
-                                    </Link>
-                                  </div>
-                                )}
+                  {user?.role !== 'admin' && (
+                    <div className="border-t border-slate-100 px-2 py-2">
+                      <Link
+                        to={user?.role === 'client' ? '/client/profile' : '/provider/profile'}
+                        onClick={() => setProfileMenuOpen(false)}
+                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-sky-50 hover:text-sky-700"
+                      >
+                        <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500">
+                          <UserCircle className="h-4 w-4" />
+                        </span>
+                        <span className="truncate">{getTranslatedLabel('Profile')}</span>
+                      </Link>
+                    </div>
+                  )}
                 </div>
 
                 <div className="border-t border-slate-200 px-2 py-2">
@@ -672,14 +679,14 @@ export default function Navbar({ navItems, title, sidebarOpen, onToggleSidebar }
                 setMobileOpen((v) => !v);
                 setNotificationsOpen(false);
               }}
-              className="flex items-center gap-1 rounded-2xl border border-slate-200 bg-white px-1.5 py-1.5 shadow-sm transition-all hover:shadow-md"
+              className="flex items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-1.5 py-1.5 shadow-sm transition-all hover:border-sky-200 hover:shadow-md"
               aria-label={t('common.openProfileMenu')}
               aria-expanded={mobileOpen}
             >
               <UserAvatar
                 avatarUrl={user?.avatar_url}
                 name={user?.full_name || user?.email}
-                className="h-8 w-8 overflow-hidden rounded-full bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center flex-shrink-0"
+                className="h-8 w-8 overflow-hidden rounded-xl border border-slate-200 bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center flex-shrink-0"
                 fallbackClassName="text-white text-[10px] font-semibold"
               />
               <ChevronDown
