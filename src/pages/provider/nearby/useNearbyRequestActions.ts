@@ -81,7 +81,15 @@ export function useNearbyRequestActions({
 
     if (updateError) {
       setActingId(null);
-      setError(updateError.message);
+      if (updateError.message.includes('FREE plan request quota reached')) {
+        setError(
+          es
+            ? 'Alcanzaste el límite de 10 solicitudes en este período de 30 días. Espera al próximo reinicio del cupo o actualiza a PRO.'
+            : 'You reached the 10-request limit for this 30-day period. Wait for the next quota reset or upgrade to PRO.'
+        );
+      } else {
+        setError(updateError.message);
+      }
       return;
     }
 

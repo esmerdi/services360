@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -104,6 +104,37 @@ export default function ProviderSubscription() {
 
   const es = language === 'es';
 
+  const quotaResetDate = useMemo(() => {
+    if (!subscription) return null;
+
+    if (subscription.plan?.name !== 'FREE') {
+      return subscription.end_date;
+    }
+
+    const features = (subscription.plan?.features ?? {}) as Record<string, unknown>;
+    const rawWindowDays = features.request_window_days;
+    const parsedWindowDays =
+      typeof rawWindowDays === 'number'
+        ? rawWindowDays
+        : typeof rawWindowDays === 'string'
+          ? Number(rawWindowDays)
+          : 30;
+
+    const requestWindowDays = Number.isFinite(parsedWindowDays) && parsedWindowDays > 0 ? parsedWindowDays : 30;
+
+    if (!subscription.start_date) return subscription.end_date;
+
+    const startDate = new Date(subscription.start_date);
+    if (Number.isNaN(startDate.getTime())) return subscription.end_date;
+
+    const cycleMs = requestWindowDays * 24 * 60 * 60 * 1000;
+    const elapsedMs = Date.now() - startDate.getTime();
+    const cycleIndex = elapsedMs > 0 ? Math.floor(elapsedMs / cycleMs) : 0;
+    const nextCycleDate = new Date(startDate.getTime() + (cycleIndex + 1) * cycleMs);
+
+    return nextCycleDate.toISOString();
+  }, [subscription]);
+
   return (
     <Layout navItems={PROVIDER_NAV} title="Subscription">
       <div className="page-header">
@@ -133,7 +164,7 @@ export default function ProviderSubscription() {
                 </div>
                 <div className="surface-muted">
                   <p className="text-xs uppercase tracking-wide text-slate-500">{subscription.plan?.name === 'FREE' ? (es ? 'Renovación del cupo' : 'Quota reset') : (es ? 'Finaliza' : 'Ends')}</p>
-                  <p className="mt-2 font-medium text-slate-900">{subscription.end_date ? formatDate(subscription.end_date, language) : (es ? 'Sin fecha de fin' : 'No end date')}</p>
+                  <p className="mt-2 font-medium text-slate-900">{quotaResetDate ? formatDate(quotaResetDate, language) : (es ? 'Sin fecha de fin' : 'No end date')}</p>
                 </div>
               </div>
             </div>
