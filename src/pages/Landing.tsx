@@ -180,10 +180,10 @@ export default function Landing() {
 
           <nav className="relative z-[90] flex items-center gap-2 md:gap-3">
             <LanguageSwitcher compact />
-            <Link to="/login" className="btn-secondary px-4 py-1.5 text-sm">
+            <Link to="/login" className="btn-secondary px-4 text-sm">
               {t('common.signIn')}
             </Link>
-            <Link to="/register" className="btn-primary px-4 py-1.5 text-sm">
+            <Link to="/register" className="btn-primary px-4 text-sm">
               {t('landing.startToday')}
             </Link>
           </nav>
