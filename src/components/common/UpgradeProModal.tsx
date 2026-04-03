@@ -11,9 +11,10 @@
  * ```
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, Check, Zap, AlertCircle } from 'lucide-react';
 import { useI18n } from '../../context/I18nContext';
+import { supabase } from '../../lib/supabase';
 import { getUpgradeProFeatures, getUpgradeProModalText } from '../../i18n/upgradeProModalText';
 
 interface UpgradeProModalProps {
@@ -33,6 +34,25 @@ export function UpgradeProModal({
   const content = getUpgradeProModalText(language);
   const proFeatures = getUpgradeProFeatures(language);
   const [isLoadingPayment, setIsLoadingPayment] = useState(false);
+  const [proPrice, setProPrice] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    supabase
+      .from('plans')
+      .select('price')
+      .eq('name', 'PRO')
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setProPrice(data.price as number);
+      });
+  }, [isOpen]);
+
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat(language === 'es' ? 'es-419' : 'en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(price);
 
   if (!isOpen) return null;
 
@@ -125,7 +145,9 @@ export function UpgradeProModal({
               <div className="mb-8 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 p-4 text-center border-2 border-purple-200">
                 <p className="text-sm text-gray-600">{content.comparePlan}</p>
                 <div className="mt-2 flex items-baseline justify-center gap-1">
-                  <span className="text-3xl font-bold text-gray-900">$9.99</span>
+                  <span className="text-3xl font-bold text-gray-900">
+                    {proPrice !== null ? `$${formatPrice(proPrice)}` : '...'}
+                  </span>
                   <span className="text-sm text-gray-600">{content.monthlySuffix}</span>
                 </div>
                 <p className="text-xs text-gray-500 mt-2">{content.noCommitments}</p>
