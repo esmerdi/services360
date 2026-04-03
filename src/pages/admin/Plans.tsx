@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Check, CircleDollarSign, Pencil, ShieldCheck, Sparkles } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -6,7 +6,7 @@ import ErrorMessage from '../../components/common/ErrorMessage';
 import Modal from '../../components/common/Modal';
 import { supabase } from '../../lib/supabase';
 import { useI18n } from '../../context/I18nContext';
-import { formatCurrency, formatPlanFeature } from '../../utils/helpers';
+import { formatPlanFeature } from '../../utils/helpers';
 import type { Plan } from '../../types';
 
 const ADMIN_NAV = [
@@ -106,6 +106,14 @@ export default function AdminPlans() {
   };
 
   const es = language === 'es';
+  const formatPlanAmount = useCallback((value: number) => {
+    const locale = language === 'es' ? 'es-419' : 'en-US';
+    return new Intl.NumberFormat(locale, {
+      minimumFractionDigits: value % 1 === 0 ? 0 : 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  }, [language]);
+
   const freePlans = plans.filter((plan) => plan.price === 0).length;
   const maxPrice = plans.reduce((max, plan) => Math.max(max, plan.price), 0);
   const quotaPreview = useMemo(() => {
@@ -155,7 +163,7 @@ export default function AdminPlans() {
             </div>
             <div className="rounded-xl border border-sky-200 bg-sky-50 p-4 shadow-sm">
               <p className="text-[11px] uppercase tracking-[0.08em] text-sky-700">{es ? 'Precio máximo' : 'Highest price'}</p>
-              <p className="mt-1 text-lg font-semibold tracking-tight text-sky-800">{maxPrice > 0 ? formatCurrency(maxPrice, language) : (es ? 'Sin costo' : 'No cost')}</p>
+              <p className="mt-1 text-lg font-semibold tracking-tight text-sky-800">{maxPrice > 0 ? `${formatPlanAmount(maxPrice)} USD` : (es ? 'Sin costo' : 'No cost')}</p>
             </div>
           </div>
 
@@ -209,8 +217,8 @@ export default function AdminPlans() {
                           <span>{es ? 'Gratis' : 'Free'}</span>
                         ) : (
                           <>
-                            {formatCurrency(plan.price, language)}
-                            <span className="text-base font-normal text-slate-500">/{es ? 'mes' : 'mo'}</span>
+                            {formatPlanAmount(plan.price)} USD
+                            <span className="text-base font-normal text-slate-500"> / {es ? 'mes' : 'mo'}</span>
                           </>
                         )}
                       </p>

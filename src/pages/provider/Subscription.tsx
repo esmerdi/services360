@@ -15,7 +15,7 @@ import ErrorMessage from '../../components/common/ErrorMessage';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
-import { formatCurrency, formatDate, formatPlanFeature } from '../../utils/helpers';
+import { formatDate, formatPlanFeature } from '../../utils/helpers';
 import type { Plan, Subscription, SubscriptionStatus } from '../../types';
 
 const PROVIDER_NAV = [
@@ -137,6 +137,13 @@ export default function ProviderSubscription() {
   }
 
   const es = language === 'es';
+  const formatPlanAmount = useMemo(() => {
+    const locale = language === 'es' ? 'es-419' : 'en-US';
+    return (value: number) => new Intl.NumberFormat(locale, {
+      minimumFractionDigits: value % 1 === 0 ? 0 : 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  }, [language]);
 
   const quotaResetDate = useMemo(() => {
     if (!subscription) return null;
@@ -337,7 +344,7 @@ export default function ProviderSubscription() {
                     <h2 className="text-lg font-semibold text-slate-900">{plan.name}</h2>
                     <div className="flex items-end gap-1.5">
                       <p className={`text-2xl font-bold leading-none md:text-[2rem] ${palette.accent}`}>
-                        {plan.price === 0 ? (es ? 'Gratis' : 'Free') : formatCurrency(plan.price, language)}
+                        {plan.price === 0 ? (es ? 'Gratis' : 'Free') : `${formatPlanAmount(plan.price)} USD`}
                       </p>
                       <span className="pb-0.5 text-sm text-slate-500">
                         {plan.price === 0 ? (es ? 'sin caducidad' : 'no expiration') : `/${es ? 'mes' : 'mo'}`}
