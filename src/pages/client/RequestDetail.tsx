@@ -33,6 +33,7 @@ const OPEN_REQUEST_FALLBACK_MINUTES = Number.isFinite(openRequestFallbackMinutes
   : 5;
 
 type DetailTab = 'overview' | 'timeline' | 'location';
+type LiveCoords = { latitude: number; longitude: number };
 
 function isDetailTab(value: string | null): value is DetailTab {
   return value === 'overview' || value === 'timeline' || value === 'location';
@@ -64,6 +65,9 @@ export default function ClientRequestDetail() {
   const [providerServiceTags, setProviderServiceTags] = useState<string[]>([]);
   const [providerServiceTagsReady, setProviderServiceTagsReady] = useState(true);
   const [providerServiceTagsCache, setProviderServiceTagsCache] = useState<Record<string, string[]>>({});
+  const [providerLiveCoords, setProviderLiveCoords] = useState<LiveCoords | null>(null);
+  const [providerLiveUpdatedAt, setProviderLiveUpdatedAt] = useState<number | null>(null);
+  const [liveClock, setLiveClock] = useState(Date.now());
 
   const categoryMap = useMemo(
     () => new Map(categories.map((category) => [category.id, category] as const)),
@@ -110,22 +114,35 @@ export default function ClientRequestDetail() {
   }, [canSwitchToOpenRequest, request, user]);
 
   const requestMarkers = useMemo(() => {
-    if (
-      !request ||
-      request.latitude === null ||
-      request.latitude === undefined ||
-      request.longitude === null ||
-      request.longitude === undefined
-    ) {
-      return [];
-    }
+    if (!request) return [];
 
-    const markers: LocationMapMarker[] = [
-      {
+    const markers: LocationMapMarker[] = [];
+
+    if (
+      request.latitude !== null
+      && request.latitude !== undefined
+      && request.longitude !== null
+      && request.longitude !== undefined
+    ) {
+      markers.push({
         id: request.id,
         latitude: request.latitude,
         longitude: request.longitude,
-        label: request.provider?.full_name || request.provider?.email || request.service?.name || t('clientRequestDetail.serviceRequest'),
+        label: request.service?.name || t('clientRequestDetail.serviceRequest'),
+        description: `${getCategoryPath(request.service?.category_id)} • ${request.address || t('clientRequestDetail.notProvided')}`,
+        serviceTags: providerServiceTags.length > 0 ? providerServiceTags : undefined,
+        color: getCategoryMarkerColor(request.service?.category_id),
+        radius: 10,
+        glyph: getCategoryMarkerGlyph(request.service?.category?.icon, request.service?.category?.name),
+      });
+    }
+
+    if (providerLiveCoords && request.provider_id && ['accepted', 'in_progress'].includes(request.status)) {
+      markers.push({
+        id: `provider-live-${request.provider_id}`,
+        latitude: providerLiveCoords.latitude,
+        longitude: providerLiveCoords.longitude,
+        label: request.provider?.full_name || request.provider?.email || t('clientRequestDetail.provider'),
         badgeText: !request.provider?.ratings_count || request.provider.ratings_count <= 0
           ? t('clientRequestDetail.newProviderBadge')
           : Number(request.provider.avg_rating ?? 0) >= 4.8
@@ -141,16 +158,100 @@ export default function ClientRequestDetail() {
           ? `${t('clientRequestDetail.providerRatingTitle')}: ${Number(request.provider.avg_rating ?? 0).toFixed(1)} (${request.provider.ratings_count})`
           : t('clientRequestDetail.noRatingsYet'),
         hasRating: Boolean(request.provider?.ratings_count && request.provider.ratings_count > 0),
-        description: `${getCategoryPath(request.service?.category_id)} • ${request.address || t('clientRequestDetail.notProvided')}`,
-        serviceTags: providerServiceTags.length > 0 ? providerServiceTags : undefined,
-        color: getCategoryMarkerColor(request.service?.category_id),
-        radius: 10,
-        glyph: getCategoryMarkerGlyph(request.service?.category?.icon, request.service?.category?.name),
-      },
-    ];
+        description: t('clientRequestDetail.provider'),
+        color: '#0284c7',
+        radius: 9,
+        glyph: 'P',
+      });
+    }
 
     return markers;
-  }, [getCategoryPath, providerServiceTags, request, t]);
+  }, [getCategoryPath, providerLiveCoords, providerServiceTags, request, t]);
+
+  const isProviderLiveTrackingEnabled = Boolean(
+    request
+    && request.provider_id
+    && ['accepted', 'in_progress'].includes(request.status)
+  );
+
+  const providerLiveAgeSeconds = providerLiveUpdatedAt
+    ? Math.max(0, Math.floor((liveClock - providerLiveUpdatedAt) / 1000))
+    : null;
+
+  useEffect(() => {
+    if (!isProviderLiveTrackingEnabled || !providerLiveUpdatedAt) return;
+
+    const timerId = window.setInterval(() => {
+      setLiveClock(Date.now());
+    }, 1000);
+
+    return () => {
+      window.clearInterval(timerId);
+    };
+  }, [isProviderLiveTrackingEnabled, providerLiveUpdatedAt]);
+
+  useEffect(() => {
+    const providerId = request?.provider_id;
+    const trackingEnabled = Boolean(request && ['accepted', 'in_progress'].includes(request.status));
+
+    if (!providerId || !trackingEnabled) {
+      setProviderLiveCoords(null);
+      setProviderLiveUpdatedAt(null);
+      return;
+    }
+
+    let active = true;
+
+    const applyProviderCoords = (latitude: number, longitude: number) => {
+      setProviderLiveCoords({ latitude, longitude });
+      setProviderLiveUpdatedAt(Date.now());
+    };
+
+    const loadProviderLocation = async () => {
+      const { data, error } = await supabase
+        .from('locations')
+        .select('latitude, longitude')
+        .eq('user_id', providerId)
+        .maybeSingle();
+
+      if (!active || error || !data) return;
+
+      const latitude = Number((data as { latitude: number }).latitude);
+      const longitude = Number((data as { longitude: number }).longitude);
+      if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+        applyProviderCoords(latitude, longitude);
+      }
+    };
+
+    void loadProviderLocation();
+
+    const channel = supabase
+      .channel(`provider-location-${request.id}-${providerId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'locations', filter: `user_id=eq.${providerId}` },
+        (payload) => {
+          const next = payload.new as { latitude?: number; longitude?: number } | null;
+          if (next && typeof next.latitude === 'number' && typeof next.longitude === 'number') {
+            applyProviderCoords(next.latitude, next.longitude);
+            return;
+          }
+
+          void loadProviderLocation();
+        }
+      )
+      .subscribe();
+
+    const pollingId = window.setInterval(() => {
+      void loadProviderLocation();
+    }, 20000);
+
+    return () => {
+      active = false;
+      window.clearInterval(pollingId);
+      void supabase.removeChannel(channel);
+    };
+  }, [request]);
 
   useEffect(() => {
     const providerId = request?.provider_id;
@@ -434,6 +535,27 @@ export default function ClientRequestDetail() {
                   <MapPin className="h-4 w-4 text-sky-600" aria-hidden="true" />
                   {t('clientRequestDetail.requestInfo')}
                 </h2>
+
+                {isProviderLiveTrackingEnabled && (
+                  <div className="mt-3 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.08em] text-sky-700">
+                      {t('clientRequestDetail.providerLiveLocationTitle')}
+                    </p>
+                    <p className="mt-1 text-xs text-sky-800">
+                      {providerLiveCoords
+                        ? t('clientRequestDetail.providerLiveLocationActive')
+                        : t('clientRequestDetail.providerLiveLocationWaiting')}
+                    </p>
+                    {providerLiveCoords && providerLiveAgeSeconds !== null && (
+                      <p className="mt-1 text-[11px] text-sky-700/90">
+                        {providerLiveAgeSeconds <= 0
+                          ? t('clientRequestDetail.providerLiveLocationUpdatedNow')
+                          : t('clientRequestDetail.providerLiveLocationUpdatedSeconds').replace('{{seconds}}', String(providerLiveAgeSeconds))}
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 <dl className="mt-3 space-y-2.5 text-sm">
                   <div className="flex flex-col gap-0.5 sm:flex-row sm:justify-between sm:gap-3">
                     <dt className="text-slate-500">{t('clientRequestDetail.address')}</dt>
