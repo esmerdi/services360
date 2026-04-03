@@ -2,50 +2,67 @@
 -- Services 360 - Reset Admin Password RPC
 -- =============================================
 -- Provides a secure RPC to reset the admin user password.
--- Usage: SELECT public.reset_admin_password('new_password');
+-- Requires: pgcrypto extension for crypt() and gen_salt()
+-- Usage: SELECT public.reset_admin_password('admin@services360.com', 'new_password');
+
+-- Enable pgcrypto extension if not already enabled
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 DO $$
 BEGIN
-  -- Drop the function if it already exists to avoid conflicts
+  -- Drop possible previous signatures to avoid parameter-name conflicts
+  DROP FUNCTION IF EXISTS public.reset_admin_password(text, text);
   DROP FUNCTION IF EXISTS public.reset_admin_password(text);
 EXCEPTION WHEN OTHERS THEN
   NULL;
 END $$;
 
-CREATE OR REPLACE FUNCTION public.reset_admin_password(new_password text)
-RETURNS json
+CREATE OR REPLACE FUNCTION public.reset_admin_password(
+  p_target_email text,
+  p_new_password text
+)
+RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_count int;
-  v_message text;
+  v_salt text := gen_salt('bf');
+  v_found_email text;
 BEGIN
-  -- Validate password is not empty
-  IF new_password IS NULL OR new_password = '' THEN
-    RETURN json_build_object('success', false, 'message', 'Password cannot be empty');
+  -- Validate input early
+  IF p_new_password IS NULL OR p_new_password = '' THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'message', 'Password cannot be empty'
+    );
   END IF;
 
   -- Validate password length (minimum 6 characters)
-  IF LENGTH(new_password) < 6 THEN
-    RETURN json_build_object('success', false, 'message', 'Password must be at least 6 characters');
+  IF char_length(p_new_password) < 6 THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'message', 'Password must be at least 6 characters'
+    );
   END IF;
 
-  -- Update the admin user's password
+  -- Update exactly one user (if it exists) and capture whether it matched
   UPDATE auth.users
-  SET encrypted_password = crypt(new_password, gen_salt('bf'))
-  WHERE email = 'admin@services360.com';
+  SET encrypted_password = crypt(p_new_password, v_salt)
+  WHERE email = p_target_email
+  RETURNING email INTO v_found_email;
 
-  GET DIAGNOSTICS v_count = ROW_COUNT;
-
-  IF v_count = 0 THEN
-    v_message := 'Admin user (admin@services360.com) not found';
-    RETURN json_build_object('success', false, 'message', v_message);
+  IF v_found_email IS NULL THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'message', 'User not found'
+    );
   END IF;
 
-  v_message := 'Admin password updated successfully';
-  RETURN json_build_object('success', true, 'message', v_message);
+  RETURN jsonb_build_object(
+    'success', true,
+    'message', 'Password updated successfully'
+  );
 END;
 $$;
 
@@ -54,6 +71,6 @@ $$;
 
 -- ──────────────────────────────────────────────────────────────────────────────
 -- Usage example:
--- SELECT public.reset_admin_password('admin123');
--- Returns: {"success": true, "message": "Admin password updated successfully"}
+-- SELECT public.reset_admin_password('admin@services360.com', 'admin123');
+-- Returns: {"success": true, "message": "Password updated successfully"}
 -- ──────────────────────────────────────────────────────────────────────────────
