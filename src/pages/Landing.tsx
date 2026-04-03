@@ -40,6 +40,7 @@ export default function Landing() {
   const [landingStats, setLandingStats] = React.useState<LandingStats | null>(null);
   const [landingPlans, setLandingPlans] = React.useState<LandingPlan[]>([]);
   const [planTab, setPlanTab] = React.useState<'providers' | 'clients'>('providers');
+  const [aboutExpanded, setAboutExpanded] = React.useState(false);
 
   React.useEffect(() => {
     if (user) {
@@ -343,6 +344,35 @@ export default function Landing() {
                 <p className="mt-1 text-2xl font-semibold">{t('landing.quickResponseValue')}</p>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── ABOUT ─────────────────────────────────────────────── */}
+      <section className="px-4 pb-10 md:px-6 md:pb-12">
+        <div className="mx-auto max-w-5xl rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-[0_14px_32px_-24px_rgba(15,23,42,0.45)] md:p-6">
+          <div className="mb-3 flex items-center gap-3">
+            <span className="h-px flex-1 bg-slate-200" />
+            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+              {text.aboutLabel}
+            </span>
+            <span className="h-px flex-1 bg-slate-200" />
+          </div>
+
+          <h2 className="font-display text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">
+            {text.aboutTitle}
+          </h2>
+
+          <div className="mt-4 space-y-3 text-sm leading-relaxed text-slate-600 md:text-base">
+            <p>{text.aboutParagraph1}</p>
+            <p className={aboutExpanded ? 'block' : 'hidden md:block'}>{text.aboutParagraph2}</p>
+            <button
+              type="button"
+              onClick={() => setAboutExpanded((current) => !current)}
+              className="text-sm font-medium text-sky-700 hover:text-sky-800 md:hidden"
+            >
+              {aboutExpanded ? text.aboutReadLess : text.aboutReadMore}
+            </button>
           </div>
         </div>
       </section>
