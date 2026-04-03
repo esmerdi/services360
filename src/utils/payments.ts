@@ -10,6 +10,51 @@
  */
 
 import crypto from 'crypto';
+import type { SupabaseClient } from '@supabase/supabase-js';
+
+type JsonMap = Record<string, unknown>;
+
+interface HotmartWebhookPayload {
+  type?: string;
+  data?: {
+    id?: string;
+    transaction_id?: string;
+    price?: number;
+    currency?: string;
+    product_id?: string;
+    status?: string;
+    customer?: {
+      email?: string;
+    };
+  };
+}
+
+interface StripeWebhookPayload {
+  id?: string;
+  type?: string;
+  data?: {
+    object?: {
+      amount?: number;
+      currency?: string;
+      customer?: string;
+      receipt_email?: string;
+      status?: string;
+      billing_details?: {
+        email?: string;
+      };
+      metadata?: {
+        email?: string;
+      };
+      plan?: {
+        amount?: number;
+      };
+    };
+  };
+}
+
+interface PaymentMetadata extends JsonMap {
+  userId?: string;
+}
 
 export interface PaymentWebhookPayload {
   provider: 'hotmart' | 'stripe';
@@ -18,7 +63,7 @@ export interface PaymentWebhookPayload {
   userEmail: string;
   amount: number;
   currency: string;
-  metadata: Record<string, unknown>;
+  metadata: PaymentMetadata;
 }
 
 /**
@@ -47,8 +92,14 @@ export function validateStripeSignature(
   signature: string,
   secret: string
 ): boolean {
-  // Stripe format: timestamp.signature
-  const [timestamp, sig] = signature.split(',')[0].split('=')[1].split('.');
+  const headerParts = signature.split(',');
+  const timestamp = headerParts.find((part) => part.startsWith('t='))?.slice(2);
+  const sig = headerParts.find((part) => part.startsWith('v1='))?.slice(3);
+
+  if (!timestamp || !sig) {
+    return false;
+  }
+
   const signedContent = `${timestamp}.${body}`;
   
   const hash = crypto
@@ -62,12 +113,12 @@ export function validateStripeSignature(
 /**
  * Extract payment data from Hotmart webhook
  */
-export function parseHotmartWebhook(payload: any): PaymentWebhookPayload {
+export function parseHotmartWebhook(payload: HotmartWebhookPayload): PaymentWebhookPayload {
   return {
     provider: 'hotmart',
-    eventType: payload.type, // 'purchase', 'chargeback', etc.
-    externalId: payload.data?.id || payload.data?.transaction_id,
-    userEmail: payload.data?.customer?.email,
+    eventType: payload.type || '',
+    externalId: payload.data?.id || payload.data?.transaction_id || '',
+    userEmail: payload.data?.customer?.email || '',
     amount: payload.data?.price || 0,
     currency: payload.data?.currency || 'USD',
     metadata: {
@@ -81,30 +132,31 @@ export function parseHotmartWebhook(payload: any): PaymentWebhookPayload {
 /**
  * Extract payment data from Stripe webhook
  */
-export function parseStripeWebhook(payload: any): PaymentWebhookPayload {
+export function parseStripeWebhook(payload: StripeWebhookPayload): PaymentWebhookPayload {
   const event = payload;
+  const eventObject = event.data?.object;
   let userEmail = '';
   let amount = 0;
 
   if (event.type === 'charge.succeeded') {
-    userEmail = event.data.object.billing_details?.email || event.data.object.receipt_email;
-    amount = event.data.object.amount / 100; // Stripe uses cents
+    userEmail = eventObject?.billing_details?.email || eventObject?.receipt_email || '';
+    amount = (eventObject?.amount || 0) / 100; // Stripe uses cents
   } else if (event.type === 'customer.subscription.updated') {
-    userEmail = event.data.object.metadata?.email;
-    amount = (event.data.object.plan?.amount || 0) / 100;
+    userEmail = eventObject?.metadata?.email || '';
+    amount = (eventObject?.plan?.amount || 0) / 100;
   }
 
   return {
     provider: 'stripe',
-    eventType: event.type,
-    externalId: event.id,
+    eventType: event.type || '',
+    externalId: event.id || '',
     userEmail,
     amount,
-    currency: event.data.object?.currency || 'USD',
+    currency: eventObject?.currency || 'USD',
     metadata: {
       stripeEventId: event.id,
-      stripeCustomerId: event.data.object?.customer,
-      status: event.data.object?.status,
+      stripeCustomerId: eventObject?.customer,
+      status: eventObject?.status,
     },
   };
 }
@@ -143,7 +195,7 @@ export function generateTempPassword(): string {
  * Call this from your backend after webhook validation
  */
 export async function processPaymentWebhook(
-  supabaseClient: any,
+  supabaseClient: SupabaseClient,
   paymentData: PaymentWebhookPayload,
   planId: string
 ) {
@@ -183,7 +235,7 @@ export async function processPaymentWebhook(
     return {
       success: true,
       webhookId: webhookLog?.webhook_id,
-      tempPassword: activation?.temp_password,
+      subscriptionId: activation?.subscription_id,
       userEmail: activation?.email,
     };
   } catch (error) {

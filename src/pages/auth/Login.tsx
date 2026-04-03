@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Eye, EyeOff, LogIn, MailWarning, ShieldCheck, Sparkles } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
+import { getAuthPagesText } from '../../i18n/authPagesText';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import LanguageSwitcher from '../../components/common/LanguageSwitcher';
@@ -10,8 +11,8 @@ import LanguageSwitcher from '../../components/common/LanguageSwitcher';
 export default function Login() {
   const { signIn, user } = useAuth();
   const { t, language } = useI18n();
+  const text = getAuthPagesText(language).login;
   const navigate = useNavigate();
-  const es = language === 'es';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,12 +22,8 @@ export default function Login() {
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
 
   const trustPoints = React.useMemo(
-    () => [
-      es ? 'Acceso seguro y cifrado.' : 'Secure and encrypted access.',
-      es ? 'Perfiles verificados en la plataforma.' : 'Verified profiles across the platform.',
-      es ? 'Soporte para clientes y proveedores.' : 'Support for clients and providers.',
-    ],
-    [es]
+    () => text.trustPoints,
+    [text.trustPoints]
   );
 
   // If already logged in, redirect
@@ -80,14 +77,10 @@ export default function Login() {
             <div className="mt-10 rounded-2xl border border-slate-200 bg-gradient-to-br from-sky-50 to-cyan-50 p-5">
               <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-sky-700">
                 <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-                {es ? 'Ingreso rápido y seguro' : 'Fast and secure sign-in'}
+                {text.badge}
               </div>
               <h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">{t('login.subtitle')}</h2>
-              <p className="mt-2 text-sm text-slate-600">
-                {es
-                  ? 'Gestiona solicitudes, mensajes y seguimiento en un solo panel.'
-                  : 'Manage requests, messages, and tracking from one dashboard.'}
-              </p>
+              <p className="mt-2 text-sm text-slate-600">{text.supportingCopy}</p>
             </div>
 
             <ul className="mt-6 space-y-3 text-sm text-slate-700">
@@ -101,7 +94,7 @@ export default function Login() {
 
             <Link to="/" className="mt-auto inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-800">
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-              {es ? 'Volver al inicio' : 'Back to home'}
+              {text.backHome}
             </Link>
           </aside>
 

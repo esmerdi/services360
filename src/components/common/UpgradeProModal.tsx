@@ -13,7 +13,8 @@
 
 import React, { useState } from 'react';
 import { X, Check, Zap, AlertCircle } from 'lucide-react';
-import { useI18n } from '../context/I18nContext';
+import { useI18n } from '../../context/I18nContext';
+import { getUpgradeProFeatures, getUpgradeProModalText } from '../../i18n/upgradeProModalText';
 
 interface UpgradeProModalProps {
   isOpen: boolean;
@@ -28,34 +29,12 @@ export function UpgradeProModal({
   currentPlan,
   onProceedToPayment,
 }: UpgradeProModalProps) {
-  const { t, language } = useI18n();
+  const { language } = useI18n();
+  const content = getUpgradeProModalText(language);
+  const proFeatures = getUpgradeProFeatures(language);
   const [isLoadingPayment, setIsLoadingPayment] = useState(false);
 
   if (!isOpen) return null;
-
-  // PRO features list
-  const proFeatures = [
-    {
-      es: 'Solicitudes ilimitadas por mes',
-      en: 'Unlimited requests per month',
-    },
-    {
-      es: 'Prioridad en búsquedas',
-      en: 'Priority in searches',
-    },
-    {
-      es: 'Perfil destacado',
-      en: 'Featured profile',
-    },
-    {
-      es: 'Chat prioritario',
-      en: 'Priority chat support',
-    },
-    {
-      es: 'Sin comisión de la plataforma',
-      en: 'No platform commission',
-    },
-  ];
 
   const handleProceedToPayment = async () => {
     setIsLoadingPayment(true);
@@ -63,8 +42,13 @@ export function UpgradeProModal({
     try {
       // TODO: Get Hotmart affiliate link from environment variables
       // HOTMART_AFFILIATE_LINK points to your product in Hotmart sandbox/production
-      const hotmartLink = process.env.REACT_APP_HOTMART_AFFILIATE_LINK ||
+      const hotmartLink = import.meta.env.VITE_HOTMART_SANDBOX_AFFILIATE_LINK ||
         'https://sandbox.hotmart.com/YOUR_PRODUCT_ID'; // Replace with your Hotmart product ID
+
+      if (hotmartLink.includes('YOUR_PRODUCT_ID')) {
+        alert(content.missingLink);
+        return;
+      }
 
       // Optional: Track conversion event
       if (onProceedToPayment) {
@@ -75,34 +59,11 @@ export function UpgradeProModal({
       window.location.href = hotmartLink;
     } catch (error) {
       console.error('Error proceeding to payment:', error);
-      alert(language === 'es' ? 'Error al procesar' : 'Error processing');
+      alert(content.processingError);
     } finally {
       setIsLoadingPayment(false);
     }
   };
-
-  const modalContent = {
-    es: {
-      title: '¡Actualiza a PRO!',
-      subtitle: 'Obtén acceso ilimitado y visibilidad mejorada',
-      currentPlanLabel: 'Tu plan actual',
-      comparePlan: 'Por solo $9.99 USD/mes',
-      proceedButton: 'Ir al pago seguro',
-      alreadyPro: 'Ya tienes plan PRO',
-      notAvailable: 'Este cambio no está disponible',
-    },
-    en: {
-      title: 'Upgrade to PRO!',
-      subtitle: 'Get unlimited access and improved visibility',
-      currentPlanLabel: 'Your current plan',
-      comparePlan: 'For only $9.99 USD/month',
-      proceedButton: 'Go to secure payment',
-      alreadyPro: 'You already have PRO plan',
-      notAvailable: 'This change is not available',
-    },
-  };
-
-  const content = modalContent[language];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -141,22 +102,20 @@ export function UpgradeProModal({
                 </p>
                 <div className="rounded-lg border-2 border-gray-200 bg-gray-50 px-4 py-3">
                   <p className="font-semibold text-gray-900">FREE</p>
-                  <p className="text-xs text-gray-600 mt-1">3 requests per day / 90 per month</p>
+                  <p className="text-xs text-gray-600 mt-1">{content.freePlanQuota}</p>
                 </div>
               </div>
 
               {/* PRO Features */}
               <div className="mb-8">
                 <h3 className="text-sm font-semibold text-gray-700 mb-4">
-                  {language === 'es' ? 'Plan PRO incluye:' : 'PRO plan includes:'}
+                  {content.includesTitle}
                 </h3>
                 <ul className="space-y-3">
                   {proFeatures.map((feature, idx) => (
                     <li key={idx} className="flex items-start gap-3">
                       <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm text-gray-700">
-                        {language === 'es' ? feature.es : feature.en}
-                      </span>
+                      <span className="text-sm text-gray-700">{feature}</span>
                     </li>
                   ))}
                 </ul>
@@ -167,23 +126,19 @@ export function UpgradeProModal({
                 <p className="text-sm text-gray-600">{content.comparePlan}</p>
                 <div className="mt-2 flex items-baseline justify-center gap-1">
                   <span className="text-3xl font-bold text-gray-900">$9.99</span>
-                  <span className="text-sm text-gray-600">USD/mes</span>
+                  <span className="text-sm text-gray-600">{content.monthlySuffix}</span>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  {language === 'es'
-                    ? 'Sin compromisos. Cancela cuando quieras.'
-                    : 'No commitments. Cancel anytime.'}
-                </p>
+                <p className="text-xs text-gray-500 mt-2">{content.noCommitments}</p>
+              </div>
+
+              <div className="mb-8 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                {content.paymentNotice}
               </div>
 
               {/* Security Notice */}
               <div className="mb-8 flex items-start gap-2 rounded-lg bg-blue-50 p-3 border-l-4 border-blue-400">
                 <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-blue-700">
-                  {language === 'es'
-                    ? 'Pago seguro procesado por Hotmart. Tu información está protegida.'
-                    : 'Secure payment processed by Hotmart. Your data is protected.'}
-                </p>
+                <p className="text-sm text-blue-700">{content.securityNotice}</p>
               </div>
 
               {/* CTA Buttons */}
@@ -192,7 +147,7 @@ export function UpgradeProModal({
                   onClick={onClose}
                   className="flex-1 px-4 py-2 border-2 border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition"
                 >
-                  {language === 'es' ? 'Cancelar' : 'Cancel'}
+                  {content.cancel}
                 </button>
                 <button
                   onClick={handleProceedToPayment}
@@ -202,7 +157,7 @@ export function UpgradeProModal({
                   {isLoadingPayment ? (
                     <>
                       <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      {language === 'es' ? 'Procesando...' : 'Processing...'}
+                      {content.processing}
                     </>
                   ) : (
                     <>

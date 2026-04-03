@@ -8,6 +8,7 @@ import ChatWindow from '../../components/common/ChatWindow';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
+import { getProviderMyJobsPageText } from '../../i18n/providerMyJobsPageText';
 import type { RequestStatus, ServiceRequest } from '../../types';
 import MyJobCard from './my-jobs/MyJobCard';
 import ReopenRequestModal from './my-jobs/ReopenRequestModal';
@@ -29,7 +30,7 @@ const NEXT_STATUS: Record<'accepted' | 'in_progress', RequestStatus> = {
 export default function ProviderMyJobs() {
   const { user } = useAuth();
   const { t, language } = useI18n();
-  const es = language === 'es';
+  const text = getProviderMyJobsPageText(language);
   const [searchParams, setSearchParams] = useSearchParams();
   const [jobs, setJobs] = useState<ServiceRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -181,7 +182,7 @@ export default function ProviderMyJobs() {
           <div className="rounded-xl border border-slate-200 bg-white p-3">
             <div className="flex items-center gap-2 text-slate-500">
               <Briefcase className="h-4 w-4" aria-hidden="true" />
-              <p className="text-[11px] uppercase tracking-wide">{es ? 'Total' : 'Total'}</p>
+              <p className="text-[11px] uppercase tracking-wide">{text.total}</p>
             </div>
             <p className="mt-1 text-xl font-semibold text-slate-900">{summary.total}</p>
           </div>
@@ -222,9 +223,7 @@ export default function ProviderMyJobs() {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600">
             <Filter className="h-3.5 w-3.5" aria-hidden="true" />
-            {es
-              ? `Filtro activo: ${filter === 'all' ? 'Todos' : t(`providerMyJobs.status.${filter}`)}`
-              : `Active filter: ${filter === 'all' ? 'All' : t(`providerMyJobs.status.${filter}`)}`}
+            {`${text.activeFilter}: ${filter === 'all' ? text.all : t(`providerMyJobs.status.${filter}`)}`}
           </div>
 
           <select

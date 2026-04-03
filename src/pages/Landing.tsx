@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
+import { getLandingPageText } from '../i18n/landingPageText';
 import LanguageSwitcher from '../components/common/LanguageSwitcher';
 import { supabase } from '../lib/supabase';
 
@@ -34,7 +35,7 @@ type LandingPlan = {
 export default function Landing() {
   const { user } = useAuth();
   const { t, language } = useI18n();
-  const es = language === 'es';
+  const text = getLandingPageText(language);
   const navigate = useNavigate();
   const [landingStats, setLandingStats] = React.useState<LandingStats | null>(null);
   const [landingPlans, setLandingPlans] = React.useState<LandingPlan[]>([]);
@@ -353,7 +354,7 @@ export default function Landing() {
           <div className="mb-8 flex items-center gap-3">
             <span className="h-px flex-1 bg-slate-200" />
             <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-              {es ? 'Por qué elegir ZippyGo' : 'Why choose ZippyGo'}
+              {text.whyChoose}
             </span>
             <span className="h-px flex-1 bg-slate-200" />
           </div>
@@ -457,17 +458,15 @@ export default function Landing() {
                   {t('landing.planTrialLabel')}
                 </p>
                 <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
-                  {freePlan ? `${formatAmount(freePlan.price)} USD ${es ? 'sin caducación' : 'without expiration'}` : t('landing.planTrialPrice')}
+                  {freePlan ? `${formatAmount(freePlan.price)} USD ${text.freeNoExpiration}` : t('landing.planTrialPrice')}
                 </p>
                 <p className="mt-1.5 text-sm text-slate-600">
-                  {es
-                    ? 'Incluye 3 solicitudes por día y hasta 90 solicitudes por mes.'
-                    : 'Includes 3 requests per day and up to 90 requests per month.'}
+                  {text.trialIntro}
                 </p>
                 <ul className="mt-5 space-y-2">
                   {[
-                    es ? '3 solicitudes por día' : '3 requests per day',
-                    es ? '90 solicitudes por mes' : '90 requests per month',
+                    text.trialFeatureDay,
+                    text.trialFeatureMonth,
                     t('landing.planTrialFeatureMap'),
                   ].map((feat) => (
                     <li key={feat} className="flex items-center gap-2 text-sm text-slate-600">
@@ -493,7 +492,7 @@ export default function Landing() {
                   {t('landing.planProLabel')}
                 </p>
                 <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
-                  {proPlan ? `${formatAmount(proPlan.price)} USD / ${es ? 'mes' : 'month'}` : t('landing.planProPrice')}
+                  {proPlan ? `${formatAmount(proPlan.price)} USD / ${text.proPerMonth}` : t('landing.planProPrice')}
                 </p>
                 <p className="mt-1.5 text-sm text-slate-600">{t('landing.planProDescription')}</p>
                 <ul className="mt-5 space-y-2">

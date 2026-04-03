@@ -8,6 +8,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
 import { useLocation } from '../../context/LocationContext';
+import { getClientPagesText } from '../../i18n/clientPagesText';
 import { formatClientQuotaError } from '../../utils/quota';
 import RequestServiceProvidersPanel from './request-service/RequestServiceProvidersPanel';
 import { buildProviderMarkers, getCategoryPath } from './request-service/utils';
@@ -25,6 +26,7 @@ export default function ClientRequestService() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t, language } = useI18n();
+  const text = getClientPagesText(language).requestService;
   const { coords, refresh, loading: locationLoading } = useLocation();
   const {
     service,
@@ -164,8 +166,6 @@ export default function ClientRequestService() {
     navigate(`/client/requests/${data.id}`);
   }
 
-  const es = language === 'es';
-
   return (
     <Layout navItems={CLIENT_NAV} title="Request Service">
       <div className="mb-5 space-y-1.5 md:mb-6">
@@ -187,16 +187,14 @@ export default function ClientRequestService() {
       {clientQuota && clientQuota.max_requests !== -1 && (
         <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50/70 p-4">
           <p className="text-sm font-semibold text-emerald-800">
-            {es ? 'Cupo actual de solicitudes (plan FREE)' : 'Current request quota (FREE plan)'}
+            {text.freeQuotaTitle}
           </p>
           <p className="mt-1 text-sm text-emerald-700">
-            {es
-              ? `Usadas: ${clientQuota.used_requests} de ${clientQuota.max_requests} en ${clientQuota.request_window_days} día(s). Restantes: ${clientQuota.remaining_requests}.`
-              : `Used: ${clientQuota.used_requests} of ${clientQuota.max_requests} in ${clientQuota.request_window_days} day(s). Remaining: ${clientQuota.remaining_requests}.`}
+            {`${text.usedLabel}: ${clientQuota.used_requests} ${t('common.of')} ${clientQuota.max_requests} ${text.inLabel} ${clientQuota.request_window_days} ${text.daySuffix}. ${text.remainingLabel}: ${clientQuota.remaining_requests}.`}
           </p>
           {clientQuota.window_end && (
             <p className="mt-1 text-xs text-emerald-700">
-              {es ? `Próximo reinicio: ${clientQuota.window_end}` : `Next reset: ${clientQuota.window_end}`}
+              {`${text.nextResetLabel}: ${clientQuota.window_end}`}
             </p>
           )}
         </div>

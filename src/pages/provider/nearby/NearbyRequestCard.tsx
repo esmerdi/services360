@@ -3,6 +3,7 @@ import LoadingSpinner from '../../../components/common/LoadingSpinner';
 import StatusBadge from '../../../components/common/StatusBadge';
 import UserAvatar from '../../../components/common/UserAvatar';
 import { formatDistance } from '../../../utils/distance';
+import { getNearbyRequestCardText } from '../../../i18n/providerNearbyRequestsText';
 import type { NearbyRequest } from './types';
 
 type NearbyRequestCardProps = {
@@ -20,7 +21,8 @@ export default function NearbyRequestCard({
   actingId,
   onAccept,
 }: NearbyRequestCardProps) {
-  const clientLabel = request.client?.full_name || request.client?.email || (es ? 'Cliente' : 'Client');
+  const text = getNearbyRequestCardText(es);
+  const clientLabel = request.client?.full_name || request.client?.email || text.client;
 
   return (
     <div className="card p-4 md:p-5">
@@ -35,8 +37,8 @@ export default function NearbyRequestCard({
             fallbackClassName="text-xs font-semibold text-slate-600"
           />
           <div className="min-w-0">
-            <p className="text-xs uppercase tracking-wide text-slate-500">{request.service?.name || (es ? 'Solicitud de servicio' : 'Service request')}</p>
-            <h2 className="mt-0.5 truncate text-base font-semibold text-slate-900">{request.client?.full_name || (es ? 'Solicitud de cliente' : 'Client request')}</h2>
+            <p className="text-xs uppercase tracking-wide text-slate-500">{request.service?.name || text.serviceRequest}</p>
+            <h2 className="mt-0.5 truncate text-base font-semibold text-slate-900">{request.client?.full_name || text.clientRequest}</h2>
           </div>
         </div>
         <StatusBadge status={request.status} />
@@ -44,23 +46,23 @@ export default function NearbyRequestCard({
 
       <p className="mt-2 inline-flex items-start gap-1.5 text-sm leading-5 text-slate-500">
         <FileText className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden="true" />
-        <span>{request.description || (es ? 'No hay detalles adicionales.' : 'No extra details provided.')}</span>
+        <span>{request.description || text.noExtraDetails}</span>
       </p>
 
       <div className="mt-3 grid gap-2.5 md:grid-cols-2">
         <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-sm text-slate-600">
-          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{es ? 'Distancia' : 'Distance'}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{text.distance}</p>
           <p className="mt-0.5 inline-flex items-center gap-1.5 font-medium text-slate-800">
             <Navigation className="h-3.5 w-3.5 text-indigo-600" aria-hidden="true" />
-            <span>{request.distance_km !== undefined ? formatDistance(request.distance_km) : (es ? 'No disponible' : 'Unavailable')}</span>
+            <span>{request.distance_km !== undefined ? formatDistance(request.distance_km) : text.unavailable}</span>
           </p>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-sm text-slate-600">
-          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{es ? 'Ubicación' : 'Location'}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{text.location}</p>
           <p className="mt-0.5 inline-flex items-start gap-1.5 text-slate-700">
             <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-sky-600" aria-hidden="true" />
-            <span>{request.address || (es ? 'Sin referencia de dirección.' : 'No address reference supplied.')}</span>
+            <span>{request.address || text.noAddressReference}</span>
           </p>
         </div>
       </div>
@@ -72,8 +74,8 @@ export default function NearbyRequestCard({
       >
         {actingId === request.id ? <LoadingSpinner size="sm" /> : (
           request.provider_id === userId
-            ? (es ? 'Confirmar solicitud' : 'Confirm request')
-            : (es ? 'Aceptar solicitud' : 'Accept request')
+            ? text.confirmRequest
+            : text.acceptRequest
         )}
       </button>
     </div>

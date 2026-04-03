@@ -7,6 +7,7 @@ import ErrorMessage from '../../components/common/ErrorMessage';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
 import { supabase } from '../../lib/supabase';
+import { getClientPagesText } from '../../i18n/clientPagesText';
 import type { RequestStatus } from '../../types';
 import MandatoryRatingModal from './request-detail/MandatoryRatingModal';
 import MyRequestsTable from './my-requests/MyRequestsTable';
@@ -23,7 +24,7 @@ const CLIENT_NAV = [
 export default function ClientMyRequests() {
   const { user } = useAuth();
   const { t, language } = useI18n();
-  const es = language === 'es';
+  const text = getClientPagesText(language).myRequests;
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<'all' | RequestStatus>('all');
   const [pageSize, setPageSize] = useState(10);
@@ -175,7 +176,7 @@ export default function ClientMyRequests() {
       <div className="mb-4 rounded-xl border border-slate-200 bg-white p-3 md:p-4">
         <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
           <Filter className="h-3.5 w-3.5" aria-hidden="true" />
-          {es ? 'Filtros' : 'Filters'}
+          {text.filters}
         </div>
         <div className="grid gap-3 lg:grid-cols-[1.2fr,0.8fr]">
         <div className="relative">

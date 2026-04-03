@@ -6,6 +6,7 @@ import ErrorMessage from '../../components/common/ErrorMessage';
 import StatusBadge from '../../components/common/StatusBadge';
 import { supabase } from '../../lib/supabase';
 import { useI18n } from '../../context/I18nContext';
+import { getAdminManagementText } from '../../i18n/adminManagementText';
 import { formatDateTime, formatCurrency } from '../../utils/helpers';
 import type { ServiceRequest, RequestStatus } from '../../types';
 
@@ -22,6 +23,7 @@ const PAGE_SIZE_OPTIONS = [10, 20, 30, 40, 50];
 
 export default function AdminRequests() {
   const { language } = useI18n();
+  const text = getAdminManagementText(language).requests;
   const [requests, setRequests]     = useState<ServiceRequest[]>([]);
   const [filtered, setFiltered]     = useState<ServiceRequest[]>([]);
   const [loading, setLoading]       = useState(true);
@@ -73,7 +75,6 @@ export default function AdminRequests() {
     setCurrentPage(1);
   }, [statusFilter, search, pageSize]);
 
-  const es = language === 'es';
   const totalRecords = filtered.length;
   const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
   const safePage = Math.min(currentPage, totalPages);
@@ -82,12 +83,12 @@ export default function AdminRequests() {
   const visibleStart = totalRecords === 0 ? 0 : startIndex + 1;
   const visibleEnd = Math.min(startIndex + pageSize, totalRecords);
   const statusOptions = [
-    { value: 'all', label: es ? 'Todos' : 'All' },
-    { value: 'pending', label: es ? 'Pendiente' : 'Pending' },
-    { value: 'accepted', label: es ? 'Aceptada' : 'Accepted' },
-    { value: 'in_progress', label: es ? 'En progreso' : 'In Progress' },
-    { value: 'completed', label: es ? 'Completada' : 'Completed' },
-    { value: 'cancelled', label: es ? 'Cancelada' : 'Cancelled' },
+    { value: 'all', label: text.all },
+    { value: 'pending', label: text.pending },
+    { value: 'accepted', label: text.accepted },
+    { value: 'in_progress', label: text.inProgress },
+    { value: 'completed', label: text.completed },
+    { value: 'cancelled', label: text.cancelled },
   ];
 
   return (
@@ -97,10 +98,10 @@ export default function AdminRequests() {
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-sky-700">
               <ClipboardList className="h-3.5 w-3.5" aria-hidden="true" />
-              {es ? 'Monitoreo operativo' : 'Operations monitoring'}
+              {text.badge}
             </div>
-            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{es ? 'Solicitudes de servicio' : 'Service Requests'}</h1>
-            <p className="mt-1 text-sm text-slate-600 md:text-base">{requests.length} {es ? 'solicitudes en total' : 'total requests'}</p>
+            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{text.title}</h1>
+            <p className="mt-1 text-sm text-slate-600 md:text-base">{requests.length} {text.totalSuffix}</p>
           </div>
           <select
             className="input w-auto"
@@ -121,14 +122,14 @@ export default function AdminRequests() {
             <input
               type="search"
               className="input pl-9"
-              placeholder={es ? 'Buscar por cliente, servicio o direccion...' : 'Search by client, service or address...'}
+              placeholder={text.searchPlaceholder}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
           <div className="flex items-center gap-2">
             <label htmlFor="requests-page-size" className="text-sm text-slate-500">
-              {es ? 'Filas' : 'Rows'}
+              {text.rows}
             </label>
             <select
               id="requests-page-size"
@@ -156,19 +157,19 @@ export default function AdminRequests() {
             <table className="dashboard-table">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{es ? 'Servicio' : 'Service'}</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{es ? 'Cliente' : 'Client'}</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 hidden lg:table-cell">{es ? 'Proveedor' : 'Provider'}</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{es ? 'Estado' : 'Status'}</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 hidden md:table-cell">{es ? 'Precio' : 'Price'}</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 hidden xl:table-cell">{es ? 'Fecha' : 'Date'}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{text.colService}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{text.colClient}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 hidden lg:table-cell">{text.colProvider}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{text.colStatus}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 hidden md:table-cell">{text.colPrice}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 hidden xl:table-cell">{text.colDate}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {paginatedRequests.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-4 py-10 text-center text-slate-400">
-                      {es ? 'No se encontraron solicitudes.' : 'No requests found.'}
+                      {text.noResults}
                     </td>
                   </tr>
                 )}
@@ -182,7 +183,7 @@ export default function AdminRequests() {
                       <p className="text-xs text-slate-400">{req.client?.email}</p>
                     </td>
                     <td className="px-4 py-3 text-slate-600 hidden lg:table-cell">
-                      {req.provider?.full_name ?? <span className="text-slate-400 italic">{es ? 'Sin asignar' : 'Unassigned'}</span>}
+                      {req.provider?.full_name ?? <span className="text-slate-400 italic">{text.unassigned}</span>}
                     </td>
                     <td className="px-4 py-3">
                       <StatusBadge status={req.status as RequestStatus} />
@@ -201,9 +202,7 @@ export default function AdminRequests() {
 
           <div className="flex flex-col gap-3 border-t border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-slate-500">
-              {es
-                ? `Mostrando ${visibleStart}-${visibleEnd} de ${totalRecords}`
-                : `Showing ${visibleStart}-${visibleEnd} of ${totalRecords}`}
+              {`${text.showing} ${visibleStart}-${visibleEnd} ${text.of} ${totalRecords}`}
             </p>
 
             <div className="flex items-center gap-2">
@@ -213,10 +212,10 @@ export default function AdminRequests() {
                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={safePage === 1}
               >
-                {es ? 'Anterior' : 'Previous'}
+                {text.previous}
               </button>
               <span className="text-sm text-slate-500">
-                {es ? `Página ${safePage} de ${totalPages}` : `Page ${safePage} of ${totalPages}`}
+                {`${text.page} ${safePage} ${text.of} ${totalPages}`}
               </span>
               <button
                 type="button"
@@ -224,7 +223,7 @@ export default function AdminRequests() {
                 onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                 disabled={safePage >= totalPages}
               >
-                {es ? 'Siguiente' : 'Next'}
+                {text.next}
               </button>
             </div>
           </div>

@@ -19,6 +19,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
 import { useLocation } from '../../context/LocationContext';
+import { getProviderProfileText } from '../../i18n/providerProfileText';
 import { formatDateTime } from '../../utils/helpers';
 import type { Category, Rating, Service } from '../../types';
 
@@ -35,6 +36,7 @@ type ServiceOption = Pick<Service, 'id' | 'name' | 'category_id'>;
 export default function ProviderProfile() {
   const { user, refreshUser } = useAuth();
   const { language } = useI18n();
+  const text = getProviderProfileText(language);
   const { coords } = useLocation();
   const [categories, setCategories] = useState<Category[]>([]);
   const [services, setServices] = useState<ServiceOption[]>([]);
@@ -48,7 +50,6 @@ export default function ProviderProfile() {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [visibleRatingsCount, setVisibleRatingsCount] = useState(10);
   const initializedRef = React.useRef(false);
-  const es = language === 'es';
 
   useEffect(() => {
     if (!user) return;
@@ -116,7 +117,7 @@ export default function ProviderProfile() {
     const grouped = new Map<string, ServiceOption[]>();
 
     for (const service of services) {
-      let rootName = es ? 'Sin categoria' : 'Uncategorized';
+      let rootName = text.uncategorized;
       const visited = new Set<string>();
       let current = service.category_id ? categoryMap.get(service.category_id) : undefined;
 
@@ -136,7 +137,7 @@ export default function ProviderProfile() {
     }
 
     return [...grouped.entries()].sort(([a], [b]) => a.localeCompare(b));
-  }, [categoryMap, es, services]);
+  }, [categoryMap, services, text.uncategorized]);
 
   // Initialize expandedCategories with first category only once
   useEffect(() => {
@@ -198,14 +199,14 @@ export default function ProviderProfile() {
     }
 
     setSavingServices(false);
-    setSuccessMessage(es ? 'Servicios guardados correctamente.' : 'Services saved successfully.');
+    setSuccessMessage(text.servicesSaved);
   }
 
   return (
     <Layout navItems={PROVIDER_NAV} title="Provider Profile">
       <div className="mb-5 space-y-1.5 md:mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{es ? 'Perfil y disponibilidad' : 'Profile & availability'}</h1>
-        <p className="text-sm text-slate-600 md:text-base">{es ? 'Gestiona tus servicios, estado y reputación en un solo lugar.' : 'Manage your services, availability, and reputation in one place.'}</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{text.title}</h1>
+        <p className="text-sm text-slate-600 md:text-base">{text.subtitle}</p>
       </div>
 
       {error && <ErrorMessage message={error} className="mb-4" />}
@@ -229,17 +230,17 @@ export default function ProviderProfile() {
             <div className="card p-4 md:p-5">
               <div className="mb-3 flex items-center gap-2 text-slate-900">
                 <ShieldCheck className="h-4 w-4 text-sky-600" aria-hidden="true" />
-                <h2 className="text-base font-semibold md:text-lg">{es ? 'Disponibilidad' : 'Availability'}</h2>
+                <h2 className="text-base font-semibold md:text-lg">{text.availability}</h2>
               </div>
               <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div>
-                  <p className="mt-1 text-sm text-slate-500">{es ? 'Los proveedores en línea pueden recibir solicitudes cercanas según disponibilidad.' : 'Online providers can receive nearby requests based on availability.'}</p>
+                  <p className="mt-1 text-sm text-slate-500">{text.availabilityInfo}</p>
                   <div className="mt-2 inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
-                    {user?.is_available ? (es ? 'En línea' : 'Online') : (es ? 'Desconectado' : 'Offline')}
+                    {user?.is_available ? text.online : text.offline}
                   </div>
                 </div>
                 <button onClick={toggleAvailability} className={`${user?.is_available ? 'btn-secondary' : 'btn-primary'} shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2`} disabled={savingAvailability}>
-                  {savingAvailability ? <LoadingSpinner size="sm" /> : user?.is_available ? (es ? 'Desconectarme' : 'Go offline') : (es ? 'Conectarme' : 'Go online')}
+                  {savingAvailability ? <LoadingSpinner size="sm" /> : user?.is_available ? text.goOffline : text.goOnline}
                 </button>
               </div>
 
@@ -247,9 +248,9 @@ export default function ProviderProfile() {
                 <div className="flex items-start gap-2">
                   <MapPin className="mt-0.5 h-4 w-4 text-sky-600" aria-hidden="true" />
                   <div>
-                    <p className="font-medium text-slate-800">{es ? 'Ubicación actual' : 'Current location'}</p>
+                    <p className="font-medium text-slate-800">{text.currentLocation}</p>
                     <p className="mt-1">
-                      {coords ? `${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}` : (es ? 'GPS aún no disponible' : 'GPS not available yet')}
+                      {coords ? `${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}` : text.gpsNotAvailable}
                     </p>
                   </div>
                 </div>
@@ -261,13 +262,13 @@ export default function ProviderProfile() {
                 <div>
                   <div className="mb-1 flex items-center gap-2 text-slate-900">
                     <Wrench className="h-4 w-4 text-indigo-600" aria-hidden="true" />
-                    <h2 className="text-base font-semibold md:text-lg">{es ? 'Servicios ofrecidos' : 'Offered services'}</h2>
+                    <h2 className="text-base font-semibold md:text-lg">{text.offeredServices}</h2>
                   </div>
-                  <p className="mt-1 text-sm text-slate-500">{es ? 'Selecciona todos los servicios que puedes realizar.' : 'Select every service you can fulfill.'}</p>
-                  <p className="mt-1 text-xs text-slate-500">{es ? `Seleccionados: ${selectedServiceIds.length}` : `Selected: ${selectedServiceIds.length}`}</p>
+                  <p className="mt-1 text-sm text-slate-500">{text.offeredServicesInfo}</p>
+                  <p className="mt-1 text-xs text-slate-500">{`${text.selectedCount}: ${selectedServiceIds.length}`}</p>
                 </div>
                 <button onClick={saveServices} className="btn-primary shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2" disabled={savingServices}>
-                  {savingServices ? <LoadingSpinner size="sm" /> : (es ? 'Guardar servicios' : 'Save services')}
+                  {savingServices ? <LoadingSpinner size="sm" /> : text.saveServices}
                 </button>
               </div>
               <div className="mt-3 space-y-2">
@@ -316,7 +317,7 @@ export default function ProviderProfile() {
                                 }
                               >
                                 <p className="text-sm font-medium text-slate-900">{service.name}</p>
-                                <p className="mt-1 text-xs text-slate-500">{selected ? (es ? 'Seleccionado' : 'Selected') : (es ? 'Toca para ofrecer este servicio' : 'Tap to offer this service')}</p>
+                                <p className="mt-1 text-xs text-slate-500">{selected ? text.selected : text.tapToOffer}</p>
                               </button>
                             );
                           })}
@@ -334,26 +335,26 @@ export default function ProviderProfile() {
               <div>
                 <div className="mb-1 flex items-center gap-2 text-slate-900">
                   <Star className="h-4 w-4 text-amber-500" aria-hidden="true" />
-                  <h2 className="text-base font-semibold md:text-lg">{es ? 'Calificaciones' : 'Ratings'}</h2>
+                  <h2 className="text-base font-semibold md:text-lg">{text.ratings}</h2>
                 </div>
-                <p className="mt-1 text-sm text-slate-500">{es ? 'Tu reputación basada en trabajos completados.' : 'Your reputation from completed jobs.'}</p>
+                <p className="mt-1 text-sm text-slate-500">{text.ratingsInfo}</p>
               </div>
               <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-right">
                 <p className="text-xl font-bold text-amber-700">{averageRating.toFixed(1)}</p>
-                <p className="text-[11px] uppercase tracking-wide text-amber-700/80">{es ? 'Promedio' : 'Average'}</p>
+                <p className="text-[11px] uppercase tracking-wide text-amber-700/80">{text.average}</p>
               </div>
             </div>
             <div className="mt-3 space-y-2.5 overflow-y-auto pr-1 xl:max-h-[500px]">
               {ratings.length === 0 && (
                 <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-4 text-center text-sm text-slate-500">
-                  {es ? 'Aún no hay calificaciones.' : 'No ratings yet.'}
+                  {text.noRatings}
                 </div>
               )}
               {visibleRatings.map((rating) => (
                 <div key={rating.id} className="rounded-xl border border-slate-200 bg-white p-3">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-sm font-medium text-slate-900">{rating.from_user?.full_name || (es ? 'Cliente' : 'Client')}</p>
+                      <p className="text-sm font-medium text-slate-900">{rating.from_user?.full_name || text.client}</p>
                       <p className="mt-1 inline-flex items-center gap-1 text-xs text-slate-400">
                         <CalendarClock className="h-3.5 w-3.5" aria-hidden="true" />
                         {formatDateTime(rating.created_at, language)}
@@ -361,7 +362,7 @@ export default function ProviderProfile() {
                     </div>
                     <StarRating value={rating.rating} readonly size="sm" />
                   </div>
-                  <p className="mt-2 text-sm text-slate-500">{rating.comment || (es ? 'Sin comentario.' : 'No comment provided.')}</p>
+                  <p className="mt-2 text-sm text-slate-500">{rating.comment || text.noComment}</p>
                 </div>
               ))}
 
@@ -373,7 +374,7 @@ export default function ProviderProfile() {
                     className="btn-secondary"
                     onClick={() => setVisibleRatingsCount((current) => current + 10)}
                   >
-                    {es ? 'Ver más calificaciones antiguas' : 'View older ratings'}
+                    {text.viewOlderRatings}
                   </button>
                   </div>
                 </div>

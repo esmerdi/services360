@@ -7,6 +7,7 @@ import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { supabase } from '../../lib/supabase';
 import { useI18n } from '../../context/I18nContext';
+import { getAdminManagementText } from '../../i18n/adminManagementText';
 import { formatCurrency } from '../../utils/helpers';
 import type { DashboardMetrics } from '../../types';
 
@@ -43,6 +44,7 @@ function StatCard({ label, value, icon: Icon, color, bgColor }: StatCardProps) {
 
 export default function AdminDashboard() {
   const { language } = useI18n();
+  const text = getAdminManagementText(language).dashboard;
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -76,20 +78,18 @@ export default function AdminDashboard() {
     fetchMetrics();
   }, []);
 
-  const es = language === 'es';
-
   return (
     <Layout navItems={ADMIN_NAV} title="Admin Dashboard">
       <div className="mb-7 rounded-2xl border border-slate-200 bg-gradient-to-r from-sky-50 to-cyan-50 p-5 md:p-6">
         <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-sky-700">
           <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-          {es ? 'Panel de administracion' : 'Admin control center'}
+          {text.badge}
         </div>
         <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">
-          {es ? 'Panel' : 'Dashboard'}
+          {text.title}
         </h1>
         <p className="mt-1 text-sm text-slate-600 md:text-base">
-          {es ? 'Resumen de la plataforma y metricas clave' : 'Platform overview and key metrics'}
+          {text.subtitle}
         </p>
       </div>
 
@@ -101,28 +101,28 @@ export default function AdminDashboard() {
         <>
           <div className="mb-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
-              label={es ? 'Usuarios totales' : 'Total Users'}
+              label={text.totalUsers}
               value={metrics.totalUsers}
               icon={Users}
               color="text-blue-600"
               bgColor="bg-blue-50"
             />
             <StatCard
-              label={es ? 'Clientes totales' : 'Total Clients'}
+              label={text.totalClients}
               value={metrics.totalClients}
               icon={Users}
               color="text-cyan-600"
               bgColor="bg-cyan-50"
             />
             <StatCard
-              label={es ? 'Proveedores totales' : 'Total Providers'}
+              label={text.totalProviders}
               value={metrics.totalProviders}
               icon={Briefcase}
               color="text-sky-700"
               bgColor="bg-sky-50"
             />
             <StatCard
-              label={es ? 'Ingresos de la plataforma' : 'Platform Revenue'}
+              label={text.platformRevenue}
               value={formatCurrency(metrics.totalRevenue, language)}
               icon={DollarSign}
               color="text-emerald-700"
@@ -132,21 +132,21 @@ export default function AdminDashboard() {
 
           <div className="grid gap-4 sm:grid-cols-3">
             <StatCard
-              label={es ? 'Solicitudes totales' : 'Total Requests'}
+              label={text.totalRequests}
               value={metrics.totalRequests}
               icon={ClipboardList}
               color="text-slate-700"
               bgColor="bg-slate-100"
             />
             <StatCard
-              label={es ? 'Solicitudes pendientes' : 'Pending Requests'}
+              label={text.pendingRequests}
               value={metrics.pendingRequests}
               icon={Clock}
               color="text-amber-600"
               bgColor="bg-amber-50"
             />
             <StatCard
-              label={es ? 'Solicitudes completadas' : 'Completed Requests'}
+              label={text.completedRequests}
               value={metrics.completedRequests}
               icon={CheckCircle2}
               color="text-emerald-700"
@@ -155,7 +155,7 @@ export default function AdminDashboard() {
           </div>
 
           <div className="mt-7 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-semibold tracking-tight text-slate-900">{es ? 'Acciones rapidas' : 'Quick Actions'}</h2>
+            <h2 className="text-lg font-semibold tracking-tight text-slate-900">{text.quickActions}</h2>
             <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {ADMIN_NAV.slice(1).map((link) => (
                 <a
@@ -163,7 +163,7 @@ export default function AdminDashboard() {
                   href={link.to}
                   className="btn-secondary justify-center text-sm"
                 >
-                  {es ? 'Gestionar' : 'Manage'} {link.label}
+                  {text.manage} {link.label}
                 </a>
               ))}
             </div>

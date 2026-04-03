@@ -6,6 +6,7 @@ import ErrorMessage from '../../components/common/ErrorMessage';
 import Modal from '../../components/common/Modal';
 import { supabase } from '../../lib/supabase';
 import { useI18n } from '../../context/I18nContext';
+import { getAdminManagementText } from '../../i18n/adminManagementText';
 import type { Category } from '../../types';
 
 const ADMIN_NAV = [
@@ -29,6 +30,7 @@ const MAX_CATEGORY_DEPTH = 2;
 
 export default function AdminCategories() {
   const { language } = useI18n();
+  const text = getAdminManagementText(language).categories;
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState<string | null>(null);
@@ -72,23 +74,19 @@ export default function AdminCategories() {
 
   const handleSave = async () => {
     if (!form.name.trim()) {
-      setFormError(language === 'es' ? 'El nombre es obligatorio.' : 'Name is required.');
+      setFormError(text.nameRequired);
       return;
     }
 
     if (form.parent_id) {
       const parent = categories.find((c) => c.id === form.parent_id);
       if (!parent) {
-        setFormError(language === 'es' ? 'La categoria padre no es valida.' : 'Parent category is invalid.');
+        setFormError(text.invalidParent);
         return;
       }
 
       if (getCategoryDepth(parent.id) >= MAX_CATEGORY_DEPTH) {
-        setFormError(
-          language === 'es'
-            ? 'Solo se permiten hasta 3 niveles (categoria > subcategoria > sub-subcategoria).'
-            : 'Only up to 3 levels are allowed (category > subcategory > sub-subcategory).'
-        );
+        setFormError(text.maxDepthError);
         return;
       }
     }
@@ -114,7 +112,7 @@ export default function AdminCategories() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm(language === 'es' ? 'Eliminar esta categoria? Las subcategorias y servicios pueden verse afectados.' : 'Delete this category? Sub-categories and services may be affected.')) return;
+    if (!confirm(text.deleteConfirm)) return;
     const { error: err } = await supabase.from('categories').delete().eq('id', id);
     if (err) alert(err.message);
     else fetchCategories();
@@ -231,8 +229,6 @@ export default function AdminCategories() {
     );
   };
 
-  const es = language === 'es';
-
   return (
     <Layout navItems={ADMIN_NAV} title="Categories">
       <div className="page-header rounded-2xl border border-slate-200 bg-gradient-to-r from-sky-50 to-cyan-50 p-5 md:p-6">
@@ -240,14 +236,14 @@ export default function AdminCategories() {
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-sky-700">
               <Layers className="h-3.5 w-3.5" aria-hidden="true" />
-              {es ? 'Estructura del catalogo' : 'Catalog structure'}
+              {text.badge}
             </div>
-            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{es ? 'Categorías' : 'Categories'}</h1>
-            <p className="mt-1 text-sm text-slate-600 md:text-base">{categories.length} {es ? 'categorías en total' : 'total categories'}</p>
+            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{text.title}</h1>
+            <p className="mt-1 text-sm text-slate-600 md:text-base">{categories.length} {text.totalSuffix}</p>
           </div>
           <button onClick={openCreate} className="btn-primary self-start sm:self-auto">
             <Plus className="h-4 w-4" />
-            {es ? 'Nueva categoría' : 'New Category'}
+            {text.newCategory}
           </button>
         </div>
       </div>
@@ -261,7 +257,7 @@ export default function AdminCategories() {
       ) : roots.length === 0 ? (
         <div className="rounded-xl border border-slate-200 bg-white py-16 text-center shadow-sm">
           <FolderTree className="h-12 w-12 text-slate-300 mb-3" />
-          <p className="text-slate-400">{es ? 'Aún no hay categorías.' : 'No categories yet.'}</p>
+          <p className="text-slate-400">{text.empty}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -300,7 +296,7 @@ export default function AdminCategories() {
                 {/* Sub-count badge */}
                 {subCount > 0 && (
                   <span className="mb-2 self-start rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">
-                    {subCount} {es ? 'subcategorias' : 'subcategories'}
+                    {subCount} {text.subcategories}
                   </span>
                 )}
 
@@ -316,67 +312,63 @@ export default function AdminCategories() {
       <Modal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={editing ? (es ? 'Editar categoría' : 'Edit Category') : (es ? 'Nueva categoría' : 'New Category')}
+        title={editing ? text.editCategory : text.newCategory}
       >
         <div className="space-y-4">
           {formError && <ErrorMessage message={formError} />}
 
           <div className="form-group">
-            <label className="label">{es ? 'Nombre *' : 'Name *'}</label>
+            <label className="label">{text.nameLabel}</label>
             <input
               className="input"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder={es ? 'ej. Plomería' : 'e.g. Plumbing'}
+              placeholder={text.namePlaceholder}
             />
           </div>
 
           <div className="form-group">
-            <label className="label">{es ? 'Categoría padre' : 'Parent Category'}</label>
+            <label className="label">{text.parentLabel}</label>
             <select
               className="input"
               value={form.parent_id}
               onChange={(e) => setForm({ ...form, parent_id: e.target.value })}
             >
-              <option value="">{es ? 'Ninguna (categoría raíz)' : 'None (root category)'}</option>
+              <option value="">{text.parentNone}</option>
               {parentOptions.map((c) => (
                 <option key={c.id} value={c.id}>{getCategoryPath(c.id)}</option>
               ))}
             </select>
-            <p className="mt-1 text-xs text-slate-500">
-              {es
-                ? 'Máximo 3 niveles: categoría > subcategoría > sub-subcategoría.'
-                : 'Max 3 levels: category > subcategory > sub-subcategory.'}
-            </p>
+            <p className="mt-1 text-xs text-slate-500">{text.maxLevelsHint}</p>
           </div>
 
           <div className="form-group">
-            <label className="label">{es ? 'Nombre del icono' : 'Icon name'}</label>
+            <label className="label">{text.iconLabel}</label>
             <input
               className="input"
               value={form.icon}
               onChange={(e) => setForm({ ...form, icon: e.target.value })}
-              placeholder={es ? 'ej. wrench, home, car' : 'e.g. wrench, home, car'}
+              placeholder={text.iconPlaceholder}
             />
           </div>
 
           <div className="form-group">
-            <label className="label">{es ? 'Descripción' : 'Description'}</label>
+            <label className="label">{text.descriptionLabel}</label>
             <textarea
               className="input resize-none"
               rows={3}
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder={es ? 'Descripcion corta...' : 'Short description...'}
+              placeholder={text.descriptionPlaceholder}
             />
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
             <button onClick={() => setModalOpen(false)} className="btn-secondary">
-              {es ? 'Cancelar' : 'Cancel'}
+              {text.cancel}
             </button>
             <button onClick={handleSave} disabled={saving} className="btn-primary">
-              {saving ? <LoadingSpinner size="sm" /> : editing ? (es ? 'Guardar cambios' : 'Save Changes') : (es ? 'Crear' : 'Create')}
+              {saving ? <LoadingSpinner size="sm" /> : editing ? text.saveChanges : text.create}
             </button>
           </div>
         </div>

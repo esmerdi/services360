@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Eye, EyeOff, ShieldCheck, Sparkles, UserPlus } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
+import { getAuthPagesText } from '../../i18n/authPagesText';
 import type { UserRole } from '../../types';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -11,8 +12,8 @@ import LanguageSwitcher from '../../components/common/LanguageSwitcher';
 export default function Register() {
   const { signUp, signIn, user } = useAuth();
   const { t, language } = useI18n();
+  const text = getAuthPagesText(language).register;
   const navigate = useNavigate();
-  const es = language === 'es';
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -39,12 +40,8 @@ export default function Register() {
   );
 
   const onboardingPoints = React.useMemo(
-    () => [
-      es ? 'Proceso de registro en menos de 2 minutos.' : 'Sign up in under 2 minutes.',
-      es ? 'Perfil listo para solicitar o ofrecer servicios.' : 'Profile ready to request or offer services.',
-      es ? 'Datos protegidos con seguridad de plataforma.' : 'Your data is protected with platform security.',
-    ],
-    [es]
+    () => text.onboardingPoints,
+    [text.onboardingPoints]
   );
 
   React.useEffect(() => {
@@ -108,14 +105,10 @@ export default function Register() {
             <div className="mt-10 rounded-2xl border border-slate-200 bg-gradient-to-br from-sky-50 to-cyan-50 p-5">
               <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-sky-700">
                 <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-                {es ? 'Tu cuenta en pocos pasos' : 'Your account in a few steps'}
+                {text.badge}
               </div>
               <h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">{t('register.subtitle')}</h2>
-              <p className="mt-2 text-sm text-slate-600">
-                {es
-                  ? 'Elige tu perfil y comienza a usar ZippyGo con experiencia completa.'
-                  : 'Choose your profile and start using ZippyGo with the full experience.'}
-              </p>
+              <p className="mt-2 text-sm text-slate-600">{text.supportingCopy}</p>
             </div>
 
             <ul className="mt-6 space-y-3 text-sm text-slate-700">
@@ -129,7 +122,7 @@ export default function Register() {
 
             <Link to="/" className="mt-auto inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-800">
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-              {es ? 'Volver al inicio' : 'Back to home'}
+              {text.backHome}
             </Link>
           </aside>
 

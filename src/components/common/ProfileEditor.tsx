@@ -3,6 +3,7 @@ import { Camera, CheckCircle2, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
+import { getProfileEditorText } from '../../i18n/profileEditorText';
 import { isManagedAvatarUrl } from '../../utils/helpers';
 import ErrorMessage from './ErrorMessage';
 import UserAvatar from './UserAvatar';
@@ -57,6 +58,7 @@ function getPhoneValidationError(dialCode: DialCode, localNumber: string, es: bo
 export default function ProfileEditor() {
   const { user, refreshUser } = useAuth();
   const { language } = useI18n();
+  const text = getProfileEditorText(language);
   const es = language === 'es';
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -86,11 +88,11 @@ export default function ProfileEditor() {
     const file = event.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      setError(es ? 'Solo se permiten imágenes' : 'Only image files are allowed');
+      setError(text.imageOnlyError);
       return;
     }
     if (file.size > 3 * 1024 * 1024) {
-      setError(es ? 'La imagen no puede superar 3 MB' : 'Image must be under 3 MB');
+      setError(text.imageSizeError);
       return;
     }
     setError(null);
@@ -157,12 +159,10 @@ export default function ProfileEditor() {
   return (
     <div className="card">
       <h2 className="text-lg font-semibold text-slate-900">
-        {es ? 'Datos personales' : 'Personal Information'}
+        {text.personalInfoTitle}
       </h2>
       <p className="mt-1 text-sm text-slate-500">
-        {es
-          ? 'Mantén tu información actualizada para que otros usuarios puedan contactarte.'
-          : 'Keep your information up to date so other users can reach you.'}
+        {text.personalInfoSubtitle}
       </p>
 
       {error && <ErrorMessage message={error} className="mt-4" />}
@@ -170,7 +170,7 @@ export default function ProfileEditor() {
       {success && (
         <div className="mt-4 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
           <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
-          {es ? 'Perfil actualizado correctamente.' : 'Profile updated successfully.'}
+          {text.successMessage}
         </div>
       )}
 
@@ -181,7 +181,7 @@ export default function ProfileEditor() {
             <UserAvatar
               avatarUrl={avatarPreview}
               name={fullName.trim() || user?.email}
-              alt={es ? 'Foto de perfil' : 'Profile photo'}
+              alt={text.avatarAlt}
               className="h-24 w-24 overflow-hidden rounded-2xl border-2 border-slate-200 bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center shadow-sm"
               fallbackClassName="text-2xl font-semibold text-white"
             />
@@ -189,7 +189,7 @@ export default function ProfileEditor() {
               type="button"
               onClick={() => { setError(null); fileInputRef.current?.click(); }}
               className="absolute -bottom-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white shadow-md hover:bg-blue-700 transition-colors"
-              title={es ? 'Cambiar foto' : 'Change photo'}
+              title={text.changePhoto}
             >
               <Camera className="h-4 w-4" />
             </button>
@@ -201,7 +201,7 @@ export default function ProfileEditor() {
               onChange={handleFileChange}
             />
           </div>
-          <p className="text-xs text-slate-400">{es ? 'Máx. 3 MB' : 'Max 3 MB'}</p>
+          <p className="text-xs text-slate-400">{text.maxSize}</p>
         </div>
 
         {/* ── Fields ─────────────────────────────────────────────────── */}
@@ -209,21 +209,21 @@ export default function ProfileEditor() {
           {/* Full name */}
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">
-              {es ? 'Nombre completo' : 'Full name'}
+              {text.fullName}
             </label>
             <input
               type="text"
               className="input"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder={es ? 'Tu nombre completo' : 'Your full name'}
+              placeholder={text.fullNamePlaceholder}
             />
           </div>
 
           {/* Phone */}
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">
-              {es ? 'Teléfono' : 'Phone'}
+              {text.phone}
             </label>
             <div className="flex flex-col gap-2 sm:flex-row">
               <select
@@ -242,15 +242,13 @@ export default function ProfileEditor() {
                 className="input w-full min-w-0 flex-1"
                 value={localNumber}
                  onChange={(e) => setLocalNumber(e.target.value.replace(/[^\d\s-]/g, ''))}
-                placeholder={dialCode === '+57' ? '3001234567' : es ? 'Número' : 'Number'}
+                placeholder={dialCode === '+57' ? '3001234567' : text.numberPlaceholder}
                 inputMode="tel"
               />
             </div>
             {dialCode === '+57' && (
               <p className="mt-1 text-xs text-slate-400">
-                {es
-                  ? '10 dígitos para celular colombiano (ej. 3001234567)'
-                  : '10 digits for a Colombian mobile (e.g. 3001234567)'}
+                {text.colombiaPhoneHint}
               </p>
             )}
           </div>
@@ -258,14 +256,14 @@ export default function ProfileEditor() {
           {/* Address */}
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">
-              {es ? 'Dirección' : 'Address'}
+              {text.address}
             </label>
             <input
               type="text"
               className="input"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              placeholder={es ? 'Calle, barrio, ciudad' : 'Street, neighborhood, city'}
+              placeholder={text.addressPlaceholder}
             />
           </div>
         </div>
@@ -274,7 +272,7 @@ export default function ProfileEditor() {
       <div className="mt-6 flex justify-end">
         <button onClick={handleSave} className="btn-primary" disabled={saving}>
           {saving && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
-          {es ? 'Guardar cambios' : 'Save changes'}
+          {text.saveChanges}
         </button>
       </div>
     </div>

@@ -6,6 +6,7 @@ import ErrorMessage from '../../components/common/ErrorMessage';
 import Modal from '../../components/common/Modal';
 import { supabase } from '../../lib/supabase';
 import { useI18n } from '../../context/I18nContext';
+import { getAdminPlansText } from '../../i18n/adminPlansText';
 import { formatPlanFeature } from '../../utils/helpers';
 import type { Plan } from '../../types';
 
@@ -20,6 +21,7 @@ const ADMIN_NAV = [
 
 export default function AdminPlans() {
   const { language } = useI18n();
+  const text = getAdminPlansText(language);
   const [plans, setPlans]         = useState<Plan[]>([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
@@ -60,7 +62,7 @@ export default function AdminPlans() {
 
     const parsed = parseFloat(price);
     if (isNaN(parsed) || parsed < 0) {
-      setFormError(language === 'es' ? 'Ingresa un precio valido.' : 'Please enter a valid price.');
+      setFormError(text.invalidPrice);
       return;
     }
 
@@ -68,12 +70,12 @@ export default function AdminPlans() {
     const parsedWindowDays = parseInt(requestWindowDays, 10);
 
     if (isNaN(parsedMaxRequests) || parsedMaxRequests < -1) {
-      setFormError(language === 'es' ? 'Ingresa un cupo valido (usa -1 para ilimitado).' : 'Enter a valid quota (use -1 for unlimited).');
+      setFormError(text.invalidQuota);
       return;
     }
 
     if (isNaN(parsedWindowDays) || parsedWindowDays < 1) {
-      setFormError(language === 'es' ? 'Ingresa una ventana valida en dias (minimo 1).' : 'Enter a valid window in days (minimum 1).');
+      setFormError(text.invalidWindow);
       return;
     }
 
@@ -105,7 +107,6 @@ export default function AdminPlans() {
       .filter(Boolean) as string[];
   };
 
-  const es = language === 'es';
   const formatPlanAmount = useCallback((value: number) => {
     const locale = language === 'es' ? 'es-419' : 'en-US';
     return new Intl.NumberFormat(locale, {
@@ -138,10 +139,10 @@ export default function AdminPlans() {
       <div className="page-header rounded-2xl border border-slate-200 bg-gradient-to-r from-sky-50 to-cyan-50 p-5 md:p-6">
         <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-sky-700">
           <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-          {es ? 'Estrategia comercial' : 'Pricing strategy'}
+          {text.badge}
         </div>
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{es ? 'Planes y precios' : 'Plans & Pricing'}</h1>
-        <p className="mt-1 text-sm text-slate-600 md:text-base">{es ? 'Gestiona los planes de suscripcion para proveedores' : 'Manage subscription plans for providers'}</p>
+        <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{text.title}</h1>
+        <p className="mt-1 text-sm text-slate-600 md:text-base">{text.subtitle}</p>
       </div>
 
       {error && <ErrorMessage message={error} className="mb-4" />}
@@ -154,16 +155,16 @@ export default function AdminPlans() {
         <div className="space-y-5">
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-              <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">{es ? 'Planes totales' : 'Total plans'}</p>
+              <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">{text.totalPlans}</p>
               <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">{plans.length}</p>
             </div>
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
-              <p className="text-[11px] uppercase tracking-[0.08em] text-emerald-700">{es ? 'Plan gratuito' : 'Free plans'}</p>
+              <p className="text-[11px] uppercase tracking-[0.08em] text-emerald-700">{text.freePlan}</p>
               <p className="mt-1 text-2xl font-semibold tracking-tight text-emerald-800">{freePlans}</p>
             </div>
             <div className="rounded-xl border border-sky-200 bg-sky-50 p-4 shadow-sm">
-              <p className="text-[11px] uppercase tracking-[0.08em] text-sky-700">{es ? 'Precio máximo' : 'Highest price'}</p>
-              <p className="mt-1 text-lg font-semibold tracking-tight text-sky-800">{maxPrice > 0 ? `${formatPlanAmount(maxPrice)} USD` : (es ? 'Sin costo' : 'No cost')}</p>
+              <p className="text-[11px] uppercase tracking-[0.08em] text-sky-700">{text.highestPrice}</p>
+              <p className="mt-1 text-lg font-semibold tracking-tight text-sky-800">{maxPrice > 0 ? `${formatPlanAmount(maxPrice)} USD` : text.noCost}</p>
             </div>
           </div>
 
@@ -204,7 +205,7 @@ export default function AdminPlans() {
                   {isPro && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                       <span className="inline-flex items-center rounded-full border border-sky-200 bg-sky-600 px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-white shadow-sm">
-                        {es ? 'Recomendado' : 'Recommended'}
+                        {text.recommended}
                       </span>
                     </div>
                   )}
@@ -214,11 +215,11 @@ export default function AdminPlans() {
                       <h2 className={`text-xl font-semibold tracking-tight ${palette.title}`}>{plan.name}</h2>
                       <p className={`mt-1 text-3xl font-bold ${palette.price}`}>
                         {plan.price === 0 ? (
-                          <span>{es ? 'Gratis' : 'Free'}</span>
+                          <span>{text.free}</span>
                         ) : (
                           <>
                             {formatPlanAmount(plan.price)} USD
-                            <span className="text-base font-normal text-slate-500"> / {es ? 'mes' : 'mo'}</span>
+                            <span className="text-base font-normal text-slate-500"> / {text.monthShort}</span>
                           </>
                         )}
                       </p>
@@ -247,11 +248,11 @@ export default function AdminPlans() {
 
                     return (
                       <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50/80 p-3 text-xs text-emerald-800">
-                        <p className="font-semibold uppercase tracking-[0.08em]">{es ? 'Parametrización FREE' : 'FREE settings'}</p>
-                        <p className="mt-1">{es ? `Cupo por ventana: ${maxRequestsValue}` : `Window quota: ${maxRequestsValue}`}</p>
-                        <p>{es ? `Ventana: ${windowDaysValue} día(s)` : `Window: ${windowDaysValue} day(s)`}</p>
+                        <p className="font-semibold uppercase tracking-[0.08em]">{text.freeSettings}</p>
+                        <p className="mt-1">{`${text.windowQuota}: ${maxRequestsValue}`}</p>
+                        <p>{`${text.windowDays}: ${windowDaysValue} ${text.daySuffix}`}</p>
                         {estimatedPerDay !== null && (
-                          <p>{es ? `Equiv. diario: ${estimatedPerDay.toFixed(2)} / día` : `Daily equiv.: ${estimatedPerDay.toFixed(2)} / day`}</p>
+                          <p>{`${text.dailyEquivalent}: ${estimatedPerDay.toFixed(2)} / ${text.perDaySuffix}`}</p>
                         )}
                       </div>
                     );
@@ -262,7 +263,7 @@ export default function AdminPlans() {
                     className="btn-secondary w-full focus-visible:ring-2 focus-visible:ring-blue-500"
                   >
                     <Pencil className="h-4 w-4" />
-                    {es ? 'Editar precio' : 'Edit Price'}
+                    {text.editPrice}
                   </button>
                 </article>
               );
@@ -275,19 +276,19 @@ export default function AdminPlans() {
       <Modal
         isOpen={!!editing}
         onClose={() => setEditing(null)}
-        title={es ? `Editar plan ${editing?.name}` : `Edit ${editing?.name} Plan`}
+        title={language === 'es' ? `${text.editPlanTitlePrefix} ${editing?.name}` : `${text.editPlanTitlePrefix} ${editing?.name} Plan`}
       >
         <div className="space-y-4">
           {formError && <ErrorMessage message={formError} />}
           <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-xs text-slate-600">
             <div className="flex items-center gap-2">
               <ShieldCheck className="h-4 w-4 text-slate-500" aria-hidden="true" />
-              <span>{es ? 'Puedes ajustar precio y parametrizaciones del cupo de solicitudes.' : 'You can update price and request quota settings.'}</span>
+              <span>{text.editHelp}</span>
             </div>
           </div>
 
           <div className="form-group">
-            <label className="label">{es ? 'Precio mensual (USD)' : 'Monthly Price (USD)'}</label>
+            <label className="label">{text.monthlyPriceLabel}</label>
             <input
               type="number"
               min="0"
@@ -300,7 +301,7 @@ export default function AdminPlans() {
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="form-group">
-              <label className="label">{es ? 'Cupo por ventana' : 'Window quota'}</label>
+              <label className="label">{text.windowQuotaLabel}</label>
               <input
                 type="number"
                 min="-1"
@@ -308,12 +309,12 @@ export default function AdminPlans() {
                 className="input"
                 value={maxRequests}
                 onChange={(e) => setMaxRequests(e.target.value)}
-                placeholder={es ? 'Ej: 3 (-1 ilimitado)' : 'Ex: 3 (-1 unlimited)'}
+                placeholder={text.quotaPlaceholder}
               />
             </div>
 
             <div className="form-group">
-              <label className="label">{es ? 'Ventana (días)' : 'Window (days)'}</label>
+              <label className="label">{text.windowDaysLabel}</label>
               <input
                 type="number"
                 min="1"
@@ -321,21 +322,21 @@ export default function AdminPlans() {
                 className="input"
                 value={requestWindowDays}
                 onChange={(e) => setRequestWindowDays(e.target.value)}
-                placeholder={es ? 'Ej: 1 para diario' : 'Ex: 1 for daily'}
+                placeholder={text.windowPlaceholder}
               />
             </div>
           </div>
 
           <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-3 text-xs text-emerald-800">
-            <p className="font-semibold uppercase tracking-[0.08em]">{es ? 'Vista previa' : 'Preview'}</p>
+            <p className="font-semibold uppercase tracking-[0.08em]">{text.preview}</p>
             {parseInt(maxRequests, 10) === -1 ? (
-              <p className="mt-1">{es ? 'Plan ilimitado.' : 'Unlimited plan.'}</p>
+              <p className="mt-1">{text.unlimitedPlan}</p>
             ) : (
               <>
-                <p className="mt-1">{es ? `Cupo por ventana: ${maxRequests || '0'}` : `Window quota: ${maxRequests || '0'}`}</p>
-                <p>{es ? `Ventana: ${requestWindowDays || '0'} día(s)` : `Window: ${requestWindowDays || '0'} day(s)`}</p>
+                <p className="mt-1">{`${text.windowQuota}: ${maxRequests || '0'}`}</p>
+                <p>{`${text.windowDays}: ${requestWindowDays || '0'} ${text.daySuffix}`}</p>
                 {quotaPreview.perDay !== null && quotaPreview.perMonth !== null && (
-                  <p>{es ? `Equivale a ${quotaPreview.perDay.toFixed(2)} por día (~${Math.round(quotaPreview.perMonth)} en 30 días)` : `Equivalent to ${quotaPreview.perDay.toFixed(2)} per day (~${Math.round(quotaPreview.perMonth)} in 30 days)`}</p>
+                  <p>{`${text.equivalentTo} ${quotaPreview.perDay.toFixed(2)} ${text.perDayPhrase} (~${Math.round(quotaPreview.perMonth)} ${text.inDaysSuffix})`}</p>
                 )}
               </>
             )}
@@ -343,10 +344,10 @@ export default function AdminPlans() {
 
           <div className="flex justify-end gap-3">
             <button onClick={() => setEditing(null)} className="btn-secondary">
-              {es ? 'Cancelar' : 'Cancel'}
+              {text.cancel}
             </button>
             <button onClick={handleSave} disabled={saving} className="btn-primary">
-              {saving ? <LoadingSpinner size="sm" /> : (es ? 'Guardar cambios' : 'Save Changes')}
+              {saving ? <LoadingSpinner size="sm" /> : text.saveChanges}
             </button>
           </div>
         </div>

@@ -10,13 +10,12 @@ import { SupabaseClient } from '@supabase/supabase-js';
 export interface EmailTemplateData {
   to: string;
   userFirstName?: string;
-  tempPassword: string;
   planName?: string;
   supportEmail?: string;
 }
 
 /**
- * Send Pro plan activation email with temp password
+ * Send Pro plan activation confirmation email
  */
 export async function sendProActivationEmail(
   supabaseClient: SupabaseClient,
@@ -36,8 +35,7 @@ export async function sendProActivationEmail(
         .content { background: white; padding: 30px; border-radius: 0 0 8px 8px; }
         .button { display: inline-block; background: #667eea; color: white; padding: 12px 32px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
         .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666; text-align: center; }
-        .password-box { background: #f0f0f0; border-left: 4px solid #667eea; padding: 15px; margin: 20px 0; font-family: 'Courier New', monospace; }
-        .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 15px 0; border-radius: 4px; }
+        .notice { background: #eef4ff; border-left: 4px solid #667eea; padding: 15px; margin: 20px 0; border-radius: 4px; }
       </style>
     </head>
     <body>
@@ -48,18 +46,11 @@ export async function sendProActivationEmail(
         <div class="content">
           <p>Hola ${data.userFirstName || 'Proveedor'},</p>
           
-          <p>Tu suscripción PRO se ha activado correctamente. Ya tienes acceso a <strong>solicitudes ilimitadas</strong>, <strong>prioridad en el sistema</strong> y <strong>visibilidad mejorada</strong>.</p>
+          <p>Tu suscripción <strong>${data.planName || 'PRO'}</strong> se activó correctamente. Ya tienes acceso a <strong>solicitudes ilimitadas</strong>, <strong>prioridad en el sistema</strong> y <strong>visibilidad mejorada</strong>.</p>
           
-          <h3>Acceso a tu cuenta</h3>
-          <p>Usa estas credenciales para ingresar por primera vez:</p>
-          
-          <div class="password-box">
-            <strong>Contraseña temporal:</strong><br>
-            <code>${data.tempPassword}</code>
-          </div>
-          
-          <div class="warning">
-            <strong>⚠️ Importante:</strong> Debes cambiar esta contraseña la próxima vez que ingreses. No compartas este código con nadie.
+          <div class="notice">
+            <strong>Tu cuenta y contraseña siguen siendo las mismas.</strong><br>
+            Solo se actualizó tu acceso para habilitar los beneficios del plan.
           </div>
           
           <p>
@@ -68,9 +59,9 @@ export async function sendProActivationEmail(
           
           <h3>¿Qué sigue?</h3>
           <ol>
-            <li>Ingresa con tu contraseña temporal</li>
-            <li>Ve a Perfil → Seguridad → Cambiar contraseña</li>
-            <li>¡Comienza a recibir solicitudes con prioridad!</li>
+            <li>Ingresa con tu contraseña habitual</li>
+            <li>Revisa tu panel de proveedor y beneficios activos</li>
+            <li>Comienza a recibir solicitudes con prioridad</li>
           </ol>
           
           <p>Si tienes preguntas, contáctanos en <strong>${data.supportEmail || 'soporte@services360.app'}</strong></p>
@@ -90,19 +81,16 @@ export async function sendProActivationEmail(
 
 Hola ${data.userFirstName || 'Proveedor'},
 
-Tu suscripción PRO se ha activado correctamente. Ya tienes acceso a solicitudes ilimitadas, prioridad en el sistema y visibilidad mejorada.
+Tu suscripción ${data.planName || 'PRO'} se activó correctamente. Ya tienes acceso a solicitudes ilimitadas, prioridad en el sistema y visibilidad mejorada.
 
-CONTRASEÑA TEMPORAL:
-${data.tempPassword}
-
-⚠️ IMPORTANTE: Debes cambiar esta contraseña la próxima vez que ingreses. No compartas este código con nadie.
+Tu cuenta y contraseña siguen siendo las mismas. Solo se actualizó tu acceso para habilitar los beneficios del plan.
 
 Ingresa aquí: https://services360.app/login
 
 ¿Qué sigue?
-1. Ingresa con tu contraseña temporal
-2. Ve a Perfil → Seguridad → Cambiar contraseña
-3. ¡Comienza a recibir solicitudes con prioridad!
+1. Ingresa con tu contraseña habitual
+2. Revisa tu panel de proveedor y beneficios activos
+3. Comienza a recibir solicitudes con prioridad
 
 Si tienes preguntas, contáctanos en ${data.supportEmail || 'soporte@services360.app'}
 
@@ -123,7 +111,7 @@ Si tienes preguntas, contáctanos en ${data.supportEmail || 'soporte@services360
     // For Supabase Email (limited free tier):
     const { data: result, error } = await supabaseClient.rpc('send_email', {
       p_to: data.to,
-      p_subject: '¡Bienvenido a Services 360 PRO! - Tu contraseña temporal',
+      p_subject: 'Tu plan PRO ya está activo en Services 360',
       p_html_body: htmlTemplate,
       p_text_body: textTemplate,
     });

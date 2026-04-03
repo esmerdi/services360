@@ -6,6 +6,7 @@ import ErrorMessage from '../../components/common/ErrorMessage';
 import Modal from '../../components/common/Modal';
 import { supabase } from '../../lib/supabase';
 import { useI18n } from '../../context/I18nContext';
+import { getAdminManagementText } from '../../i18n/adminManagementText';
 import type { Service, Category } from '../../types';
 
 const ADMIN_NAV = [
@@ -30,6 +31,7 @@ type ServiceWithCategory = Service & { category?: Category };
 
 export default function AdminServices() {
   const { language } = useI18n();
+  const text = getAdminManagementText(language).services;
   const [services, setServices]   = useState<ServiceWithCategory[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading]     = useState(true);
@@ -79,14 +81,10 @@ export default function AdminServices() {
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) { setFormError(language === 'es' ? 'El nombre es obligatorio.' : 'Name is required.'); return; }
+    if (!form.name.trim()) { setFormError(text.nameRequired); return; }
 
     if (form.category_id && !leafCategoryIds.has(form.category_id)) {
-      setFormError(
-        language === 'es'
-          ? 'Selecciona una sub-subcategoria (categoria hoja) para el servicio.'
-          : 'Select a leaf category (sub-subcategory) for this service.'
-      );
+      setFormError(text.leafCategoryRequired);
       return;
     }
 
@@ -110,7 +108,7 @@ export default function AdminServices() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm(language === 'es' ? 'Eliminar este servicio? Las solicitudes existentes pueden verse afectadas.' : 'Delete this service? Existing requests may be affected.')) return;
+    if (!confirm(text.deleteConfirm)) return;
     const { error: err } = await supabase.from('services').delete().eq('id', id);
     if (err) alert(err.message);
     else fetchData();
@@ -135,7 +133,7 @@ export default function AdminServices() {
   }, [categories]);
 
   const getCategoryPath = useCallback((categoryId: string | null | undefined) => {
-    if (!categoryId) return language === 'es' ? 'Sin categoria' : 'No category';
+    if (!categoryId) return text.noCategory;
 
     const path: string[] = [];
     let current = categoryMap.get(categoryId);
@@ -148,8 +146,8 @@ export default function AdminServices() {
       current = current.parent_id ? categoryMap.get(current.parent_id) : undefined;
     }
 
-    return path.length > 0 ? path.join(' > ') : (language === 'es' ? 'Sin categoria' : 'No category');
-  }, [categoryMap, language]);
+    return path.length > 0 ? path.join(' > ') : text.noCategory;
+  }, [categoryMap, text.noCategory]);
 
   const leafCategories = useMemo(
     () => categories.filter((c) => leafCategoryIds.has(c.id)).sort((a, b) => getCategoryPath(a.id).localeCompare(getCategoryPath(b.id))),
@@ -174,7 +172,6 @@ export default function AdminServices() {
     setCurrentPage(1);
   }, [search, pageSize]);
 
-  const es = language === 'es';
   const totalRecords = filtered.length;
   const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
   const safePage = Math.min(currentPage, totalPages);
@@ -190,14 +187,14 @@ export default function AdminServices() {
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-sky-700">
               <Wrench className="h-3.5 w-3.5" aria-hidden="true" />
-              {es ? 'Catalogo de servicios' : 'Service catalog'}
+              {text.badge}
             </div>
-            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{es ? 'Servicios' : 'Services'}</h1>
-            <p className="mt-1 text-sm text-slate-600 md:text-base">{services.length} {es ? 'servicios en total' : 'total services'}</p>
+            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{text.title}</h1>
+            <p className="mt-1 text-sm text-slate-600 md:text-base">{services.length} {text.totalSuffix}</p>
           </div>
           <button onClick={openCreate} className="btn-primary self-start sm:self-auto">
             <Plus className="h-4 w-4" />
-            {es ? 'Nuevo servicio' : 'New Service'}
+            {text.newService}
           </button>
         </div>
       </div>
@@ -209,14 +206,14 @@ export default function AdminServices() {
             <input
               type="search"
               className="input pl-9"
-              placeholder={es ? 'Buscar servicios...' : 'Search services...'}
+              placeholder={text.searchPlaceholder}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
           <div className="flex items-center gap-2">
             <label htmlFor="services-page-size" className="text-sm text-slate-500">
-              {es ? 'Filas' : 'Rows'}
+              {text.rows}
             </label>
             <select
               id="services-page-size"
@@ -243,17 +240,17 @@ export default function AdminServices() {
           <table className="dashboard-table">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{es ? 'Nombre' : 'Name'}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{es ? 'Categoria' : 'Category'}</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 hidden md:table-cell">{es ? 'Descripcion' : 'Description'}</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{es ? 'Acciones' : 'Actions'}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{text.colName}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{text.colCategory}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 hidden md:table-cell">{text.colDescription}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{text.colActions}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {paginatedServices.length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-4 py-10 text-center text-slate-400">
-                    {es ? 'No se encontraron servicios.' : 'No services found.'}
+                    {text.noResults}
                   </td>
                 </tr>
               )}
@@ -264,7 +261,7 @@ export default function AdminServices() {
                     {getCategoryPath(svc.category_id)}
                   </td>
                   <td className="px-4 py-3 text-slate-500 hidden md:table-cell max-w-xs truncate">
-                    {svc.description ?? (es ? 'Sin descripcion' : '—')}
+                    {svc.description ?? text.noDescription}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-1">
@@ -286,9 +283,7 @@ export default function AdminServices() {
 
           <div className="flex flex-col gap-3 border-t border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-slate-500">
-              {es
-                ? `Mostrando ${visibleStart}-${visibleEnd} de ${totalRecords}`
-                : `Showing ${visibleStart}-${visibleEnd} of ${totalRecords}`}
+              {`${text.showing} ${visibleStart}-${visibleEnd} ${text.of} ${totalRecords}`}
             </p>
 
             <div className="flex items-center gap-2">
@@ -298,10 +293,10 @@ export default function AdminServices() {
                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={safePage === 1}
               >
-                {es ? 'Anterior' : 'Previous'}
+                {text.previous}
               </button>
               <span className="text-sm text-slate-500">
-                {es ? `Página ${safePage} de ${totalPages}` : `Page ${safePage} of ${totalPages}`}
+                {`${text.page} ${safePage} ${text.of} ${totalPages}`}
               </span>
               <button
                 type="button"
@@ -309,7 +304,7 @@ export default function AdminServices() {
                 onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                 disabled={safePage >= totalPages}
               >
-                {es ? 'Siguiente' : 'Next'}
+                {text.next}
               </button>
             </div>
           </div>
@@ -319,57 +314,53 @@ export default function AdminServices() {
       <Modal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={editing ? (es ? 'Editar servicio' : 'Edit Service') : (es ? 'Nuevo servicio' : 'New Service')}
+        title={editing ? text.editService : text.newService}
       >
         <div className="space-y-4">
           {formError && <ErrorMessage message={formError} />}
 
           <div className="form-group">
-            <label className="label">{es ? 'Nombre *' : 'Name *'}</label>
+            <label className="label">{text.nameLabel}</label>
             <input
               className="input"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder={es ? 'ej. Limpieza profunda del hogar' : 'e.g. Deep House Cleaning'}
+              placeholder={text.namePlaceholder}
             />
           </div>
 
           <div className="form-group">
-            <label className="label">{es ? 'Categoria' : 'Category'}</label>
+            <label className="label">{text.categoryLabel}</label>
             <select
               className="input"
               value={form.category_id}
               onChange={(e) => setForm({ ...form, category_id: e.target.value })}
             >
-              <option value="">{es ? 'Sin categoria' : 'No category'}</option>
+              <option value="">{text.categoryNone}</option>
               {leafCategories.map((c) => (
                 <option key={c.id} value={c.id}>{getCategoryPath(c.id)}</option>
               ))}
             </select>
-            <p className="mt-1 text-xs text-slate-500">
-              {es
-                ? 'Solo se permiten categorias hoja (sub-subcategorias) para asociar servicios.'
-                : 'Only leaf categories (sub-subcategories) can be assigned to services.'}
-            </p>
+            <p className="mt-1 text-xs text-slate-500">{text.leafHint}</p>
           </div>
 
           <div className="form-group">
-            <label className="label">{es ? 'Descripcion' : 'Description'}</label>
+            <label className="label">{text.descriptionLabel}</label>
             <textarea
               className="input resize-none"
               rows={3}
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder={es ? 'Descripcion corta del servicio...' : 'Short description of the service...'}
+              placeholder={text.descriptionPlaceholder}
             />
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
             <button onClick={() => setModalOpen(false)} className="btn-secondary">
-              {es ? 'Cancelar' : 'Cancel'}
+              {text.cancel}
             </button>
             <button onClick={handleSave} disabled={saving} className="btn-primary">
-              {saving ? <LoadingSpinner size="sm" /> : editing ? (es ? 'Guardar cambios' : 'Save Changes') : (es ? 'Crear' : 'Create')}
+              {saving ? <LoadingSpinner size="sm" /> : editing ? text.saveChanges : text.create}
             </button>
           </div>
         </div>

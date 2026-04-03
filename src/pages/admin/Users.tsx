@@ -6,6 +6,7 @@ import ErrorMessage from '../../components/common/ErrorMessage';
 import Modal from '../../components/common/Modal';
 import { supabase } from '../../lib/supabase';
 import { useI18n } from '../../context/I18nContext';
+import { getAdminManagementText } from '../../i18n/adminManagementText';
 import { formatDate, getInitials } from '../../utils/helpers';
 import type { User, UserRole } from '../../types';
 
@@ -28,6 +29,7 @@ const PAGE_SIZE_OPTIONS = [10, 20, 30, 40, 50];
 
 export default function AdminUsers() {
   const { language } = useI18n();
+  const text = getAdminManagementText(language).users;
   const [users, setUsers]           = useState<User[]>([]);
   const [filtered, setFiltered]     = useState<User[]>([]);
   const [loading, setLoading]       = useState(true);
@@ -90,7 +92,6 @@ export default function AdminUsers() {
     fetchUsers();
   }
 
-  const es = language === 'es';
   const totalRecords = filtered.length;
   const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
   const safePage = Math.min(currentPage, totalPages);
@@ -106,23 +107,23 @@ export default function AdminUsers() {
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-sky-700">
               <UsersIcon className="h-3.5 w-3.5" aria-hidden="true" />
-              {es ? 'Gestion de usuarios' : 'User management'}
+              {text.badge}
             </div>
-            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{es ? 'Usuarios' : 'Users'}</h1>
-            <p className="mt-1 text-sm text-slate-600 md:text-base">{users.length} {es ? 'usuarios registrados' : 'registered users'}</p>
+            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{text.title}</h1>
+            <p className="mt-1 text-sm text-slate-600 md:text-base">{users.length} {text.totalSuffix}</p>
           </div>
           <div className="flex gap-2">
-            <label htmlFor="roleFilter" className="sr-only">{es ? 'Filtrar por rol' : 'Filter by role'}</label>
+            <label htmlFor="roleFilter" className="sr-only">{text.roleFilterLabel}</label>
           <select
             id="roleFilter"
             className="input w-auto"
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
           >
-            <option value="all">{es ? 'Todos los roles' : 'All Roles'}</option>
-            <option value="client">{es ? 'Clientes' : 'Clients'}</option>
-            <option value="provider">{es ? 'Proveedores' : 'Providers'}</option>
-            <option value="admin">{es ? 'Administradores' : 'Admins'}</option>
+            <option value="all">{text.allRoles}</option>
+            <option value="client">{text.clients}</option>
+            <option value="provider">{text.providers}</option>
+            <option value="admin">{text.admins}</option>
           </select>
           </div>
         </div>
@@ -136,14 +137,14 @@ export default function AdminUsers() {
             <input
               type="search"
               className="input pl-9"
-              placeholder={es ? 'Buscar por nombre o correo...' : 'Search by name or email...'}
+              placeholder={text.searchPlaceholder}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
           <div className="flex items-center gap-2">
             <label htmlFor="users-page-size" className="text-sm text-slate-500">
-              {es ? 'Filas' : 'Rows'}
+              {text.rows}
             </label>
             <select
               id="users-page-size"
@@ -171,18 +172,18 @@ export default function AdminUsers() {
             <table className="dashboard-table">
               <thead className="border-b border-slate-200 bg-slate-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{es ? 'Usuario' : 'User'}</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{es ? 'Rol' : 'Role'}</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{es ? 'Telefono' : 'Phone'}</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{es ? 'Registro' : 'Joined'}</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{es ? 'Acciones' : 'Actions'}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{text.colUser}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{text.colRole}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{text.colPhone}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{text.colJoined}</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{text.colActions}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {paginatedUsers.length === 0 && (
                   <tr>
                     <td colSpan={5} className="px-4 py-10 text-center text-slate-400">
-                      {es ? 'No se encontraron usuarios.' : 'No users found.'}
+                      {text.noResults}
                     </td>
                   </tr>
                 )}
@@ -197,7 +198,7 @@ export default function AdminUsers() {
                         </div>
                         <div>
                           <p className="font-medium text-slate-900">
-                            {u.full_name || (es ? 'Sin nombre' : '—')}
+                            {u.full_name || text.noName}
                           </p>
                           <p className="text-xs text-slate-500">{u.email}</p>
                         </div>
@@ -220,7 +221,7 @@ export default function AdminUsers() {
                         className="btn-secondary text-xs px-3 py-1.5"
                       >
                         <Shield className="h-3.5 w-3.5" />
-                        {es ? 'Editar rol' : 'Edit Role'}
+                        {text.editRole}
                       </button>
                     </td>
                   </tr>
@@ -231,9 +232,7 @@ export default function AdminUsers() {
 
           <div className="flex flex-col gap-3 border-t border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-slate-500">
-              {es
-                ? `Mostrando ${visibleStart}-${visibleEnd} de ${totalRecords}`
-                : `Showing ${visibleStart}-${visibleEnd} of ${totalRecords}`}
+              {`${text.showing} ${visibleStart}-${visibleEnd} ${text.of} ${totalRecords}`}
             </p>
 
             <div className="flex items-center gap-2">
@@ -243,10 +242,10 @@ export default function AdminUsers() {
                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={safePage === 1}
               >
-                {es ? 'Anterior' : 'Previous'}
+                {text.previous}
               </button>
               <span className="text-sm text-slate-500">
-                {es ? `Página ${safePage} de ${totalPages}` : `Page ${safePage} of ${totalPages}`}
+                {`${text.page} ${safePage} ${text.of} ${totalPages}`}
               </span>
               <button
                 type="button"
@@ -254,7 +253,7 @@ export default function AdminUsers() {
                 onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                 disabled={safePage >= totalPages}
               >
-                {es ? 'Siguiente' : 'Next'}
+                {text.next}
               </button>
             </div>
           </div>
@@ -265,12 +264,12 @@ export default function AdminUsers() {
       <Modal
         isOpen={!!editUser}
         onClose={() => setEditUser(null)}
-        title={es ? 'Cambiar rol de usuario' : 'Change User Role'}
+        title={text.changeUserRole}
       >
         {editUser && (
           <div className="space-y-4">
             <p className="text-slate-600">
-              {es ? 'Cambiando rol para' : 'Changing role for'} <strong>{editUser.full_name || editUser.email}</strong>
+              {text.changingRoleFor} <strong>{editUser.full_name || editUser.email}</strong>
             </p>
             <div className="grid gap-3">
               {(['client', 'provider', 'admin'] as UserRole[]).map((r) => (
@@ -286,7 +285,7 @@ export default function AdminUsers() {
                 >
                   <span className="font-medium capitalize text-slate-800">{r}</span>
                   {editUser.role === r && (
-                    <span className="text-xs text-blue-600 font-medium">{es ? 'Actual' : 'Current'}</span>
+                    <span className="text-xs text-blue-600 font-medium">{text.current}</span>
                   )}
                 </button>
               ))}
