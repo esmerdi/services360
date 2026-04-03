@@ -24,10 +24,9 @@ CREATE OR REPLACE FUNCTION public.reset_admin_password(
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
-  v_salt text := gen_salt('bf');
   v_found_email text;
 BEGIN
   -- Validate input early
@@ -48,7 +47,10 @@ BEGIN
 
   -- Update exactly one user (if it exists) and capture whether it matched
   UPDATE auth.users
-  SET encrypted_password = crypt(p_new_password, v_salt)
+  SET encrypted_password = extensions.crypt(
+    p_new_password,
+    extensions.gen_salt('bf')
+  )
   WHERE email = p_target_email
   RETURNING email INTO v_found_email;
 
