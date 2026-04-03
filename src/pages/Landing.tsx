@@ -25,12 +25,19 @@ type LandingStats = {
   total_cities: number;
 };
 
+type LandingPlan = {
+  name: 'FREE' | 'PRO';
+  price: number;
+  features: Record<string, unknown> | null;
+};
+
 export default function Landing() {
   const { user } = useAuth();
   const { t, language } = useI18n();
   const es = language === 'es';
   const navigate = useNavigate();
   const [landingStats, setLandingStats] = React.useState<LandingStats | null>(null);
+  const [landingPlans, setLandingPlans] = React.useState<LandingPlan[]>([]);
   const [planTab, setPlanTab] = React.useState<'providers' | 'clients'>('providers');
 
   React.useEffect(() => {
@@ -43,20 +50,30 @@ export default function Landing() {
     let mounted = true;
 
     const loadLandingStats = async () => {
-      const { data, error } = await supabase.rpc('public_landing_stats').single();
-      if (error || !data || !mounted) return;
+      const [{ data: statsData, error: statsError }, { data: plansData, error: plansError }] = await Promise.all([
+        supabase.rpc('public_landing_stats').single(),
+        supabase
+          .from('plans')
+          .select('name, price, features')
+          .in('name', ['FREE', 'PRO'])
+          .order('price', { ascending: true }),
+      ]);
 
-      const parsed = data as Partial<LandingStats>;
-      if (
-        typeof parsed.total_clients !== 'number' ||
-        typeof parsed.total_providers !== 'number' ||
-        typeof parsed.total_categories !== 'number' ||
-        typeof parsed.total_cities !== 'number'
-      ) {
-        return;
+      if (!statsError && statsData && mounted) {
+        const parsed = statsData as Partial<LandingStats>;
+        if (
+          typeof parsed.total_clients === 'number' &&
+          typeof parsed.total_providers === 'number' &&
+          typeof parsed.total_categories === 'number' &&
+          typeof parsed.total_cities === 'number'
+        ) {
+          setLandingStats(parsed as LandingStats);
+        }
       }
 
-      setLandingStats(parsed as LandingStats);
+      if (!plansError && plansData && mounted) {
+        setLandingPlans((plansData as LandingPlan[]) ?? []);
+      }
     };
 
     void loadLandingStats();
@@ -67,6 +84,13 @@ export default function Landing() {
   }, []);
 
   const formatCount = React.useCallback((value: number) => new Intl.NumberFormat().format(value), []);
+  const formatUsd = React.useCallback(
+    (value: number) => {
+      const locale = language === 'es' ? 'es-419' : 'en-US';
+      return new Intl.NumberFormat(locale, { style: 'currency', currency: 'USD' }).format(value);
+    },
+    [language]
+  );
   const getStatValue = React.useCallback(
     (value: number, fallbackKey: string) => {
       if (!landingStats) return t(fallbackKey);
@@ -154,6 +178,44 @@ export default function Landing() {
     ],
     [t]
   );
+
+  const freePlan = React.useMemo(
+    () => landingPlans.find((plan) => plan.name === 'FREE') ?? null,
+    [landingPlans]
+  );
+
+  const proPlan = React.useMemo(
+    () => landingPlans.find((plan) => plan.name === 'PRO') ?? null,
+    [landingPlans]
+  );
+
+  const freePlanQuota = React.useMemo(() => {
+    const features = (freePlan?.features ?? {}) as Record<string, unknown>;
+    const maxRequestsRaw = features.max_requests_per_month;
+    const windowDaysRaw = features.request_window_days;
+
+    const maxRequests = typeof maxRequestsRaw === 'number'
+      ? maxRequestsRaw
+      : typeof maxRequestsRaw === 'string'
+        ? Number(maxRequestsRaw)
+        : 10;
+
+    const windowDays = typeof windowDaysRaw === 'number'
+      ? windowDaysRaw
+      : typeof windowDaysRaw === 'string'
+        ? Number(windowDaysRaw)
+        : 30;
+
+    const safeMaxRequests = Number.isFinite(maxRequests) ? maxRequests : 10;
+    const safeWindowDays = Number.isFinite(windowDays) && windowDays > 0 ? windowDays : 30;
+    const monthlyEquivalent = Math.round((safeMaxRequests / safeWindowDays) * 30);
+
+    return {
+      maxRequests: safeMaxRequests,
+      windowDays: safeWindowDays,
+      monthlyEquivalent,
+    };
+  }, [freePlan?.features]);
 
   if (user) return null;
 
@@ -392,13 +454,21 @@ export default function Landing() {
                   {t('landing.planTrialLabel')}
                 </p>
                 <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
-                  {t('landing.planTrialPrice')}
+                  {freePlan ? `${formatUsd(freePlan.price)} ${es ? 'sin caducación' : 'without expiration'}` : t('landing.planTrialPrice')}
                 </p>
-                <p className="mt-1.5 text-sm text-slate-600">{t('landing.planTrialDescription')}</p>
+                <p className="mt-1.5 text-sm text-slate-600">
+                  {es
+                    ? `Cupo configurable: ${freePlanQuota.maxRequests} solicitudes cada ${freePlanQuota.windowDays} día(s).`
+                    : `Configurable quota: ${freePlanQuota.maxRequests} requests every ${freePlanQuota.windowDays} day(s).`}
+                </p>
                 <ul className="mt-5 space-y-2">
                   {[
-                    t('landing.planTrialFeatureDays'),
-                    t('landing.planTrialFeatureRequests'),
+                    es
+                      ? `${freePlanQuota.maxRequests} solicitudes por ventana de ${freePlanQuota.windowDays} día(s)`
+                      : `${freePlanQuota.maxRequests} requests per ${freePlanQuota.windowDays}-day window`,
+                    es
+                      ? `Equivalente aproximado: ${freePlanQuota.monthlyEquivalent} solicitudes cada 30 días`
+                      : `Approximate equivalent: ${freePlanQuota.monthlyEquivalent} requests every 30 days`,
                     t('landing.planTrialFeatureMap'),
                   ].map((feat) => (
                     <li key={feat} className="flex items-center gap-2 text-sm text-slate-600">
@@ -424,7 +494,7 @@ export default function Landing() {
                   {t('landing.planProLabel')}
                 </p>
                 <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
-                  {t('landing.planProPrice')}
+                  {proPlan ? `${formatUsd(proPlan.price)} / ${es ? 'mes' : 'month'}` : t('landing.planProPrice')}
                 </p>
                 <p className="mt-1.5 text-sm text-slate-600">{t('landing.planProDescription')}</p>
                 <ul className="mt-5 space-y-2">
