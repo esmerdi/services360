@@ -117,7 +117,7 @@ export default function ProviderProfile() {
     const grouped = new Map<string, ServiceOption[]>();
 
     for (const service of services) {
-      let rootName = text.uncategorized;
+      let rootName: string = text.uncategorized;
       const visited = new Set<string>();
       let current = service.category_id ? categoryMap.get(service.category_id) : undefined;
 
