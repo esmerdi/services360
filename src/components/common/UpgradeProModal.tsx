@@ -1,18 +1,5 @@
-/**
- * UpgradeProModal - Dialog to initiate PRO plan upgrade via Hotmart payment
- * 
- * Usage:
- * ```tsx
- * <UpgradeProModal
- *   isOpen={showUpgrade}
- *   onClose={() => setShowUpgrade(false)}
- *   currentPlan="free"
- * />
- * ```
- */
-
 import React, { useEffect, useState } from 'react';
-import { X, Check, Zap, AlertCircle } from 'lucide-react';
+import { X, Check, Zap, Sparkles, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { useI18n } from '../../context/I18nContext';
 import { supabase } from '../../lib/supabase';
 import { getUpgradeProFeatures, getUpgradeProModalText } from '../../i18n/upgradeProModalText';
@@ -48,6 +35,20 @@ export function UpgradeProModal({
       });
   }, [isOpen]);
 
+  // Escape key
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    if (isOpen) document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [isOpen, onClose]);
+
+  // Body scroll lock
+  useEffect(() => {
+    if (isOpen) document.body.style.overflow = 'hidden';
+    else document.body.style.overflow = '';
+    return () => { document.body.style.overflow = ''; };
+  }, [isOpen]);
+
   const formatPrice = (price: number) =>
     new Intl.NumberFormat(language === 'es' ? 'es-419' : 'en-US', {
       minimumFractionDigits: 2,
@@ -58,24 +59,16 @@ export function UpgradeProModal({
 
   const handleProceedToPayment = async () => {
     setIsLoadingPayment(true);
-
     try {
-      // TODO: Get Hotmart affiliate link from environment variables
-      // HOTMART_AFFILIATE_LINK points to your product in Hotmart sandbox/production
-      const hotmartLink = import.meta.env.VITE_HOTMART_SANDBOX_AFFILIATE_LINK ||
-        'https://sandbox.hotmart.com/YOUR_PRODUCT_ID'; // Replace with your Hotmart product ID
+      const hotmartLink =
+        import.meta.env.VITE_HOTMART_SANDBOX_AFFILIATE_LINK ||
+        'https://sandbox.hotmart.com/YOUR_PRODUCT_ID';
 
       if (hotmartLink.includes('YOUR_PRODUCT_ID')) {
         alert(content.missingLink);
         return;
       }
-
-      // Optional: Track conversion event
-      if (onProceedToPayment) {
-        onProceedToPayment();
-      }
-
-      // Redirect to Hotmart payment page
+      if (onProceedToPayment) onProceedToPayment();
       window.location.href = hotmartLink;
     } catch (error) {
       console.error('Error proceeding to payment:', error);
@@ -86,110 +79,132 @@ export function UpgradeProModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="relative w-full max-w-lg rounded-lg bg-white shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      {/* Modal */}
+      <div
+        className="relative z-10 w-full max-h-[90dvh] overflow-y-auto rounded-t-2xl bg-white shadow-2xl sm:max-w-lg sm:rounded-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="upgrade-modal-title"
+      >
         {/* Header */}
-        <div className="border-b border-gray-200 bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-6 text-white">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <Zap className="h-6 w-6" />
-              <h2 className="text-2xl font-bold">{content.title}</h2>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-white/80 hover:text-white transition"
-            >
-              <X className="h-5 w-5" />
-            </button>
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4 sm:px-6">
+          <div className="flex items-center gap-2.5">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-sky-700">
+              <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+              PRO
+            </span>
+            <h2 id="upgrade-modal-title" className="text-base font-semibold text-slate-900 sm:text-lg">
+              {content.title}
+            </h2>
           </div>
-          <p className="mt-2 text-purple-100">{content.subtitle}</p>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+            aria-label="Close"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
 
         {/* Body */}
-        <div className="px-6 py-6">
+        <div className="px-5 py-5 sm:px-6 sm:py-6">
           {currentPlan === 'pro' ? (
-            // Already PRO state
-            <div className="rounded-lg bg-green-50 p-4 text-center">
-              <Check className="mx-auto h-8 w-8 text-green-600 mb-2" />
-              <p className="text-sm font-medium text-green-700">{content.alreadyPro}</p>
+            /* Already PRO */
+            <div className="flex flex-col items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-6 text-center">
+              <span className="flex h-12 w-12 items-center justify-center rounded-full border border-emerald-200 bg-white shadow-sm">
+                <Check className="h-6 w-6 text-emerald-600" aria-hidden="true" />
+              </span>
+              <p className="text-sm font-medium text-emerald-800">{content.alreadyPro}</p>
             </div>
           ) : (
-            <>
-              {/* Current Plan Display */}
-              <div className="mb-6">
-                <p className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-2">
+            <div className="space-y-5">
+              {/* Subtitle */}
+              <p className="text-sm text-slate-600">{content.subtitle}</p>
+
+              {/* Current plan */}
+              <div>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                   {content.currentPlanLabel}
                 </p>
-                <div className="rounded-lg border-2 border-gray-200 bg-gray-50 px-4 py-3">
-                  <p className="font-semibold text-gray-900">FREE</p>
-                  <p className="text-xs text-gray-600 mt-1">{content.freePlanQuota}</p>
+                <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+                  <p className="text-sm font-semibold text-slate-900">FREE</p>
+                  <p className="mt-0.5 text-xs text-slate-500">{content.freePlanQuota}</p>
                 </div>
               </div>
 
-              {/* PRO Features */}
-              <div className="mb-8">
-                <h3 className="text-sm font-semibold text-gray-700 mb-4">
+              {/* PRO features */}
+              <div>
+                <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                   {content.includesTitle}
-                </h3>
-                <ul className="space-y-3">
+                </p>
+                <ul className="space-y-2">
                   {proFeatures.map((feature, idx) => (
-                    <li key={idx} className="flex items-start gap-3">
-                      <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm text-gray-700">{feature}</span>
+                    <li key={idx} className="flex items-start gap-2.5">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-sky-600" aria-hidden="true" />
+                      <span className="text-sm leading-5 text-slate-700">{feature}</span>
                     </li>
                   ))}
                 </ul>
               </div>
 
-              {/* Price Badge */}
-              <div className="mb-8 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 p-4 text-center border-2 border-purple-200">
-                <p className="text-sm text-gray-600">{content.comparePlan}</p>
-                <div className="mt-2 flex items-baseline justify-center gap-1">
-                  <span className="text-3xl font-bold text-gray-900">
-                    {proPrice !== null ? `$${formatPrice(proPrice)}` : '...'}
+              {/* Price block */}
+              <div className="rounded-xl border border-sky-200 bg-gradient-to-b from-cyan-50 to-white p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                  {content.comparePlan}
+                </p>
+                <div className="mt-2 flex items-end gap-1.5">
+                  <span className="text-3xl font-bold leading-none text-sky-700">
+                    {proPrice !== null ? `$${formatPrice(proPrice)}` : '…'}
                   </span>
-                  <span className="text-sm text-gray-600">{content.monthlySuffix}</span>
+                  <span className="pb-0.5 text-sm text-slate-500">{content.monthlySuffix}</span>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">{content.noCommitments}</p>
+                <p className="mt-1.5 text-xs text-slate-500">{content.noCommitments}</p>
               </div>
 
-              <div className="mb-8 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                {content.paymentNotice}
+              {/* Payment notice */}
+              <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" aria-hidden="true" />
+                <p className="text-xs leading-5 text-amber-800">{content.paymentNotice}</p>
               </div>
 
-              {/* Security Notice */}
-              <div className="mb-8 flex items-start gap-2 rounded-lg bg-blue-50 p-3 border-l-4 border-blue-400">
-                <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-blue-700">{content.securityNotice}</p>
+              {/* Security notice */}
+              <div className="flex items-start gap-2.5 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" aria-hidden="true" />
+                <p className="text-xs leading-5 text-slate-600">{content.securityNotice}</p>
               </div>
 
-              {/* CTA Buttons */}
-              <div className="flex gap-3">
-                <button
-                  onClick={onClose}
-                  className="flex-1 px-4 py-2 border-2 border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition"
-                >
+              {/* CTAs */}
+              <div className="flex gap-3 pt-1">
+                <button onClick={onClose} className="btn-secondary flex-1">
                   {content.cancel}
                 </button>
                 <button
                   onClick={handleProceedToPayment}
                   disabled={isLoadingPayment}
-                  className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg font-semibold text-white hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="btn-primary flex-1"
                 >
                   {isLoadingPayment ? (
                     <>
-                      <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                       {content.processing}
                     </>
                   ) : (
                     <>
-                      <Zap className="h-4 w-4" />
+                      <Zap className="h-4 w-4" aria-hidden="true" />
                       {content.proceedButton}
                     </>
                   )}
                 </button>
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>
