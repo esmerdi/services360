@@ -84,10 +84,13 @@ export default function Landing() {
   }, []);
 
   const formatCount = React.useCallback((value: number) => new Intl.NumberFormat().format(value), []);
-  const formatUsd = React.useCallback(
+  const formatAmount = React.useCallback(
     (value: number) => {
       const locale = language === 'es' ? 'es-419' : 'en-US';
-      return new Intl.NumberFormat(locale, { style: 'currency', currency: 'USD' }).format(value);
+      return new Intl.NumberFormat(locale, {
+        minimumFractionDigits: value % 1 === 0 ? 0 : 2,
+        maximumFractionDigits: 2,
+      }).format(value);
     },
     [language]
   );
@@ -454,21 +457,17 @@ export default function Landing() {
                   {t('landing.planTrialLabel')}
                 </p>
                 <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
-                  {freePlan ? `${formatUsd(freePlan.price)} ${es ? 'sin caducación' : 'without expiration'}` : t('landing.planTrialPrice')}
+                  {freePlan ? `${formatAmount(freePlan.price)} USD ${es ? 'sin caducación' : 'without expiration'}` : t('landing.planTrialPrice')}
                 </p>
                 <p className="mt-1.5 text-sm text-slate-600">
                   {es
-                    ? `Cupo configurable: ${freePlanQuota.maxRequests} solicitudes cada ${freePlanQuota.windowDays} día(s).`
-                    : `Configurable quota: ${freePlanQuota.maxRequests} requests every ${freePlanQuota.windowDays} day(s).`}
+                    ? 'Incluye 3 solicitudes por día y hasta 90 solicitudes por mes.'
+                    : 'Includes 3 requests per day and up to 90 requests per month.'}
                 </p>
                 <ul className="mt-5 space-y-2">
                   {[
-                    es
-                      ? `${freePlanQuota.maxRequests} solicitudes por ventana de ${freePlanQuota.windowDays} día(s)`
-                      : `${freePlanQuota.maxRequests} requests per ${freePlanQuota.windowDays}-day window`,
-                    es
-                      ? `Equivalente aproximado: ${freePlanQuota.monthlyEquivalent} solicitudes cada 30 días`
-                      : `Approximate equivalent: ${freePlanQuota.monthlyEquivalent} requests every 30 days`,
+                    es ? '3 solicitudes por día' : '3 requests per day',
+                    es ? '90 solicitudes por mes' : '90 requests per month',
                     t('landing.planTrialFeatureMap'),
                   ].map((feat) => (
                     <li key={feat} className="flex items-center gap-2 text-sm text-slate-600">
@@ -494,7 +493,7 @@ export default function Landing() {
                   {t('landing.planProLabel')}
                 </p>
                 <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
-                  {proPlan ? `${formatUsd(proPlan.price)} / ${es ? 'mes' : 'month'}` : t('landing.planProPrice')}
+                  {proPlan ? `${formatAmount(proPlan.price)} USD / ${es ? 'mes' : 'month'}` : t('landing.planProPrice')}
                 </p>
                 <p className="mt-1.5 text-sm text-slate-600">{t('landing.planProDescription')}</p>
                 <ul className="mt-5 space-y-2">
