@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Check, CircleDollarSign, Pencil, ShieldCheck, Sparkles } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -25,6 +25,8 @@ export default function AdminPlans() {
   const [error, setError]         = useState<string | null>(null);
   const [editing, setEditing]     = useState<Plan | null>(null);
   const [price, setPrice]         = useState('');
+  const [maxRequests, setMaxRequests] = useState('');
+  const [requestWindowDays, setRequestWindowDays] = useState('');
   const [saving, setSaving]       = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -42,22 +44,54 @@ export default function AdminPlans() {
   useEffect(() => { fetchPlans(); }, []);
 
   const openEdit = (plan: Plan) => {
+    const planFeatures = (plan.features ?? {}) as Record<string, unknown>;
+    const maxRequestsValue = Number(planFeatures.max_requests_per_month ?? (plan.price === 0 ? 10 : -1));
+    const windowDaysValue = Number(planFeatures.request_window_days ?? 30);
+
     setEditing(plan);
     setPrice(String(plan.price));
+    setMaxRequests(Number.isFinite(maxRequestsValue) ? String(maxRequestsValue) : String(plan.price === 0 ? 10 : -1));
+    setRequestWindowDays(Number.isFinite(windowDaysValue) ? String(windowDaysValue) : '30');
     setFormError(null);
   };
 
   const handleSave = async () => {
+    if (!editing) return;
+
     const parsed = parseFloat(price);
     if (isNaN(parsed) || parsed < 0) {
       setFormError(language === 'es' ? 'Ingresa un precio valido.' : 'Please enter a valid price.');
       return;
     }
+
+    const parsedMaxRequests = parseInt(maxRequests, 10);
+    const parsedWindowDays = parseInt(requestWindowDays, 10);
+
+    if (isNaN(parsedMaxRequests) || parsedMaxRequests < -1) {
+      setFormError(language === 'es' ? 'Ingresa un cupo valido (usa -1 para ilimitado).' : 'Enter a valid quota (use -1 for unlimited).');
+      return;
+    }
+
+    if (isNaN(parsedWindowDays) || parsedWindowDays < 1) {
+      setFormError(language === 'es' ? 'Ingresa una ventana valida en dias (minimo 1).' : 'Enter a valid window in days (minimum 1).');
+      return;
+    }
+
+    const currentFeatures = (editing.features ?? {}) as Record<string, unknown>;
+    const nextFeatures: Record<string, unknown> = {
+      ...currentFeatures,
+      max_requests_per_month: parsedMaxRequests,
+      request_window_days: parsedWindowDays,
+    };
+
     setSaving(true);
     const { error: err } = await supabase
       .from('plans')
-      .update({ price: parsed })
-      .eq('id', editing!.id);
+      .update({
+        price: parsed,
+        features: nextFeatures,
+      })
+      .eq('id', editing.id);
     setSaving(false);
     if (err) { setFormError(err.message); return; }
     setEditing(null);
@@ -74,6 +108,22 @@ export default function AdminPlans() {
   const es = language === 'es';
   const freePlans = plans.filter((plan) => plan.price === 0).length;
   const maxPrice = plans.reduce((max, plan) => Math.max(max, plan.price), 0);
+  const quotaPreview = useMemo(() => {
+    const max = parseInt(maxRequests, 10);
+    const windowDays = parseInt(requestWindowDays, 10);
+
+    if (!Number.isFinite(max) || !Number.isFinite(windowDays) || windowDays <= 0 || max < 0) {
+      return {
+        perDay: null as number | null,
+        perMonth: null as number | null,
+      };
+    }
+
+    return {
+      perDay: max / windowDays,
+      perMonth: (max / windowDays) * 30,
+    };
+  }, [maxRequests, requestWindowDays]);
 
   return (
     <Layout navItems={ADMIN_NAV} title="Plans">
@@ -181,6 +231,24 @@ export default function AdminPlans() {
                     </ul>
                   </div>
 
+                  {isFree && (() => {
+                    const features = (plan.features ?? {}) as Record<string, unknown>;
+                    const maxRequestsValue = Number(features.max_requests_per_month ?? 10);
+                    const windowDaysValue = Number(features.request_window_days ?? 30);
+                    const estimatedPerDay = windowDaysValue > 0 && maxRequestsValue >= 0 ? maxRequestsValue / windowDaysValue : null;
+
+                    return (
+                      <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50/80 p-3 text-xs text-emerald-800">
+                        <p className="font-semibold uppercase tracking-[0.08em]">{es ? 'Parametrización FREE' : 'FREE settings'}</p>
+                        <p className="mt-1">{es ? `Cupo por ventana: ${maxRequestsValue}` : `Window quota: ${maxRequestsValue}`}</p>
+                        <p>{es ? `Ventana: ${windowDaysValue} día(s)` : `Window: ${windowDaysValue} day(s)`}</p>
+                        {estimatedPerDay !== null && (
+                          <p>{es ? `Equiv. diario: ${estimatedPerDay.toFixed(2)} / día` : `Daily equiv.: ${estimatedPerDay.toFixed(2)} / day`}</p>
+                        )}
+                      </div>
+                    );
+                  })()}
+
                   <button
                     onClick={() => openEdit(plan)}
                     className="btn-secondary w-full focus-visible:ring-2 focus-visible:ring-blue-500"
@@ -199,14 +267,14 @@ export default function AdminPlans() {
       <Modal
         isOpen={!!editing}
         onClose={() => setEditing(null)}
-        title={es ? `Editar precio del plan ${editing?.name}` : `Edit ${editing?.name} Plan Price`}
+        title={es ? `Editar plan ${editing?.name}` : `Edit ${editing?.name} Plan`}
       >
         <div className="space-y-4">
           {formError && <ErrorMessage message={formError} />}
           <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-xs text-slate-600">
             <div className="flex items-center gap-2">
               <ShieldCheck className="h-4 w-4 text-slate-500" aria-hidden="true" />
-              <span>{es ? 'Actualiza solo el valor monetario. Las features del plan se mantienen.' : 'Update only the monetary value. Plan features stay unchanged.'}</span>
+              <span>{es ? 'Puedes ajustar precio y parametrizaciones del cupo de solicitudes.' : 'You can update price and request quota settings.'}</span>
             </div>
           </div>
 
@@ -221,12 +289,56 @@ export default function AdminPlans() {
               onChange={(e) => setPrice(e.target.value)}
             />
           </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="form-group">
+              <label className="label">{es ? 'Cupo por ventana' : 'Window quota'}</label>
+              <input
+                type="number"
+                min="-1"
+                step="1"
+                className="input"
+                value={maxRequests}
+                onChange={(e) => setMaxRequests(e.target.value)}
+                placeholder={es ? 'Ej: 3 (-1 ilimitado)' : 'Ex: 3 (-1 unlimited)'}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="label">{es ? 'Ventana (días)' : 'Window (days)'}</label>
+              <input
+                type="number"
+                min="1"
+                step="1"
+                className="input"
+                value={requestWindowDays}
+                onChange={(e) => setRequestWindowDays(e.target.value)}
+                placeholder={es ? 'Ej: 1 para diario' : 'Ex: 1 for daily'}
+              />
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-3 text-xs text-emerald-800">
+            <p className="font-semibold uppercase tracking-[0.08em]">{es ? 'Vista previa' : 'Preview'}</p>
+            {parseInt(maxRequests, 10) === -1 ? (
+              <p className="mt-1">{es ? 'Plan ilimitado.' : 'Unlimited plan.'}</p>
+            ) : (
+              <>
+                <p className="mt-1">{es ? `Cupo por ventana: ${maxRequests || '0'}` : `Window quota: ${maxRequests || '0'}`}</p>
+                <p>{es ? `Ventana: ${requestWindowDays || '0'} día(s)` : `Window: ${requestWindowDays || '0'} day(s)`}</p>
+                {quotaPreview.perDay !== null && quotaPreview.perMonth !== null && (
+                  <p>{es ? `Equivale a ${quotaPreview.perDay.toFixed(2)} por día (~${Math.round(quotaPreview.perMonth)} en 30 días)` : `Equivalent to ${quotaPreview.perDay.toFixed(2)} per day (~${Math.round(quotaPreview.perMonth)} in 30 days)`}</p>
+                )}
+              </>
+            )}
+          </div>
+
           <div className="flex justify-end gap-3">
             <button onClick={() => setEditing(null)} className="btn-secondary">
               {es ? 'Cancelar' : 'Cancel'}
             </button>
             <button onClick={handleSave} disabled={saving} className="btn-primary">
-              {saving ? <LoadingSpinner size="sm" /> : (es ? 'Guardar precio' : 'Save Price')}
+              {saving ? <LoadingSpinner size="sm" /> : (es ? 'Guardar cambios' : 'Save Changes')}
             </button>
           </div>
         </div>

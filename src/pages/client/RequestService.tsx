@@ -8,6 +8,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
 import { useLocation } from '../../context/LocationContext';
+import { formatClientQuotaError } from '../../utils/quota';
 import RequestServiceProvidersPanel from './request-service/RequestServiceProvidersPanel';
 import { buildProviderMarkers, getCategoryPath } from './request-service/utils';
 import { useRequestServiceData } from './request-service/useRequestServiceData';
@@ -23,7 +24,7 @@ export default function ClientRequestService() {
   const { serviceId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const { coords, refresh, loading: locationLoading } = useLocation();
   const {
     service,
@@ -41,11 +42,46 @@ export default function ClientRequestService() {
   const [description, setDescription] = useState('');
   const [budget, setBudget] = useState('');
   const [address, setAddress] = useState('');
+  const [clientQuota, setClientQuota] = useState<{
+    plan_name: string;
+    max_requests: number;
+    request_window_days: number;
+    used_requests: number;
+    remaining_requests: number;
+    window_end: string | null;
+  } | null>(null);
 
   useEffect(() => {
     if (!user?.address) return;
     setAddress((current) => (current.trim().length > 0 ? current : user.address ?? ''));
   }, [user?.address]);
+
+  useEffect(() => {
+    if (!user) return;
+    const currentUserId = user.id;
+
+    let mounted = true;
+    async function fetchClientQuota() {
+      const { data, error: quotaError } = await supabase
+        .rpc('get_client_request_quota', { p_client_id: currentUserId })
+        .maybeSingle();
+
+      if (quotaError || !mounted) return;
+      setClientQuota((data as {
+        plan_name: string;
+        max_requests: number;
+        request_window_days: number;
+        used_requests: number;
+        remaining_requests: number;
+        window_end: string | null;
+      }) ?? null);
+    }
+
+    void fetchClientQuota();
+    return () => {
+      mounted = false;
+    };
+  }, [user]);
 
   const addressPlaceholder = useMemo(() => {
     if (user?.address?.trim()) {
@@ -107,12 +143,28 @@ export default function ClientRequestService() {
     setSubmitting(false);
 
     if (requestError) {
-      setError(requestError.message);
+      setError(formatClientQuotaError(requestError.message, language));
       return;
+    }
+
+    if (user) {
+      const { data: quotaData } = await supabase
+        .rpc('get_client_request_quota', { p_client_id: user.id })
+        .maybeSingle();
+      setClientQuota((quotaData as {
+        plan_name: string;
+        max_requests: number;
+        request_window_days: number;
+        used_requests: number;
+        remaining_requests: number;
+        window_end: string | null;
+      }) ?? null);
     }
 
     navigate(`/client/requests/${data.id}`);
   }
+
+  const es = language === 'es';
 
   return (
     <Layout navItems={CLIENT_NAV} title="Request Service">
@@ -129,6 +181,24 @@ export default function ClientRequestService() {
             <MapPin className="h-4 w-4" />
             {t('clientRequestService.detectLocation')}
           </button>
+        </div>
+      )}
+
+      {clientQuota && clientQuota.max_requests !== -1 && (
+        <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50/70 p-4">
+          <p className="text-sm font-semibold text-emerald-800">
+            {es ? 'Cupo actual de solicitudes (plan FREE)' : 'Current request quota (FREE plan)'}
+          </p>
+          <p className="mt-1 text-sm text-emerald-700">
+            {es
+              ? `Usadas: ${clientQuota.used_requests} de ${clientQuota.max_requests} en ${clientQuota.request_window_days} día(s). Restantes: ${clientQuota.remaining_requests}.`
+              : `Used: ${clientQuota.used_requests} of ${clientQuota.max_requests} in ${clientQuota.request_window_days} day(s). Remaining: ${clientQuota.remaining_requests}.`}
+          </p>
+          {clientQuota.window_end && (
+            <p className="mt-1 text-xs text-emerald-700">
+              {es ? `Próximo reinicio: ${clientQuota.window_end}` : `Next reset: ${clientQuota.window_end}`}
+            </p>
+          )}
         </div>
       )}
 

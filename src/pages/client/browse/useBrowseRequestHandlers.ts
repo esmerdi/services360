@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { LocationMapMarker } from '../../../components/common/LocationMap';
 import { createServiceRequest } from './utils';
+import { formatClientQuotaError } from '../../../utils/quota';
 
 type BrowseCoords = {
   latitude: number;
@@ -13,6 +14,7 @@ type UseBrowseRequestHandlersParams = {
   coords: BrowseCoords | null;
   setError: (message: string | null) => void;
   t: (key: string) => string;
+  language: 'es' | 'en';
   selectedService: string | null;
   selectedProviderId: string | null;
 };
@@ -22,6 +24,7 @@ export function useBrowseRequestHandlers({
   coords,
   setError,
   t,
+  language,
   selectedService,
   selectedProviderId,
 }: UseBrowseRequestHandlersParams) {
@@ -53,14 +56,14 @@ export function useBrowseRequestHandlers({
     });
 
     if (requestError) {
-      setError(requestError.message);
+      setError(formatClientQuotaError(requestError.message, language));
       setQuickRequestingMarkerId(null);
       return;
     }
 
     setQuickRequestingMarkerId(null);
     navigate('/client/requests');
-  }, [coords, navigate, setError, t, user]);
+  }, [coords, language, navigate, setError, t, user]);
 
   const handleQuickRequest = useCallback(async (marker: LocationMapMarker) => {
     if (!marker.actionServiceId || !marker.actionProviderId) {

@@ -29,7 +29,7 @@ const CLIENT_NAV = [
 
 export default function ClientBrowse() {
   const { user } = useAuth();
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const { coords, refresh } = useLocation();
   const { categories, services, nearbyProviders, loading, error, setError } = useBrowseData(coords);
   const [selectedRootCategory, setSelectedRootCategory] = useState<string | null>(null);
@@ -131,6 +131,7 @@ export default function ClientBrowse() {
     coords,
     setError,
     t,
+    language,
     selectedService,
     selectedProviderId,
   });
