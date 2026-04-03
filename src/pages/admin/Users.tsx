@@ -24,6 +24,8 @@ const ROLE_COLORS: Record<UserRole, string> = {
   provider: 'bg-green-100 text-green-700',
 };
 
+const PAGE_SIZE_OPTIONS = [10, 20, 30, 40, 50];
+
 export default function AdminUsers() {
   const { language } = useI18n();
   const [users, setUsers]           = useState<User[]>([]);
@@ -34,6 +36,8 @@ export default function AdminUsers() {
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [editUser, setEditUser]     = useState<User | null>(null);
   const [saving, setSaving]         = useState(false);
+  const [pageSize, setPageSize]     = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
 
   async function fetchUsers() {
     setLoading(true);
@@ -67,6 +71,10 @@ export default function AdminUsers() {
     setFiltered(result);
   }, [users, search, roleFilter]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, roleFilter, pageSize]);
+
   async function handleRoleChange(userId: string, newRole: UserRole) {
     setSaving(true);
     const { error: err } = await supabase
@@ -83,6 +91,13 @@ export default function AdminUsers() {
   }
 
   const es = language === 'es';
+  const totalRecords = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * pageSize;
+  const paginatedUsers = filtered.slice(startIndex, startIndex + pageSize);
+  const visibleStart = totalRecords === 0 ? 0 : startIndex + 1;
+  const visibleEnd = Math.min(startIndex + pageSize, totalRecords);
 
   return (
     <Layout navItems={ADMIN_NAV} title="Users">
@@ -115,15 +130,32 @@ export default function AdminUsers() {
 
       {/* Search */}
       <div className="mb-4 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input
-            type="search"
-            className="input pl-9"
-            placeholder={es ? 'Buscar por nombre o correo...' : 'Search by name or email...'}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="relative w-full md:max-w-xl">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="search"
+              className="input pl-9"
+              placeholder={es ? 'Buscar por nombre o correo...' : 'Search by name or email...'}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label htmlFor="users-page-size" className="text-sm text-slate-500">
+              {es ? 'Filas' : 'Rows'}
+            </label>
+            <select
+              id="users-page-size"
+              className="input h-10 w-24"
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+            >
+              {PAGE_SIZE_OPTIONS.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -147,14 +179,14 @@ export default function AdminUsers() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filtered.length === 0 && (
+                {paginatedUsers.length === 0 && (
                   <tr>
                     <td colSpan={5} className="px-4 py-10 text-center text-slate-400">
                       {es ? 'No se encontraron usuarios.' : 'No users found.'}
                     </td>
                   </tr>
                 )}
-                {filtered.map((u) => (
+                {paginatedUsers.map((u) => (
                   <tr key={u.id} className="hover:bg-slate-50">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
@@ -195,6 +227,36 @@ export default function AdminUsers() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          <div className="flex flex-col gap-3 border-t border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-slate-500">
+              {es
+                ? `Mostrando ${visibleStart}-${visibleEnd} de ${totalRecords}`
+                : `Showing ${visibleStart}-${visibleEnd} of ${totalRecords}`}
+            </p>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="btn-secondary !px-3 !py-2 text-sm"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={safePage === 1}
+              >
+                {es ? 'Anterior' : 'Previous'}
+              </button>
+              <span className="text-sm text-slate-500">
+                {es ? `Página ${safePage} de ${totalPages}` : `Page ${safePage} of ${totalPages}`}
+              </span>
+              <button
+                type="button"
+                className="btn-secondary !px-3 !py-2 text-sm"
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={safePage >= totalPages}
+              >
+                {es ? 'Siguiente' : 'Next'}
+              </button>
+            </div>
           </div>
         </div>
       )}

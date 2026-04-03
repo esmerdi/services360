@@ -24,6 +24,7 @@ interface ServiceForm {
 }
 
 const emptyForm: ServiceForm = { name: '', category_id: '', description: '' };
+const PAGE_SIZE_OPTIONS = [10, 20, 30, 40, 50];
 
 type ServiceWithCategory = Service & { category?: Category };
 
@@ -39,6 +40,8 @@ export default function AdminServices() {
   const [form, setForm]           = useState<ServiceForm>(emptyForm);
   const [saving, setSaving]       = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [pageSize, setPageSize]   = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
 
   async function fetchData() {
     setLoading(true);
@@ -167,7 +170,18 @@ export default function AdminServices() {
     });
   }, [getCategoryPath, search, services]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, pageSize]);
+
   const es = language === 'es';
+  const totalRecords = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * pageSize;
+  const paginatedServices = filtered.slice(startIndex, startIndex + pageSize);
+  const visibleStart = totalRecords === 0 ? 0 : startIndex + 1;
+  const visibleEnd = Math.min(startIndex + pageSize, totalRecords);
 
   return (
     <Layout navItems={ADMIN_NAV} title="Services">
@@ -189,15 +203,32 @@ export default function AdminServices() {
       </div>
 
       <div className="mb-4 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input
-            type="search"
-            className="input pl-9"
-            placeholder={es ? 'Buscar servicios...' : 'Search services...'}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="relative w-full md:max-w-xl">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="search"
+              className="input pl-9"
+              placeholder={es ? 'Buscar servicios...' : 'Search services...'}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label htmlFor="services-page-size" className="text-sm text-slate-500">
+              {es ? 'Filas' : 'Rows'}
+            </label>
+            <select
+              id="services-page-size"
+              className="input h-10 w-24"
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+            >
+              {PAGE_SIZE_OPTIONS.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -219,14 +250,14 @@ export default function AdminServices() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filtered.length === 0 && (
+              {paginatedServices.length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-4 py-10 text-center text-slate-400">
                     {es ? 'No se encontraron servicios.' : 'No services found.'}
                   </td>
                 </tr>
               )}
-              {filtered.map((svc) => (
+              {paginatedServices.map((svc) => (
                 <tr key={svc.id} className="hover:bg-slate-50">
                   <td className="px-4 py-3 font-medium text-slate-900">{svc.name}</td>
                   <td className="px-4 py-3 text-slate-600">
@@ -252,6 +283,36 @@ export default function AdminServices() {
               ))}
             </tbody>
           </table>
+
+          <div className="flex flex-col gap-3 border-t border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-slate-500">
+              {es
+                ? `Mostrando ${visibleStart}-${visibleEnd} de ${totalRecords}`
+                : `Showing ${visibleStart}-${visibleEnd} of ${totalRecords}`}
+            </p>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="btn-secondary !px-3 !py-2 text-sm"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={safePage === 1}
+              >
+                {es ? 'Anterior' : 'Previous'}
+              </button>
+              <span className="text-sm text-slate-500">
+                {es ? `Página ${safePage} de ${totalPages}` : `Page ${safePage} of ${totalPages}`}
+              </span>
+              <button
+                type="button"
+                className="btn-secondary !px-3 !py-2 text-sm"
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={safePage >= totalPages}
+              >
+                {es ? 'Siguiente' : 'Next'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

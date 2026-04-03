@@ -18,6 +18,8 @@ const ADMIN_NAV = [
   { label: 'Plans',      to: '/admin/plans' },
 ];
 
+const PAGE_SIZE_OPTIONS = [10, 20, 30, 40, 50];
+
 export default function AdminRequests() {
   const { language } = useI18n();
   const [requests, setRequests]     = useState<ServiceRequest[]>([]);
@@ -26,6 +28,8 @@ export default function AdminRequests() {
   const [error, setError]           = useState<string | null>(null);
   const [search, setSearch]         = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [pageSize, setPageSize]     = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     async function fetchRequests() {
@@ -65,7 +69,18 @@ export default function AdminRequests() {
     setFiltered(result);
   }, [requests, statusFilter, search]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, search, pageSize]);
+
   const es = language === 'es';
+  const totalRecords = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * pageSize;
+  const paginatedRequests = filtered.slice(startIndex, startIndex + pageSize);
+  const visibleStart = totalRecords === 0 ? 0 : startIndex + 1;
+  const visibleEnd = Math.min(startIndex + pageSize, totalRecords);
   const statusOptions = [
     { value: 'all', label: es ? 'Todos' : 'All' },
     { value: 'pending', label: es ? 'Pendiente' : 'Pending' },
@@ -100,15 +115,32 @@ export default function AdminRequests() {
       </div>
 
       <div className="mb-4 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input
-            type="search"
-            className="input pl-9"
-            placeholder={es ? 'Buscar por cliente, servicio o direccion...' : 'Search by client, service or address...'}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="relative w-full md:max-w-xl">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="search"
+              className="input pl-9"
+              placeholder={es ? 'Buscar por cliente, servicio o direccion...' : 'Search by client, service or address...'}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label htmlFor="requests-page-size" className="text-sm text-slate-500">
+              {es ? 'Filas' : 'Rows'}
+            </label>
+            <select
+              id="requests-page-size"
+              className="input h-10 w-24"
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+            >
+              {PAGE_SIZE_OPTIONS.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -133,14 +165,14 @@ export default function AdminRequests() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filtered.length === 0 && (
+                {paginatedRequests.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-4 py-10 text-center text-slate-400">
                       {es ? 'No se encontraron solicitudes.' : 'No requests found.'}
                     </td>
                   </tr>
                 )}
-                {filtered.map((req) => (
+                {paginatedRequests.map((req) => (
                   <tr key={req.id} className="hover:bg-slate-50">
                     <td className="px-4 py-3 font-medium text-slate-900">
                       {req.service?.name ?? '—'}
@@ -165,6 +197,36 @@ export default function AdminRequests() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          <div className="flex flex-col gap-3 border-t border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-slate-500">
+              {es
+                ? `Mostrando ${visibleStart}-${visibleEnd} de ${totalRecords}`
+                : `Showing ${visibleStart}-${visibleEnd} of ${totalRecords}`}
+            </p>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="btn-secondary !px-3 !py-2 text-sm"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={safePage === 1}
+              >
+                {es ? 'Anterior' : 'Previous'}
+              </button>
+              <span className="text-sm text-slate-500">
+                {es ? `Página ${safePage} de ${totalPages}` : `Page ${safePage} of ${totalPages}`}
+              </span>
+              <button
+                type="button"
+                className="btn-secondary !px-3 !py-2 text-sm"
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={safePage >= totalPages}
+              >
+                {es ? 'Siguiente' : 'Next'}
+              </button>
+            </div>
           </div>
         </div>
       )}

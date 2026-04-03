@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Check, Pencil, Sparkles } from 'lucide-react';
+import { Check, CircleDollarSign, Pencil, ShieldCheck, Sparkles } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
@@ -72,6 +72,8 @@ export default function AdminPlans() {
   };
 
   const es = language === 'es';
+  const freePlans = plans.filter((plan) => plan.price === 0).length;
+  const maxPrice = plans.reduce((max, plan) => Math.max(max, plan.price), 0);
 
   return (
     <Layout navItems={ADMIN_NAV} title="Plans">
@@ -91,52 +93,105 @@ export default function AdminPlans() {
           <LoadingSpinner size="lg" />
         </div>
       ) : (
-        <div className="grid max-w-3xl gap-5 md:grid-cols-2">
-          {plans.map((plan) => (
-            <div
-              key={plan.id}
-              className={`relative rounded-xl border bg-white p-5 shadow-sm ${plan.name === 'PRO' ? 'border-blue-300 ring-2 ring-blue-100' : 'border-slate-200'}`}
-            >
-              {plan.name === 'PRO' && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="badge bg-blue-600 text-white px-4 py-1 text-xs font-semibold shadow">
-                    {es ? 'RECOMENDADO' : 'RECOMMENDED'}
-                  </span>
-                </div>
-              )}
-
-              <div className="mb-4">
-                <h2 className="text-xl font-semibold tracking-tight text-slate-900">{plan.name}</h2>
-                <p className="mt-1 text-3xl font-bold text-blue-600">
-                  {plan.price === 0 ? (
-                    <span>{es ? 'Gratis' : 'Free'}</span>
-                  ) : (
-                    <>
-                      {formatCurrency(plan.price, language)}
-                      <span className="text-base font-normal text-slate-500">/{es ? 'mes' : 'mo'}</span>
-                    </>
-                  )}
-                </p>
-              </div>
-
-              <ul className="space-y-2 mb-6">
-                {getFeatures(plan).map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm text-slate-600">
-                    <Check className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span className="capitalize">{f}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <button
-                onClick={() => openEdit(plan)}
-                className="btn-secondary w-full"
-              >
-                <Pencil className="h-4 w-4" />
-                {es ? 'Editar precio' : 'Edit Price'}
-              </button>
+        <div className="space-y-5">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">{es ? 'Planes totales' : 'Total plans'}</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">{plans.length}</p>
             </div>
-          ))}
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
+              <p className="text-[11px] uppercase tracking-[0.08em] text-emerald-700">{es ? 'Plan gratuito' : 'Free plans'}</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight text-emerald-800">{freePlans}</p>
+            </div>
+            <div className="rounded-xl border border-sky-200 bg-sky-50 p-4 shadow-sm">
+              <p className="text-[11px] uppercase tracking-[0.08em] text-sky-700">{es ? 'Precio máximo' : 'Highest price'}</p>
+              <p className="mt-1 text-lg font-semibold tracking-tight text-sky-800">{maxPrice > 0 ? formatCurrency(maxPrice, language) : (es ? 'Sin costo' : 'No cost')}</p>
+            </div>
+          </div>
+
+          <div className="grid max-w-4xl gap-4 md:grid-cols-2">
+            {plans.map((plan) => {
+              const isFree = plan.name === 'FREE' || plan.price === 0;
+              const isPro = plan.name === 'PRO';
+
+              const palette = isFree
+                ? {
+                    card: 'border-emerald-200 bg-gradient-to-b from-emerald-50 to-white',
+                    ring: 'ring-emerald-200',
+                    title: 'text-emerald-800',
+                    icon: 'text-emerald-600',
+                    price: 'text-emerald-700',
+                  }
+                : isPro
+                  ? {
+                      card: 'border-sky-200 bg-gradient-to-b from-cyan-50 to-white',
+                      ring: 'ring-sky-200',
+                      title: 'text-sky-900',
+                      icon: 'text-sky-600',
+                      price: 'text-sky-700',
+                    }
+                  : {
+                      card: 'border-slate-200 bg-white',
+                      ring: 'ring-slate-200',
+                      title: 'text-slate-900',
+                      icon: 'text-slate-600',
+                      price: 'text-blue-600',
+                    };
+
+              return (
+                <article
+                  key={plan.id}
+                  className={`relative rounded-2xl border p-5 shadow-sm ${palette.card} ${isPro ? `ring-2 ${palette.ring}` : ''}`}
+                >
+                  {isPro && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <span className="inline-flex items-center rounded-full border border-sky-200 bg-sky-600 px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-white shadow-sm">
+                        {es ? 'Recomendado' : 'Recommended'}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="mb-4 flex items-start justify-between gap-3">
+                    <div>
+                      <h2 className={`text-xl font-semibold tracking-tight ${palette.title}`}>{plan.name}</h2>
+                      <p className={`mt-1 text-3xl font-bold ${palette.price}`}>
+                        {plan.price === 0 ? (
+                          <span>{es ? 'Gratis' : 'Free'}</span>
+                        ) : (
+                          <>
+                            {formatCurrency(plan.price, language)}
+                            <span className="text-base font-normal text-slate-500">/{es ? 'mes' : 'mo'}</span>
+                          </>
+                        )}
+                      </p>
+                    </div>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white/85">
+                      <CircleDollarSign className={`h-5 w-5 ${palette.icon}`} aria-hidden="true" />
+                    </div>
+                  </div>
+
+                  <div className="mb-5 rounded-xl border border-slate-200 bg-white/80 p-3">
+                    <ul className="space-y-2">
+                      {getFeatures(plan).map((f) => (
+                        <li key={f} className="flex items-start gap-2 text-sm text-slate-600">
+                          <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-500" />
+                          <span className="capitalize">{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <button
+                    onClick={() => openEdit(plan)}
+                    className="btn-secondary w-full focus-visible:ring-2 focus-visible:ring-blue-500"
+                  >
+                    <Pencil className="h-4 w-4" />
+                    {es ? 'Editar precio' : 'Edit Price'}
+                  </button>
+                </article>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -148,6 +203,13 @@ export default function AdminPlans() {
       >
         <div className="space-y-4">
           {formError && <ErrorMessage message={formError} />}
+          <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-xs text-slate-600">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-slate-500" aria-hidden="true" />
+              <span>{es ? 'Actualiza solo el valor monetario. Las features del plan se mantienen.' : 'Update only the monetary value. Plan features stay unchanged.'}</span>
+            </div>
+          </div>
+
           <div className="form-group">
             <label className="label">{es ? 'Precio mensual (USD)' : 'Monthly Price (USD)'}</label>
             <input
