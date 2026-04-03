@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Plus, Pencil, Trash2, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Wrench } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
@@ -171,26 +171,34 @@ export default function AdminServices() {
 
   return (
     <Layout navItems={ADMIN_NAV} title="Services">
-      <div className="page-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="page-title">{es ? 'Servicios' : 'Services'}</h1>
-          <p className="page-subtitle">{services.length} {es ? 'servicios en total' : 'total services'}</p>
+      <div className="page-header rounded-2xl border border-slate-200 bg-gradient-to-r from-sky-50 to-cyan-50 p-5 md:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-sky-700">
+              <Wrench className="h-3.5 w-3.5" aria-hidden="true" />
+              {es ? 'Catalogo de servicios' : 'Service catalog'}
+            </div>
+            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{es ? 'Servicios' : 'Services'}</h1>
+            <p className="mt-1 text-sm text-slate-600 md:text-base">{services.length} {es ? 'servicios en total' : 'total services'}</p>
+          </div>
+          <button onClick={openCreate} className="btn-primary self-start sm:self-auto">
+            <Plus className="h-4 w-4" />
+            {es ? 'Nuevo servicio' : 'New Service'}
+          </button>
         </div>
-        <button onClick={openCreate} className="btn-primary">
-          <Plus className="h-4 w-4" />
-          {es ? 'Nuevo servicio' : 'New Service'}
-        </button>
       </div>
 
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-        <input
-          type="search"
-          className="input pl-9"
-          placeholder={es ? 'Buscar servicios...' : 'Search services...'}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      <div className="mb-4 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            type="search"
+            className="input pl-9"
+            placeholder={es ? 'Buscar servicios...' : 'Search services...'}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
       </div>
 
       {error && <ErrorMessage message={error} className="mb-4" />}
@@ -200,14 +208,14 @@ export default function AdminServices() {
           <LoadingSpinner size="lg" />
         </div>
       ) : (
-        <div className="card p-0 overflow-hidden">
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white p-0 shadow-sm">
           <table className="dashboard-table">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="px-4 py-3 text-left font-medium text-slate-500">{es ? 'Nombre' : 'Name'}</th>
-                <th className="px-4 py-3 text-left font-medium text-slate-500">{es ? 'Categoria' : 'Category'}</th>
-                <th className="px-4 py-3 text-left font-medium text-slate-500 hidden md:table-cell">{es ? 'Descripcion' : 'Description'}</th>
-                <th className="px-4 py-3 text-right font-medium text-slate-500">{es ? 'Acciones' : 'Actions'}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{es ? 'Nombre' : 'Name'}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{es ? 'Categoria' : 'Category'}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 hidden md:table-cell">{es ? 'Descripcion' : 'Description'}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{es ? 'Acciones' : 'Actions'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">

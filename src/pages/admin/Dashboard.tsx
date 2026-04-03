@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Users, Briefcase, ClipboardList, CheckCircle2,
-  Clock, DollarSign,
+  Clock, DollarSign, Sparkles,
 } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -29,13 +29,13 @@ interface StatCardProps {
 
 function StatCard({ label, value, icon: Icon, color, bgColor }: StatCardProps) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-transform duration-300 hover:-translate-y-1">
-      <div className={`h-12 w-12 rounded-xl ${bgColor} flex items-center justify-center flex-shrink-0`}>
-        <Icon className={`h-6 w-6 ${color}`} />
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${bgColor} flex-shrink-0`}>
+        <Icon className={`h-5 w-5 ${color}`} />
       </div>
       <div className="mt-3">
-        <p className="font-display text-2xl text-slate-900">{value}</p>
-        <p className="text-sm text-slate-500 mt-0.5">{label}</p>
+        <p className="text-2xl font-semibold tracking-tight text-slate-900">{value}</p>
+        <p className="mt-0.5 text-xs font-medium uppercase tracking-[0.08em] text-slate-500">{label}</p>
       </div>
     </div>
   );
@@ -80,9 +80,17 @@ export default function AdminDashboard() {
 
   return (
     <Layout navItems={ADMIN_NAV} title="Admin Dashboard">
-      <div className="mb-8 rounded-3xl border border-slate-200 bg-gradient-to-r from-sky-50 to-blue-50 p-6">
-        <h1 className="font-display text-3xl text-slate-900">{es ? 'Panel' : 'Dashboard'}</h1>
-        <p className="text-slate-600 mt-2">{es ? 'Resumen de la plataforma y metricas clave' : 'Platform overview and key metrics'}</p>
+      <div className="mb-7 rounded-2xl border border-slate-200 bg-gradient-to-r from-sky-50 to-cyan-50 p-5 md:p-6">
+        <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-sky-700">
+          <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+          {es ? 'Panel de administracion' : 'Admin control center'}
+        </div>
+        <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">
+          {es ? 'Panel' : 'Dashboard'}
+        </h1>
+        <p className="mt-1 text-sm text-slate-600 md:text-base">
+          {es ? 'Resumen de la plataforma y metricas clave' : 'Platform overview and key metrics'}
+        </p>
       </div>
 
       {loading ? (
@@ -91,7 +99,7 @@ export default function AdminDashboard() {
         </div>
       ) : metrics && (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+          <div className="mb-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
               label={es ? 'Usuarios totales' : 'Total Users'}
               value={metrics.totalUsers}
@@ -146,14 +154,14 @@ export default function AdminDashboard() {
             />
           </div>
 
-          <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="font-display text-xl text-slate-900 mb-4">{es ? 'Acciones rapidas' : 'Quick Actions'}</h2>
-            <div className="flex flex-wrap gap-3">
+          <div className="mt-7 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-lg font-semibold tracking-tight text-slate-900">{es ? 'Acciones rapidas' : 'Quick Actions'}</h2>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {ADMIN_NAV.slice(1).map((link) => (
                 <a
                   key={link.to}
                   href={link.to}
-                  className="btn-secondary text-sm"
+                  className="btn-secondary justify-center text-sm"
                 >
                   {es ? 'Gestionar' : 'Manage'} {link.label}
                 </a>

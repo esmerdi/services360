@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Plus, Pencil, Trash2, ChevronRight, FolderTree } from 'lucide-react';
+import { Plus, Pencil, Trash2, ChevronRight, FolderTree, Layers } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
@@ -235,15 +235,21 @@ export default function AdminCategories() {
 
   return (
     <Layout navItems={ADMIN_NAV} title="Categories">
-      <div className="page-header flex items-center justify-between">
-        <div>
-          <h1 className="page-title">{es ? 'Categorías' : 'Categories'}</h1>
-          <p className="page-subtitle">{categories.length} {es ? 'categorías en total' : 'total categories'}</p>
+      <div className="page-header rounded-2xl border border-slate-200 bg-gradient-to-r from-sky-50 to-cyan-50 p-5 md:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-sky-700">
+              <Layers className="h-3.5 w-3.5" aria-hidden="true" />
+              {es ? 'Estructura del catalogo' : 'Catalog structure'}
+            </div>
+            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{es ? 'Categorías' : 'Categories'}</h1>
+            <p className="mt-1 text-sm text-slate-600 md:text-base">{categories.length} {es ? 'categorías en total' : 'total categories'}</p>
+          </div>
+          <button onClick={openCreate} className="btn-primary self-start sm:self-auto">
+            <Plus className="h-4 w-4" />
+            {es ? 'Nueva categoría' : 'New Category'}
+          </button>
         </div>
-        <button onClick={openCreate} className="btn-primary">
-          <Plus className="h-4 w-4" />
-          {es ? 'Nueva categoría' : 'New Category'}
-        </button>
       </div>
 
       {error && <ErrorMessage message={error} className="mb-4" />}
@@ -253,7 +259,7 @@ export default function AdminCategories() {
           <LoadingSpinner size="lg" />
         </div>
       ) : roots.length === 0 ? (
-        <div className="card flex flex-col items-center justify-center py-16 text-center">
+        <div className="rounded-xl border border-slate-200 bg-white py-16 text-center shadow-sm">
           <FolderTree className="h-12 w-12 text-slate-300 mb-3" />
           <p className="text-slate-400">{es ? 'Aún no hay categorías.' : 'No categories yet.'}</p>
         </div>

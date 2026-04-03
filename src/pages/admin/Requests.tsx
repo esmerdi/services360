@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search } from 'lucide-react';
+import { Search, ClipboardList } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
@@ -77,31 +77,39 @@ export default function AdminRequests() {
 
   return (
     <Layout navItems={ADMIN_NAV} title="Requests">
-      <div className="page-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="page-title">{es ? 'Solicitudes de servicio' : 'Service Requests'}</h1>
-          <p className="page-subtitle">{requests.length} {es ? 'solicitudes en total' : 'total requests'}</p>
+      <div className="page-header rounded-2xl border border-slate-200 bg-gradient-to-r from-sky-50 to-cyan-50 p-5 md:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-sky-700">
+              <ClipboardList className="h-3.5 w-3.5" aria-hidden="true" />
+              {es ? 'Monitoreo operativo' : 'Operations monitoring'}
+            </div>
+            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{es ? 'Solicitudes de servicio' : 'Service Requests'}</h1>
+            <p className="mt-1 text-sm text-slate-600 md:text-base">{requests.length} {es ? 'solicitudes en total' : 'total requests'}</p>
+          </div>
+          <select
+            className="input w-auto"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            {statusOptions.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
         </div>
-        <select
-          className="input w-auto"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        >
-          {statusOptions.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
       </div>
 
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-        <input
-          type="search"
-          className="input pl-9"
-          placeholder={es ? 'Buscar por cliente, servicio o direccion...' : 'Search by client, service or address...'}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      <div className="mb-4 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            type="search"
+            className="input pl-9"
+            placeholder={es ? 'Buscar por cliente, servicio o direccion...' : 'Search by client, service or address...'}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
       </div>
 
       {error && <ErrorMessage message={error} className="mb-4" />}
@@ -111,17 +119,17 @@ export default function AdminRequests() {
           <LoadingSpinner size="lg" />
         </div>
       ) : (
-        <div className="card p-0 overflow-hidden">
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white p-0 shadow-sm">
           <div className="overflow-x-auto">
             <table className="dashboard-table">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <th className="px-4 py-3 text-left font-medium text-slate-500">{es ? 'Servicio' : 'Service'}</th>
-                  <th className="px-4 py-3 text-left font-medium text-slate-500">{es ? 'Cliente' : 'Client'}</th>
-                  <th className="px-4 py-3 text-left font-medium text-slate-500 hidden lg:table-cell">{es ? 'Proveedor' : 'Provider'}</th>
-                  <th className="px-4 py-3 text-left font-medium text-slate-500">{es ? 'Estado' : 'Status'}</th>
-                  <th className="px-4 py-3 text-left font-medium text-slate-500 hidden md:table-cell">{es ? 'Precio' : 'Price'}</th>
-                  <th className="px-4 py-3 text-left font-medium text-slate-500 hidden xl:table-cell">{es ? 'Fecha' : 'Date'}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{es ? 'Servicio' : 'Service'}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{es ? 'Cliente' : 'Client'}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 hidden lg:table-cell">{es ? 'Proveedor' : 'Provider'}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{es ? 'Estado' : 'Status'}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 hidden md:table-cell">{es ? 'Precio' : 'Price'}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 hidden xl:table-cell">{es ? 'Fecha' : 'Date'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Check, Pencil } from 'lucide-react';
+import { Check, Pencil, Sparkles } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
@@ -75,9 +75,13 @@ export default function AdminPlans() {
 
   return (
     <Layout navItems={ADMIN_NAV} title="Plans">
-      <div className="page-header">
-        <h1 className="page-title">{es ? 'Planes y precios' : 'Plans & Pricing'}</h1>
-        <p className="page-subtitle">{es ? 'Gestiona los planes de suscripcion para proveedores' : 'Manage subscription plans for providers'}</p>
+      <div className="page-header rounded-2xl border border-slate-200 bg-gradient-to-r from-sky-50 to-cyan-50 p-5 md:p-6">
+        <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-sky-700">
+          <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+          {es ? 'Estrategia comercial' : 'Pricing strategy'}
+        </div>
+        <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{es ? 'Planes y precios' : 'Plans & Pricing'}</h1>
+        <p className="mt-1 text-sm text-slate-600 md:text-base">{es ? 'Gestiona los planes de suscripcion para proveedores' : 'Manage subscription plans for providers'}</p>
       </div>
 
       {error && <ErrorMessage message={error} className="mb-4" />}
@@ -87,11 +91,11 @@ export default function AdminPlans() {
           <LoadingSpinner size="lg" />
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 max-w-3xl">
+        <div className="grid max-w-3xl gap-5 md:grid-cols-2">
           {plans.map((plan) => (
             <div
               key={plan.id}
-              className={`card relative ${plan.name === 'PRO' ? 'border-blue-400 ring-2 ring-blue-100' : ''}`}
+              className={`relative rounded-xl border bg-white p-5 shadow-sm ${plan.name === 'PRO' ? 'border-blue-300 ring-2 ring-blue-100' : 'border-slate-200'}`}
             >
               {plan.name === 'PRO' && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -102,8 +106,8 @@ export default function AdminPlans() {
               )}
 
               <div className="mb-4">
-                <h2 className="text-xl font-bold text-slate-900">{plan.name}</h2>
-                <p className="text-3xl font-extrabold text-blue-600 mt-1">
+                <h2 className="text-xl font-semibold tracking-tight text-slate-900">{plan.name}</h2>
+                <p className="mt-1 text-3xl font-bold text-blue-600">
                   {plan.price === 0 ? (
                     <span>{es ? 'Gratis' : 'Free'}</span>
                   ) : (
