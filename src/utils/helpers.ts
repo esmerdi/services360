@@ -67,7 +67,7 @@ const PLAN_FEATURE_LABELS: Record<string, { en: string; es: string }> = {
   featured_in_search: { en: 'Featured in search', es: 'Destacado en búsqueda' },
   max_requests_per_month: { en: 'Max requests per 30-day period', es: 'Máximo de solicitudes por período de 30 días' },
   profile_boost: { en: 'Profile boost', es: 'Impulso de perfil' },
-  priority_support: { en: 'Priority support', es: 'Soporte prioritario' },
+  priority_support: { en: 'Email support', es: 'Soporte por correo electrónico' },
   instant_notifications: { en: 'Timely notifications', es: 'Notificaciones oportunas' },
 };
 

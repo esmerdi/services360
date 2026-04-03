@@ -42,14 +42,14 @@ export const UPGRADE_PRO_FEATURES = {
     'Solicitudes ilimitadas por mes',
     'Prioridad en búsquedas',
     'Perfil destacado',
-    'Chat prioritario',
+    'Soporte por correo electrónico',
     'Sin comisión de la plataforma',
   ],
   en: [
     'Unlimited requests per month',
     'Priority in searches',
     'Featured profile',
-    'Priority chat support',
+    'Email support',
     'No platform commission',
   ],
 } as const;
