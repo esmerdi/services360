@@ -203,16 +203,16 @@ export default function Landing() {
       ? maxRequestsRaw
       : typeof maxRequestsRaw === 'string'
         ? Number(maxRequestsRaw)
-        : 10;
+        : 3;
 
     const windowDays = typeof windowDaysRaw === 'number'
       ? windowDaysRaw
       : typeof windowDaysRaw === 'string'
         ? Number(windowDaysRaw)
-        : 30;
+        : 1;
 
-    const safeMaxRequests = Number.isFinite(maxRequests) ? maxRequests : 10;
-    const safeWindowDays = Number.isFinite(windowDays) && windowDays > 0 ? windowDays : 30;
+    const safeMaxRequests = Number.isFinite(maxRequests) ? maxRequests : 3;
+    const safeWindowDays = Number.isFinite(windowDays) && windowDays > 0 ? windowDays : 1;
     const monthlyEquivalent = Math.round((safeMaxRequests / safeWindowDays) * 30);
 
     return {

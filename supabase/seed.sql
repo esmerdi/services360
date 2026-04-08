@@ -8,8 +8,9 @@
 -- =============================================
 INSERT INTO public.plans (name, price, features) VALUES
   ('FREE', 0.00, '{
-    "trial_days": 15,
-    "max_requests_per_month": 10,
+    "trial_days": 30,
+    "max_requests_per_month": 3,
+    "request_window_days": 1,
     "featured_in_search": false,
     "profile_boost": false,
     "priority_support": false,

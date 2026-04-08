@@ -47,13 +47,13 @@ export default function AdminPlans() {
 
   const openEdit = (plan: Plan) => {
     const planFeatures = (plan.features ?? {}) as Record<string, unknown>;
-    const maxRequestsValue = Number(planFeatures.max_requests_per_month ?? (plan.price === 0 ? 10 : -1));
-    const windowDaysValue = Number(planFeatures.request_window_days ?? 30);
+    const maxRequestsValue = Number(planFeatures.max_requests_per_month ?? (plan.price === 0 ? 3 : -1));
+    const windowDaysValue = Number(planFeatures.request_window_days ?? (plan.price === 0 ? 1 : 30));
 
     setEditing(plan);
     setPrice(String(plan.price));
-    setMaxRequests(Number.isFinite(maxRequestsValue) ? String(maxRequestsValue) : String(plan.price === 0 ? 10 : -1));
-    setRequestWindowDays(Number.isFinite(windowDaysValue) ? String(windowDaysValue) : '30');
+    setMaxRequests(Number.isFinite(maxRequestsValue) ? String(maxRequestsValue) : String(plan.price === 0 ? 3 : -1));
+    setRequestWindowDays(Number.isFinite(windowDaysValue) ? String(windowDaysValue) : (plan.price === 0 ? '1' : '30'));
     setFormError(null);
   };
 
@@ -242,8 +242,8 @@ export default function AdminPlans() {
 
                   {isFree && (() => {
                     const features = (plan.features ?? {}) as Record<string, unknown>;
-                    const maxRequestsValue = Number(features.max_requests_per_month ?? 10);
-                    const windowDaysValue = Number(features.request_window_days ?? 30);
+                    const maxRequestsValue = Number(features.max_requests_per_month ?? 3);
+                    const windowDaysValue = Number(features.request_window_days ?? 1);
                     const estimatedPerDay = windowDaysValue > 0 && maxRequestsValue >= 0 ? maxRequestsValue / windowDaysValue : null;
 
                     return (

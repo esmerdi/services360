@@ -84,8 +84,8 @@ export function useNearbyRequestActions({
       if (updateError.message.includes('FREE plan request quota reached')) {
         setError(
           es
-            ? 'Alcanzaste el límite de 10 solicitudes en este período de 30 días. Espera al próximo reinicio del cupo o actualiza a PRO.'
-            : 'You reached the 10-request limit for this 30-day period. Wait for the next quota reset or upgrade to PRO.'
+            ? 'Alcanzaste el límite de 3 solicitudes por día del plan FREE. Además, el plan FREE vence a los 30 días. Espera al próximo reinicio del cupo o actualiza a PRO.'
+            : 'You reached the FREE plan limit of 3 requests per day. Also, the FREE plan expires after 30 days. Wait for the next quota reset or upgrade to PRO.'
         );
       } else {
         setError(updateError.message);
