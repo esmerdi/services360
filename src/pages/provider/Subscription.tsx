@@ -300,9 +300,40 @@ export default function ProviderSubscription() {
           <div className="grid max-w-4xl gap-4 md:grid-cols-2 md:gap-5">
             {plans.map((plan) => {
               const active = subscription ? subscription.plan_id === plan.id : plan.price === 0;
-              const features = Object.entries(plan.features || {}).filter(([, value]) => value !== false);
+              const planFeatures = (plan.features ?? {}) as Record<string, unknown>;
               const isFree = plan.name === 'FREE';
               const isPro = plan.name === 'PRO';
+
+              const hiddenFeatureKeys = isFree
+                ? new Set(['max_requests_per_month', 'request_window_days', 'trial_days'])
+                : new Set<string>();
+              const features = Object.entries(planFeatures).filter(
+                ([key, value]) => value !== false && !hiddenFeatureKeys.has(key)
+              );
+
+              const maxRequestsRaw = planFeatures.max_requests_per_month;
+              const windowDaysRaw = planFeatures.request_window_days;
+              const maxRequests =
+                typeof maxRequestsRaw === 'number'
+                  ? maxRequestsRaw
+                  : typeof maxRequestsRaw === 'string'
+                    ? Number(maxRequestsRaw)
+                    : 3;
+              const windowDays =
+                typeof windowDaysRaw === 'number'
+                  ? windowDaysRaw
+                  : typeof windowDaysRaw === 'string'
+                    ? Number(windowDaysRaw)
+                    : 1;
+              const safeMaxRequests = Number.isFinite(maxRequests) && maxRequests > 0 ? maxRequests : 3;
+              const safeWindowDays = Number.isFinite(windowDays) && windowDays > 0 ? windowDays : 1;
+              const dayRequests = Math.max(1, Math.round(safeMaxRequests / safeWindowDays));
+              const monthRequests = Math.max(dayRequests, Math.round((safeMaxRequests / safeWindowDays) * 30));
+              const freeQuotaIntro = text.freeQuotaIntro
+                .replace('{dayRequests}', String(dayRequests))
+                .replace('{monthRequests}', String(monthRequests));
+              const freeQuotaDay = text.freeQuotaDay.replace('{dayRequests}', String(dayRequests));
+              const freeQuotaMonth = text.freeQuotaMonth.replace('{monthRequests}', String(monthRequests));
 
               const palette = isFree
                 ? {
@@ -361,6 +392,13 @@ export default function ProviderSubscription() {
                   </div>
 
                   <ul className="mt-4 space-y-1.5 text-sm text-slate-700">
+                    {isFree && (
+                      <li className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-3">
+                        <p className="text-sm font-medium text-emerald-800">{freeQuotaIntro}</p>
+                        <p className="mt-2 leading-5 text-emerald-700">{freeQuotaDay}</p>
+                        <p className="leading-5 text-emerald-700">{freeQuotaMonth}</p>
+                      </li>
+                    )}
                     {features.map(([key, value]) => (
                       <li key={key} className="flex items-start gap-2">
                         <Check className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${palette.icon}`} aria-hidden="true" />
