@@ -313,6 +313,7 @@ export default function ProviderSubscription() {
 
               const maxRequestsRaw = planFeatures.max_requests_per_month;
               const windowDaysRaw = planFeatures.request_window_days;
+              const trialDaysRaw = planFeatures.trial_days;
               const maxRequests =
                 typeof maxRequestsRaw === 'number'
                   ? maxRequestsRaw
@@ -325,13 +326,19 @@ export default function ProviderSubscription() {
                   : typeof windowDaysRaw === 'string'
                     ? Number(windowDaysRaw)
                     : 1;
+              const trialDays =
+                typeof trialDaysRaw === 'number'
+                  ? trialDaysRaw
+                  : typeof trialDaysRaw === 'string'
+                    ? Number(trialDaysRaw)
+                    : 30;
               const safeMaxRequests = Number.isFinite(maxRequests) && maxRequests > 0 ? maxRequests : 3;
               const safeWindowDays = Number.isFinite(windowDays) && windowDays > 0 ? windowDays : 1;
+              const safeTrialDays = Number.isFinite(trialDays) && trialDays > 0 ? Math.round(trialDays) : 30;
               const dayRequests = Math.max(1, Math.round(safeMaxRequests / safeWindowDays));
               const monthRequests = Math.max(dayRequests, Math.round((safeMaxRequests / safeWindowDays) * 30));
-              const freeQuotaIntro = text.freeQuotaIntro
-                .replace('{dayRequests}', String(dayRequests))
-                .replace('{monthRequests}', String(monthRequests));
+              const freeQuotaIntro = text.freeQuotaIntro;
+              const freeQuotaValidity = text.freeQuotaValidity.replace('{validityDays}', String(safeTrialDays));
               const freeQuotaDay = text.freeQuotaDay.replace('{dayRequests}', String(dayRequests));
               const freeQuotaMonth = text.freeQuotaMonth.replace('{monthRequests}', String(monthRequests));
 
@@ -394,7 +401,8 @@ export default function ProviderSubscription() {
                   <ul className="mt-4 space-y-1.5 text-sm text-slate-700">
                     {isFree && (
                       <li className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-3">
-                        <p className="text-sm font-medium text-emerald-800">{freeQuotaIntro}</p>
+                        <p className="text-sm font-semibold text-emerald-800">{freeQuotaIntro}</p>
+                        <p className="mt-1 leading-5 text-emerald-700">{freeQuotaValidity}</p>
                         <p className="mt-2 leading-5 text-emerald-700">{freeQuotaDay}</p>
                         <p className="leading-5 text-emerald-700">{freeQuotaMonth}</p>
                       </li>

@@ -15,7 +15,10 @@ export const UPGRADE_PRO_MODAL_TEXT = {
     securityNotice: 'Pago seguro procesado por Hotmart. Tu información está protegida.',
     cancel: 'Cancelar',
     processing: 'Procesando...',
-    freePlanQuota: '3 solicitudes por día / 90 por mes',
+    freePlanQuotaTitle: 'Cupo del plan FREE',
+    freePlanValidity: 'Vigencia de 30 días desde la activación.',
+    freePlanDaily: '3 solicitudes por día',
+    freePlanMonthly: '90 solicitudes por mes',
   },
   en: {
     title: 'Upgrade to PRO!',
@@ -33,7 +36,10 @@ export const UPGRADE_PRO_MODAL_TEXT = {
     securityNotice: 'Secure payment processed by Hotmart. Your data is protected.',
     cancel: 'Cancel',
     processing: 'Processing...',
-    freePlanQuota: '3 requests per day / 90 per month',
+    freePlanQuotaTitle: 'FREE plan quota',
+    freePlanValidity: 'Valid for 30 days from activation.',
+    freePlanDaily: '3 requests per day',
+    freePlanMonthly: '90 requests per month',
   },
 } as const;
 
