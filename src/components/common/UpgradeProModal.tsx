@@ -137,10 +137,19 @@ export function UpgradeProModal({
                 <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
                   <p className="text-sm font-semibold text-slate-900">FREE</p>
                   <p className="mt-0.5 text-xs font-medium text-slate-600">{content.freePlanQuotaTitle}</p>
-                  <p className="mt-1 text-xs text-slate-500">{content.freePlanValidity}</p>
-                  <ul className="mt-2 space-y-1 text-xs text-slate-600">
-                    <li>{content.freePlanDaily}</li>
-                    <li>{content.freePlanMonthly}</li>
+                  <ul className="mt-2 space-y-1.5">
+                    <li className="flex items-start gap-2">
+                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" aria-hidden="true" />
+                      <span className="text-xs leading-5 text-slate-600">{content.freePlanValidity}</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" aria-hidden="true" />
+                      <span className="text-xs leading-5 text-slate-600">{content.freePlanDaily}</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" aria-hidden="true" />
+                      <span className="text-xs leading-5 text-slate-600">{content.freePlanMonthly}</span>
+                    </li>
                   </ul>
                 </div>
               </div>
