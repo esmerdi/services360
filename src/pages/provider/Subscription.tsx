@@ -1,12 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  BadgeCheck,
-  CalendarClock,
   Check,
   CheckCircle2,
   CircleDollarSign,
   Leaf,
-  ShieldCheck,
   Sparkles,
 } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
@@ -16,9 +13,9 @@ import { UpgradeProModal } from '../../components/common/UpgradeProModal';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../context/I18nContext';
-import { getProviderSubscriptionText, getSubscriptionStatusLabelMap } from '../../i18n/providerSubscriptionText';
+import { getProviderSubscriptionText } from '../../i18n/providerSubscriptionText';
 import { formatDate, formatPlanFeature } from '../../utils/helpers';
-import type { Plan, Subscription, SubscriptionStatus } from '../../types';
+import type { Plan, Subscription } from '../../types';
 
 const PROVIDER_NAV = [
   { label: 'Dashboard', to: '/provider' },
@@ -86,6 +83,7 @@ export default function ProviderSubscription() {
       } else {
         setQuota(null);
       }
+
       setLoading(false);
     }
 
@@ -157,39 +155,6 @@ export default function ProviderSubscription() {
     }).format(value);
   }, [language]);
 
-  const quotaResetDate = useMemo(() => {
-    if (!subscription) return null;
-
-    if (subscription.plan?.name !== 'FREE') {
-      return subscription.end_date;
-    }
-
-    const features = (subscription.plan?.features ?? {}) as Record<string, unknown>;
-    const rawWindowDays = features.request_window_days;
-    const parsedWindowDays =
-      typeof rawWindowDays === 'number'
-        ? rawWindowDays
-        : typeof rawWindowDays === 'string'
-          ? Number(rawWindowDays)
-          : 30;
-
-    const requestWindowDays = Number.isFinite(parsedWindowDays) && parsedWindowDays > 0 ? parsedWindowDays : 30;
-
-    if (!subscription.start_date) return subscription.end_date;
-
-    const startDate = new Date(subscription.start_date);
-    if (Number.isNaN(startDate.getTime())) return subscription.end_date;
-
-    const cycleMs = requestWindowDays * 24 * 60 * 60 * 1000;
-    const elapsedMs = Date.now() - startDate.getTime();
-    const cycleIndex = elapsedMs > 0 ? Math.floor(elapsedMs / cycleMs) : 0;
-    const nextCycleDate = new Date(startDate.getTime() + (cycleIndex + 1) * cycleMs);
-
-    return nextCycleDate.toISOString();
-  }, [subscription]);
-
-  const statusLabelMap: Record<SubscriptionStatus, string> = getSubscriptionStatusLabelMap(language);
-
   const quotaUsagePercent = useMemo(() => {
     if (!quota || quota.max_requests <= 0 || quota.max_requests === -1) return 0;
     return Math.min(100, Math.round((quota.used_requests / quota.max_requests) * 100));
@@ -216,40 +181,6 @@ export default function ProviderSubscription() {
         </div>
       ) : (
         <>
-          {subscription && (
-            <div className="card mb-4 p-4 md:mb-5 md:p-5">
-              <div className="mb-3 flex items-center gap-2 text-slate-900">
-                <ShieldCheck className="h-4 w-4 text-blue-600" aria-hidden="true" />
-                <h2 className="text-base font-semibold md:text-lg">{text.currentPlan}</h2>
-              </div>
-              <div className="grid gap-2.5 md:grid-cols-3 md:gap-3">
-                <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-                  <p className="text-[11px] uppercase tracking-wide text-slate-500">{text.plan}</p>
-                  <div className="mt-1.5 flex items-center gap-2">
-                    <CircleDollarSign className="h-4 w-4 text-slate-500" aria-hidden="true" />
-                    <p className="text-sm font-semibold text-slate-900">{subscription.plan?.name || text.unknown}</p>
-                  </div>
-                </div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-                  <p className="text-[11px] uppercase tracking-wide text-slate-500">{text.status}</p>
-                  <div className="mt-1.5 flex items-center gap-2">
-                    <BadgeCheck className="h-4 w-4 text-emerald-600" aria-hidden="true" />
-                    <p className="text-sm font-semibold text-slate-900">
-                      {statusLabelMap[subscription.status] ?? subscription.status}
-                    </p>
-                  </div>
-                </div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-                  <p className="text-[11px] uppercase tracking-wide text-slate-500">{subscription.plan?.name === 'FREE' ? text.quotaReset : text.ends}</p>
-                  <div className="mt-1.5 flex items-center gap-2">
-                    <CalendarClock className="h-4 w-4 text-sky-600" aria-hidden="true" />
-                    <p className="text-sm font-semibold text-slate-900">{quotaResetDate ? formatDate(quotaResetDate, language) : text.noEndDate}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
           {quota && (
             <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:mb-6 md:p-5">
               <div className="mb-3 flex items-center gap-2">
