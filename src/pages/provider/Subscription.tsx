@@ -347,7 +347,7 @@ export default function ProviderSubscription() {
                     {features.map((feature) => (
                       <li key={feature.key} className="flex items-start gap-2">
                         <Check className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${palette.icon}`} aria-hidden="true" />
-                        <span className="leading-5 text-slate-600">{feature.description}</span>
+                        <span className={`leading-5 ${isFree ? 'text-emerald-700' : 'text-slate-600'}`}>{feature.description}</span>
                       </li>
                     ))}
                   </ul>
@@ -374,3 +374,4 @@ export default function ProviderSubscription() {
     </Layout>
   );
 }
+
