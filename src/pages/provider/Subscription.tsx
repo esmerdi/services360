@@ -307,9 +307,13 @@ export default function ProviderSubscription() {
               const hiddenFeatureKeys = isFree
                 ? new Set(['max_requests_per_month', 'request_window_days', 'trial_days'])
                 : new Set<string>();
-              const features = Object.entries(planFeatures).filter(
-                ([key, value]) => value !== false && !hiddenFeatureKeys.has(key)
-              );
+              const features = Object.entries(planFeatures)
+                .filter(([key, value]) => value !== false && !hiddenFeatureKeys.has(key))
+                .map(([key, value]) => ({
+                  key,
+                  description: formatPlanFeature(key, value, language),
+                }))
+                .filter((feature) => feature.description.trim().length > 0);
 
               const maxRequestsRaw = planFeatures.max_requests_per_month;
               const windowDaysRaw = planFeatures.request_window_days;
@@ -409,10 +413,10 @@ export default function ProviderSubscription() {
                           <span className="leading-5 text-emerald-700">{item}</span>
                         </li>
                       ))}
-                    {features.map(([key, value]) => (
-                      <li key={key} className="flex items-start gap-2">
+                    {features.map((feature) => (
+                      <li key={feature.key} className="flex items-start gap-2">
                         <Check className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${palette.icon}`} aria-hidden="true" />
-                        <span className="leading-5 text-slate-600">{formatPlanFeature(key, value, language)}</span>
+                        <span className="leading-5 text-slate-600">{feature.description}</span>
                       </li>
                     ))}
                   </ul>
