@@ -26,6 +26,11 @@ function readHeader(req: any, name: string): string {
 }
 
 async function readRawBody(req: any): Promise<string> {
+  // Vercel pre-parses application/json bodies and exposes them via req.body.
+  // When that happens the readable stream is already consumed, so we re-serialize.
+  if (req.body !== undefined && req.body !== null) {
+    return typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+  }
   const chunks: Buffer[] = [];
   for await (const chunk of req) {
     chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
@@ -104,13 +109,20 @@ export default async function handler(req: any, res: any) {
     return json(res, 500, { ok: false, message: 'Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY' });
   }
 
-  const rawBody = await readRawBody(req);
+  let rawBody: string;
   let payload: HotmartPayload;
 
-  try {
-    payload = JSON.parse(rawBody) as HotmartPayload;
-  } catch {
-    return json(res, 400, { ok: false, message: 'Invalid JSON payload' });
+  // If Vercel pre-parsed the body it lands as req.body (object or string).
+  if (req.body !== undefined && req.body !== null && typeof req.body === 'object') {
+    payload = req.body as HotmartPayload;
+    rawBody = JSON.stringify(req.body);
+  } else {
+    rawBody = await readRawBody(req);
+    try {
+      payload = JSON.parse(rawBody) as HotmartPayload;
+    } catch {
+      return json(res, 400, { ok: false, message: 'Invalid JSON payload' });
+    }
   }
 
   const signature = readHeader(req, 'x-hotmart-signature');
