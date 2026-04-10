@@ -399,20 +399,16 @@ export default function ProviderSubscription() {
                     </div>
                   </div>
 
+                  {isFree && <p className="mt-4 text-sm font-semibold text-emerald-800">{freeQuotaIntro}</p>}
+
                   <ul className="mt-4 space-y-1.5 text-sm text-slate-700">
-                    {isFree && (
-                      <>
-                        <li>
-                          <p className="text-sm font-semibold text-emerald-800">{freeQuotaIntro}</p>
+                    {isFree &&
+                      freeItems.map((item) => (
+                        <li key={item} className="flex items-start gap-2">
+                          <Check className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${palette.icon}`} aria-hidden="true" />
+                          <span className="leading-5 text-emerald-700">{item}</span>
                         </li>
-                        {freeItems.map((item) => (
-                          <li key={item} className="flex items-start gap-2">
-                            <Check className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${palette.icon}`} aria-hidden="true" />
-                            <span className="leading-5 text-emerald-700">{item}</span>
-                          </li>
-                        ))}
-                      </>
-                    )}
+                      ))}
                     {features.map(([key, value]) => (
                       <li key={key} className="flex items-start gap-2">
                         <Check className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${palette.icon}`} aria-hidden="true" />
